@@ -1412,8 +1412,8 @@
   let gdriveTokenClient = null;
   let gdriveWriteQueued = false;
 
-  // INSIRA O SEU GOOGLE OAUTH CLIENT ID NA CONSTANTE ABAIXO:
-  const DEFAULT_GDRIVE_CLIENT_ID = '';
+  // GOOGLE OAUTH CLIENT ID CONFIGURADO:
+  const DEFAULT_GDRIVE_CLIENT_ID = '664945687530-k0dl56iffpl3f222jvlur6deuoe8h18l.apps.googleusercontent.com';
 
   function getGDriveClientId() {
     return localStorage.getItem('daysk-gdrive-client-id') || DEFAULT_GDRIVE_CLIENT_ID;
