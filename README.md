@@ -12,11 +12,17 @@
   <img src="https://img.shields.io/badge/Tema-Light_&_Dark-15181B?style=for-the-badge" alt="Tema">
 </p>
 
+<p align="center">
+  🌐 <strong>Acesse a aplicação online: <a href="https://mariogomesbarbosa.github.io/Daysk/Daysk.html">Daysk</a></strong>
+</p>
+
 ---
 
 ## 📌 Sobre o Daysk
 
 O **Daysk** é uma aplicação web minimalista e elegante voltada para o acompanhamento produtivo de tarefas diárias, planejamento de tempo e organização de projetos. Projetado com uma interface focada em UX/UI de alta performance, o Daysk oferece uma experiência fluida, sem distrações, ideal para profissionais, equipes de design e desenvolvedores.
+
+Você pode utilizar o produto diretamente pelo navegador em [Daysk](https://mariogomesbarbosa.github.io/Daysk/Daysk.html).
 
 ---
 
@@ -62,9 +68,13 @@ O **Daysk** é uma aplicação web minimalista e elegante voltada para o acompan
 
 ---
 
-## 🚀 Como Executar o Projeto
+## 🌐 Acesso Online & Como Executar
 
-Como o Daysk foi construído de forma leve e direta com tecnologias web nativas, você pode executá-lo facilmente:
+### 🚀 Acesso Online Direto
+Você pode acessar e usar o produto online em [Daysk](https://mariogomesbarbosa.github.io/Daysk/Daysk.html).
+
+### 💻 Executar Localmente
+Como o Daysk foi construído de forma leve e direta com tecnologias web nativas, você também pode executá-lo localmente:
 
 1. **Clonar o Repositório**:
    ```bash
