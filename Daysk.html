@@ -8,6 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script src="https://apis.google.com/js/api.js" async defer></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
   (function() {
     var saved = localStorage.getItem('daysk-theme');
@@ -674,6 +675,272 @@
     border-color: var(--accent);
   }
 
+  /* Report Dashboard Grid (TickTick / Todoist style) */
+  .report-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    margin-bottom: 1.5rem;
+  }
+
+  @media (max-width: 860px) {
+    .report-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .report-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.25rem;
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    flex-direction: column;
+    min-height: 270px;
+    transition: border-color .2s, box-shadow .2s;
+  }
+
+  .report-card:hover {
+    border-color: var(--border2);
+    box-shadow: var(--shadow-md);
+  }
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.75rem;
+  }
+
+  .card-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    margin: 0;
+  }
+
+  .card-pills {
+    display: flex;
+    gap: 4px;
+    background: var(--surface2);
+    padding: 3px;
+    border-radius: 16px;
+  }
+
+  .pill-btn {
+    font-size: 11px;
+    font-weight: 500;
+    border: none;
+    background: transparent;
+    color: var(--text2);
+    padding: 3px 9px;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all .15s;
+  }
+
+  .pill-btn.active {
+    background: var(--surface);
+    color: var(--accent);
+    font-weight: 600;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+
+  /* Overview Card */
+  .overview-stats {
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    padding: 0.75rem 0;
+    margin-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border);
+    text-align: center;
+    flex: 1;
+  }
+
+  .overview-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .overview-num {
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1;
+  }
+
+  .overview-lbl {
+    font-size: 12px;
+    color: var(--text2);
+    font-weight: 500;
+  }
+
+  .overview-trend {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 12px;
+    margin-top: 4px;
+  }
+
+  .overview-trend.up {
+    background: rgba(34, 197, 94, 0.12);
+    color: #16a34a;
+  }
+
+  .overview-trend.down {
+    background: rgba(239, 68, 68, 0.12);
+    color: #dc2626;
+  }
+
+  .overview-trend.neutral {
+    background: var(--surface2);
+    color: var(--text2);
+  }
+
+  .overview-divider {
+    width: 1px;
+    height: 52px;
+    background: var(--border);
+  }
+
+  .overview-substats {
+    display: flex;
+    justify-content: space-between;
+    background: var(--surface2);
+    padding: 10px 14px;
+    border-radius: var(--radius-md);
+    font-size: 12px;
+  }
+
+  .substat-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .substat-lbl {
+    font-size: 11px;
+    color: var(--text2);
+  }
+
+  .substat-val {
+    font-weight: 600;
+    font-family: var(--mono);
+    color: var(--text);
+  }
+
+  /* Charts Container */
+  .chart-box {
+    position: relative;
+    flex: 1;
+    width: 100%;
+    min-height: 190px;
+    max-height: 220px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .donut-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    flex: 1;
+    min-height: 190px;
+  }
+
+  .donut-chart-box {
+    position: relative;
+    width: 140px;
+    height: 140px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .donut-center-overlay {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    text-align: center;
+  }
+
+  .donut-center-num {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1;
+  }
+
+  .donut-center-lbl {
+    font-size: 10px;
+    color: var(--text2);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 500;
+    margin-top: 2px;
+  }
+
+  .donut-legend {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex: 1;
+    max-height: 180px;
+    overflow-y: auto;
+    padding-right: 4px;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 12px;
+  }
+
+  .legend-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    flex: 1;
+  }
+
+  .legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .legend-name {
+    color: var(--text);
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .legend-count {
+    font-family: var(--mono);
+    color: var(--text2);
+    font-weight: 600;
+    white-space: nowrap;
+    margin-left: 6px;
+  }
+
   .report-section { margin-top: 1.75rem; }
 
   .section-title {
@@ -1142,32 +1409,91 @@
       <button class="period-btn" data-period="all" onclick="setPeriod('all')">tudo</button>
     </div>
 
-    <div class="summary-bar">
-      <div class="stat-card">
-        <div class="stat-val" id="r-time">0min</div>
-        <div class="stat-lbl">tempo registrado</div>
+    <!-- TICK TICK / TODOIST STYLE VISUAL DASHBOARD -->
+    <div class="report-grid">
+
+      <!-- CARD 1: Overview -->
+      <div class="report-card">
+        <div class="card-header">
+          <h3 class="card-title">Visão Geral</h3>
+        </div>
+        <div class="overview-stats">
+          <div class="overview-col">
+            <div class="overview-num" id="r-done">0</div>
+            <div class="overview-lbl">Tarefas Concluídas</div>
+            <div class="overview-trend neutral" id="r-done-trend">— vs anterior</div>
+          </div>
+          <div class="overview-divider"></div>
+          <div class="overview-col">
+            <div class="overview-num" id="r-rate">0%</div>
+            <div class="overview-lbl">Taxa de Conclusão</div>
+            <div class="overview-trend neutral" id="r-rate-trend">— vs anterior</div>
+          </div>
+        </div>
+        <div class="overview-substats">
+          <div class="substat-item">
+            <span class="substat-lbl">Tempo Registrado</span>
+            <span class="substat-val" id="r-time">0min</span>
+          </div>
+          <div class="substat-item">
+            <span class="substat-lbl">Média Diária</span>
+            <span class="substat-val" id="r-avg">0min</span>
+          </div>
+        </div>
       </div>
-      <div class="stat-card">
-        <div class="stat-val" id="r-tasks">0</div>
-        <div class="stat-lbl">tarefas</div>
+
+      <!-- CARD 2: Completion Distribution (Bar Chart) -->
+      <div class="report-card">
+        <div class="card-header">
+          <h3 class="card-title">Distribuição de Conclusão</h3>
+        </div>
+        <div class="chart-box">
+          <canvas id="chart-distribution"></canvas>
+        </div>
       </div>
-      <div class="stat-card">
-        <div class="stat-val" id="r-done">0</div>
-        <div class="stat-lbl">concluídas</div>
+
+      <!-- CARD 3: Recent Completion Curve (Line Area Chart) -->
+      <div class="report-card">
+        <div class="card-header">
+          <h3 class="card-title">Curva de Desempenho</h3>
+          <div class="card-pills" id="curve-metric-pills">
+            <button class="pill-btn active" data-metric="tasks" onclick="setCurveMetric('tasks')">Tarefas</button>
+            <button class="pill-btn" data-metric="time" onclick="setCurveMetric('time')">Tempo</button>
+          </div>
+        </div>
+        <div class="chart-box">
+          <canvas id="chart-curve"></canvas>
+        </div>
       </div>
-      <div class="stat-card">
-        <div class="stat-val" id="r-avg">0min</div>
-        <div class="stat-lbl">média diária</div>
+
+      <!-- CARD 4: Classified Completion Statistics (Donut Chart) -->
+      <div class="report-card">
+        <div class="card-header">
+          <h3 class="card-title">Estatísticas por Projeto</h3>
+        </div>
+        <div class="donut-wrapper">
+          <div class="donut-chart-box">
+            <canvas id="chart-donut"></canvas>
+            <div class="donut-center-overlay">
+              <span class="donut-center-num" id="r-donut-total">0</span>
+              <span class="donut-center-lbl">Concluídas</span>
+            </div>
+          </div>
+          <div class="donut-legend" id="r-donut-legend"></div>
+        </div>
       </div>
+
     </div>
 
+    <!-- Tempo por Projeto / Demanda (Barras) -->
     <div class="report-section">
-      <h2 class="section-title">tempo por projeto/demanda</h2>
+      <h2 class="section-title">tempo por projeto / demanda</h2>
       <div id="r-projects" class="project-bars"></div>
     </div>
 
+    <!-- Detalhamento das Atividades (Tabela) -->
     <div class="report-section">
-      <h2 class="section-title">detalhamento</h2>
+      <h2 class="section-title">detalhamento das atividades</h2>
       <div class="report-table-wrap">
         <table class="report-table">
           <thead><tr><th>data</th><th>atividade</th><th>projeto</th><th>previsto</th><th>registrado</th><th>status</th></tr></thead>
@@ -2480,6 +2806,21 @@
 
   /* ---------- render: report ---------- */
 
+  /* ---------- render: report & charts (TickTick / Todoist style) ---------- */
+
+  let chartDistribution = null;
+  let chartCurve = null;
+  let chartDonut = null;
+  let currentCurveMetric = 'tasks';
+
+  function setCurveMetric(metric) {
+    currentCurveMetric = metric;
+    document.querySelectorAll('#curve-metric-pills .pill-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.metric === metric);
+    });
+    renderReport();
+  }
+
   function getWeekRange() {
     const d = new Date();
     const day = d.getDay();
@@ -2490,6 +2831,31 @@
     sunday.setDate(monday.getDate() + 6);
     const fmt = x => x.getFullYear() + '-' + String(x.getMonth() + 1).padStart(2, '0') + '-' + String(x.getDate()).padStart(2, '0');
     return [fmt(monday), fmt(sunday)];
+  }
+
+  function getPreviousDateStr(ds) {
+    const d = new Date(ds + 'T00:00:00');
+    d.setDate(d.getDate() - 1);
+    const fmt = x => x.getFullYear() + '-' + String(x.getMonth() + 1).padStart(2, '0') + '-' + String(x.getDate()).padStart(2, '0');
+    return fmt(d);
+  }
+
+  function getPreviousWeekRange() {
+    const [ws] = getWeekRange();
+    const dMon = new Date(ws + 'T00:00:00');
+    dMon.setDate(dMon.getDate() - 7);
+    const dSun = new Date(dMon);
+    dSun.setDate(dMon.getDate() + 6);
+    const fmt = x => x.getFullYear() + '-' + String(x.getMonth() + 1).padStart(2, '0') + '-' + String(x.getDate()).padStart(2, '0');
+    return [fmt(dMon), fmt(dSun)];
+  }
+
+  function getPreviousMonthStr() {
+    const t = todayStr();
+    const y = parseInt(t.slice(0, 4), 10);
+    const m = parseInt(t.slice(5, 7), 10);
+    const prevDate = new Date(y, m - 2, 1);
+    return prevDate.getFullYear() + '-' + String(prevDate.getMonth() + 1).padStart(2, '0');
   }
 
   function inPeriod(dateStr) {
@@ -2503,22 +2869,357 @@
     return true;
   }
 
+  function inPreviousPeriod(dateStr) {
+    if (currentPeriod === 'today') return dateStr === getPreviousDateStr(todayStr());
+    if (currentPeriod === 'week') {
+      const [pws, pwe] = getPreviousWeekRange();
+      return dateStr >= pws && dateStr <= pwe;
+    }
+    if (currentPeriod === 'month') return dateStr.slice(0, 7) === getPreviousMonthStr();
+    return false;
+  }
+
   function formatDateShort(ds) {
     const [, m, d] = ds.split('-');
     return d + '/' + m;
   }
 
+  function generateTimelineDays(period) {
+    const daysArr = [];
+    const fmt = x => x.getFullYear() + '-' + String(x.getMonth() + 1).padStart(2, '0') + '-' + String(x.getDate()).padStart(2, '0');
+
+    if (period === 'today') {
+      const today = new Date();
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date(today);
+        d.setDate(today.getDate() - i);
+        daysArr.push(fmt(d));
+      }
+    } else if (period === 'week') {
+      const [ws] = getWeekRange();
+      const mon = new Date(ws + 'T00:00:00');
+      for (let i = 0; i < 7; i++) {
+        const d = new Date(mon);
+        d.setDate(mon.getDate() + i);
+        daysArr.push(fmt(d));
+      }
+    } else if (period === 'month') {
+      const t = todayStr();
+      const y = parseInt(t.slice(0, 4), 10);
+      const m = parseInt(t.slice(5, 7), 10);
+      const daysInMonth = new Date(y, m, 0).getDate();
+      for (let i = 1; i <= daysInMonth; i++) {
+        const d = new Date(y, m - 1, i);
+        daysArr.push(fmt(d));
+      }
+    } else {
+      const taskDates = Array.from(new Set(tasks.map(t => t.date))).sort();
+      if (taskDates.length > 0) {
+        const minDate = new Date(taskDates[0] + 'T00:00:00');
+        const maxDate = new Date(taskDates[taskDates.length - 1] + 'T00:00:00');
+        const diffDays = Math.min(30, Math.ceil((maxDate - minDate) / (1000 * 60 * 60 * 24)) + 1);
+        const end = new Date(maxDate);
+        for (let i = diffDays - 1; i >= 0; i--) {
+          const d = new Date(end);
+          d.setDate(end.getDate() - i);
+          daysArr.push(fmt(d));
+        }
+      } else {
+        const today = new Date();
+        for (let i = 6; i >= 0; i--) {
+          const d = new Date(today);
+          d.setDate(today.getDate() - i);
+          daysArr.push(fmt(d));
+        }
+      }
+    }
+    return daysArr;
+  }
+
+  function getThemeColors() {
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark' || 
+      (!document.documentElement.getAttribute('data-theme') && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    return {
+      text: isDark ? '#94A3B8' : '#64748B',
+      grid: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
+      accent: '#4F46E5'
+    };
+  }
+
+  function updateCharts(filtered, timelineDays) {
+    if (typeof Chart === 'undefined') return;
+
+    const theme = getThemeColors();
+
+    // 1. Completion Distribution (Bar Chart)
+    const distData = timelineDays.map(ds => filtered.filter(t => t.date === ds && t.status === 'done').length);
+    const distLabels = timelineDays.map(ds => {
+      const parts = ds.split('-');
+      return currentPeriod === 'month' ? parseInt(parts[2], 10) : parts[2] + '/' + parts[1];
+    });
+
+    const ctxDist = document.getElementById('chart-distribution');
+    if (ctxDist) {
+      if (chartDistribution && chartDistribution.data.labels.length === distLabels.length) {
+        chartDistribution.data.labels = distLabels;
+        chartDistribution.data.datasets[0].data = distData;
+        chartDistribution.data.datasets[0].backgroundColor = theme.accent;
+        chartDistribution.options.scales.x.ticks.color = theme.text;
+        chartDistribution.options.scales.y.ticks.color = theme.text;
+        chartDistribution.options.scales.y.grid.color = theme.grid;
+        chartDistribution.update('none');
+      } else {
+        if (chartDistribution) chartDistribution.destroy();
+        chartDistribution = new Chart(ctxDist, {
+          type: 'bar',
+          data: {
+            labels: distLabels,
+            datasets: [{
+              label: 'Concluídas',
+              data: distData,
+              backgroundColor: theme.accent,
+              borderRadius: 4,
+              maxBarThickness: 16
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+              x: {
+                grid: { display: false },
+                ticks: { color: theme.text, font: { size: 10 } }
+              },
+              y: {
+                beginAtZero: true,
+                grid: { color: theme.grid },
+                ticks: { color: theme.text, font: { size: 10 }, precision: 0 }
+              }
+            }
+          }
+        });
+      }
+    }
+
+    // 2. Recent Completion Curve (Line Area Chart)
+    const curveData = timelineDays.map(ds => {
+      const dayTasks = filtered.filter(t => t.date === ds);
+      if (currentCurveMetric === 'time') {
+        const totalMs = dayTasks.reduce((s, t) => s + effectiveElapsed(t), 0);
+        return Math.round((totalMs / 3600000) * 10) / 10;
+      } else {
+        return dayTasks.filter(t => t.status === 'done').length;
+      }
+    });
+
+    const ctxCurve = document.getElementById('chart-curve');
+    if (ctxCurve) {
+      if (chartCurve && chartCurve.data.labels.length === distLabels.length) {
+        chartCurve.data.labels = distLabels;
+        chartCurve.data.datasets[0].data = curveData;
+        chartCurve.data.datasets[0].label = currentCurveMetric === 'time' ? 'Horas Registradas' : 'Tarefas Concluídas';
+        chartCurve.data.datasets[0].borderColor = theme.accent;
+        chartCurve.options.scales.x.ticks.color = theme.text;
+        chartCurve.options.scales.y.ticks.color = theme.text;
+        chartCurve.options.scales.y.grid.color = theme.grid;
+        chartCurve.update('none');
+      } else {
+        if (chartCurve) chartCurve.destroy();
+
+        const canvasCtx = ctxCurve.getContext('2d');
+        const gradient = canvasCtx.createLinearGradient(0, 0, 0, 180);
+        gradient.addColorStop(0, 'rgba(79, 70, 229, 0.4)');
+        gradient.addColorStop(1, 'rgba(79, 70, 229, 0.0)');
+
+        chartCurve = new Chart(ctxCurve, {
+          type: 'line',
+          data: {
+            labels: distLabels,
+            datasets: [{
+              label: currentCurveMetric === 'time' ? 'Horas Registradas' : 'Tarefas Concluídas',
+              data: curveData,
+              borderColor: theme.accent,
+              borderWidth: 2,
+              backgroundColor: gradient,
+              fill: true,
+              tension: 0.35,
+              pointRadius: 2.5,
+              pointHoverRadius: 5
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+              x: {
+                grid: { display: false },
+                ticks: { color: theme.text, font: { size: 10 } }
+              },
+              y: {
+                beginAtZero: true,
+                grid: { color: theme.grid },
+                ticks: { color: theme.text, font: { size: 10 } }
+              }
+            }
+          }
+        });
+      }
+    }
+
+    // 3. Classified Completion Statistics (Donut Chart & Custom Legend)
+    const doneFiltered = filtered.filter(t => t.status === 'done');
+    const projectStats = {};
+
+    doneFiltered.forEach(t => {
+      const pid = t.projectId || 'none';
+      projectStats[pid] = (projectStats[pid] || 0) + 1;
+    });
+
+    const activeProjects = projects.filter(p => projectStats[p.id] > 0);
+    const unclassifiedCount = projectStats['none'] || 0;
+
+    const donutLabels = activeProjects.map(p => p.name);
+    const donutData = activeProjects.map(p => projectStats[p.id]);
+    const donutColors = activeProjects.map(p => PALETTE[p.colorIndex % PALETTE.length].fg);
+
+    if (unclassifiedCount > 0) {
+      donutLabels.push('Sem projeto');
+      donutData.push(unclassifiedCount);
+      donutColors.push('#94A3B8');
+    }
+
+    const totalDone = doneFiltered.length;
+    document.getElementById('r-donut-total').textContent = totalDone;
+
+    const ctxDonut = document.getElementById('chart-donut');
+    if (ctxDonut) {
+      if (donutData.length === 0) {
+        if (chartDonut) chartDonut.destroy();
+        chartDonut = new Chart(ctxDonut, {
+          type: 'doughnut',
+          data: {
+            labels: ['Sem tarefas'],
+            datasets: [{ data: [1], backgroundColor: ['rgba(148, 163, 184, 0.2)'], borderWidth: 0 }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '76%',
+            plugins: { legend: { display: false }, tooltip: { enabled: false } }
+          }
+        });
+      } else if (chartDonut && chartDonut.data.labels.length === donutLabels.length && chartDonut.data.labels.every((l, i) => l === donutLabels[i])) {
+        chartDonut.data.datasets[0].data = donutData;
+        chartDonut.data.datasets[0].backgroundColor = donutColors;
+        chartDonut.update('none');
+      } else {
+        if (chartDonut) chartDonut.destroy();
+        chartDonut = new Chart(ctxDonut, {
+          type: 'doughnut',
+          data: {
+            labels: donutLabels,
+            datasets: [{
+              data: donutData,
+              backgroundColor: donutColors,
+              borderWidth: 2,
+              borderColor: getComputedStyle(document.documentElement).getPropertyValue('--surface').trim() || '#FFFFFF'
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '76%',
+            plugins: { legend: { display: false } }
+          }
+        });
+      }
+    }
+
+    // Render side legend for Donut
+    const legendEl = document.getElementById('r-donut-legend');
+    if (legendEl) {
+      if (donutData.length === 0) {
+        legendEl.innerHTML = '<div class="empty-report">Nenhuma tarefa concluída</div>';
+      } else {
+        legendEl.innerHTML = donutLabels.map((name, i) => {
+          const cnt = donutData[i];
+          const pct = Math.round((cnt / (totalDone || 1)) * 100);
+          const color = donutColors[i];
+          return `<div class="legend-item">
+            <div class="legend-info">
+              <span class="legend-dot" style="background:${color}"></span>
+              <span class="legend-name">${name}</span>
+            </div>
+            <span class="legend-count">${cnt} (${pct}%)</span>
+          </div>`;
+        }).join('');
+      }
+    }
+  }
+
   function renderReport() {
     const filtered = tasks.filter(t => inPeriod(t.date));
+    const prevFiltered = tasks.filter(t => inPreviousPeriod(t.date));
+
     const totalMs = filtered.reduce((s, t) => s + effectiveElapsed(t), 0);
     const doneCount = filtered.filter(t => t.status === 'done').length;
+    const prevDoneCount = prevFiltered.filter(t => t.status === 'done').length;
+    const totalCount = filtered.length;
+    const prevTotalCount = prevFiltered.length;
+
+    const rate = totalCount ? Math.round((doneCount / totalCount) * 100) : 0;
+    const prevRate = prevTotalCount ? Math.round((prevDoneCount / prevTotalCount) * 100) : 0;
+
     const distinctDays = new Set(filtered.map(t => t.date)).size;
 
+    // Overview KPIs
     document.getElementById('r-time').textContent = minsToHm(Math.round(totalMs / 60000));
-    document.getElementById('r-tasks').textContent = filtered.length;
     document.getElementById('r-done').textContent = doneCount;
+    document.getElementById('r-rate').textContent = rate + '%';
     document.getElementById('r-avg').textContent = distinctDays ? minsToHm(Math.round(totalMs / 60000 / distinctDays)) : '0min';
 
+    // Trend indicators vs previous period
+    const doneTrendEl = document.getElementById('r-done-trend');
+    const rateTrendEl = document.getElementById('r-rate-trend');
+
+    if (currentPeriod === 'all') {
+      doneTrendEl.textContent = 'total acumulado';
+      doneTrendEl.className = 'overview-trend neutral';
+      rateTrendEl.textContent = 'taxa acumulada';
+      rateTrendEl.className = 'overview-trend neutral';
+    } else {
+      const doneDiff = doneCount - prevDoneCount;
+      if (doneDiff > 0) {
+        doneTrendEl.textContent = `↑ +${doneDiff} vs anterior`;
+        doneTrendEl.className = 'overview-trend up';
+      } else if (doneDiff < 0) {
+        doneTrendEl.textContent = `↓ ${doneDiff} vs anterior`;
+        doneTrendEl.className = 'overview-trend down';
+      } else {
+        doneTrendEl.textContent = `= igual ao anterior`;
+        doneTrendEl.className = 'overview-trend neutral';
+      }
+
+      const rateDiff = rate - prevRate;
+      if (rateDiff > 0) {
+        rateTrendEl.textContent = `↑ +${rateDiff}% vs anterior`;
+        rateTrendEl.className = 'overview-trend up';
+      } else if (rateDiff < 0) {
+        rateTrendEl.textContent = `↓ ${rateDiff}% vs anterior`;
+        rateTrendEl.className = 'overview-trend down';
+      } else {
+        rateTrendEl.textContent = `= igual ao anterior`;
+        rateTrendEl.className = 'overview-trend neutral';
+      }
+    }
+
+    // Render Charts
+    const timelineDays = generateTimelineDays(currentPeriod);
+    updateCharts(filtered, timelineDays);
+
+    // Project Bars Section
     const byProject = {};
     filtered.forEach(t => {
       const pid = t.projectId || 'none';
@@ -2551,6 +3252,7 @@
       }).join('');
     }
 
+    // Detail Table Section
     const tbody = document.getElementById('r-table-body');
     if (!filtered.length) {
       tbody.innerHTML = '<tr><td colspan="6" class="empty-report">sem atividades neste período</td></tr>';
@@ -2582,8 +3284,28 @@
       const pct = plannedMs ? Math.min(100, Math.round(effectiveElapsed(active) / plannedMs * 100)) : 0;
       if (bar) bar.style.width = pct + '%';
       if (lbl) lbl.textContent = minsToHm(Math.round(effectiveElapsed(active) / 60000)) + ' em andamento';
+
+      if (currentTab === 'report') {
+        const filtered = tasks.filter(t => inPeriod(t.date));
+        const totalMs = filtered.reduce((s, t) => s + effectiveElapsed(t), 0);
+        const distinctDays = new Set(filtered.map(t => t.date)).size;
+        const rTimeEl = document.getElementById('r-time');
+        const rAvgEl = document.getElementById('r-avg');
+        if (rTimeEl) rTimeEl.textContent = minsToHm(Math.round(totalMs / 60000));
+        if (rAvgEl) rAvgEl.textContent = distinctDays ? minsToHm(Math.round(totalMs / 60000 / distinctDays)) : '0min';
+
+        if (currentCurveMetric === 'time' && chartCurve) {
+          const timelineDays = generateTimelineDays(currentPeriod);
+          const curveData = timelineDays.map(ds => {
+            const dayTasks = filtered.filter(t => t.date === ds);
+            const ms = dayTasks.reduce((s, t) => s + effectiveElapsed(t), 0);
+            return Math.round((ms / 3600000) * 10) / 10;
+          });
+          chartCurve.data.datasets[0].data = curveData;
+          chartCurve.update('none');
+        }
+      }
     }
-    if (currentTab === 'report' && (active || document.getElementById('r-time'))) renderReport();
   }
 
   document.getElementById('f-name').addEventListener('keydown', e => { if (e.key === 'Enter') saveTask(); });
