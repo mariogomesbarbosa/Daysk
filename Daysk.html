@@ -235,6 +235,120 @@
     border-color: var(--accent);
   }
 
+  /* Context Bar & Pills */
+  .context-bar {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 1.25rem;
+  }
+
+  .context-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.03em;
+    padding: 8px 14px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text2);
+    cursor: pointer;
+    transition: all .15s ease;
+  }
+
+  .context-pill:hover:not(.active) {
+    border-color: var(--border2);
+    color: var(--text);
+    background: var(--surface2);
+  }
+
+  .context-pill.active {
+    background: var(--accent);
+    color: var(--on-accent);
+    border-color: var(--accent);
+    font-weight: 500;
+  }
+
+  .ctx-count {
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 10px;
+    background: var(--bg);
+    color: var(--text2);
+    transition: all .15s;
+  }
+
+  .context-pill.active .ctx-count {
+    background: rgba(255,255,255,.25);
+    color: var(--on-accent);
+  }
+
+  /* Form Context Selector */
+  .context-selector {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+  }
+
+  .ctx-btn {
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 8px 10px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text2);
+    cursor: pointer;
+    transition: all .15s;
+    text-align: center;
+  }
+
+  .ctx-btn:hover:not(.active) {
+    border-color: var(--border2);
+    color: var(--text);
+  }
+
+  .ctx-btn.active {
+    background: var(--accent);
+    color: var(--on-accent);
+    border-color: var(--accent);
+    font-weight: 500;
+  }
+
+  /* Schedule Button for Later Tasks */
+  .btn-schedule {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 5px 9px;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    cursor: pointer;
+    transition: all .15s;
+  }
+
+  .btn-schedule:hover {
+    background: var(--accent);
+    color: var(--on-accent);
+    border-color: var(--accent);
+  }
+
+  .later-badge {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text2);
+    background: var(--bg);
+    padding: 3px 6px;
+    border-radius: var(--radius-sm);
+    border: 1px dashed var(--border2);
+  }
+
   /* Summary bar */
   .summary-bar {
     display: grid;
@@ -1372,7 +1486,19 @@
 
   <div id="view-today">
 
-    <div class="summary-bar">
+    <div class="context-bar">
+      <button class="context-pill active" data-context="today" onclick="setTaskContext('today')">
+        📅 Hoje <span class="ctx-count" id="count-today">0</span>
+      </button>
+      <button class="context-pill" data-context="tomorrow" onclick="setTaskContext('tomorrow')">
+        🌅 Amanhã <span class="ctx-count" id="count-tomorrow">0</span>
+      </button>
+      <button class="context-pill" data-context="later" onclick="setTaskContext('later')">
+        📌 Fazer depois <span class="ctx-count" id="count-later">0</span>
+      </button>
+    </div>
+
+    <div class="summary-bar" id="summary-bar-container">
       <div class="stat-card">
         <div class="stat-val" id="s-total">0</div>
         <div class="stat-lbl">total</div>
@@ -1391,7 +1517,7 @@
       </div>
     </div>
 
-    <div class="period-btns">
+    <div class="period-btns" id="view-options-bar">
       <button class="period-btn view-btn active" data-view="time" onclick="setListView('time')">por horário</button>
       <button class="period-btn view-btn" data-view="project" onclick="setListView('project')">por projeto</button>
     </div>
@@ -1522,7 +1648,15 @@
         <label class="form-label">Atividade</label>
         <input type="text" id="f-name" placeholder="Ex: Revisão de handoff">
       </div>
-      <div class="form-row-2">
+      <div class="form-field-v">
+        <label class="form-label">Quando fazer?</label>
+        <div class="context-selector">
+          <button type="button" class="ctx-btn active" id="btn-ctx-today" onclick="selectFormContext('today')">Hoje</button>
+          <button type="button" class="ctx-btn" id="btn-ctx-tomorrow" onclick="selectFormContext('tomorrow')">Amanhã</button>
+          <button type="button" class="ctx-btn" id="btn-ctx-later" onclick="selectFormContext('later')">Fazer depois</button>
+        </div>
+      </div>
+      <div class="form-row-2" id="form-row-time-dur">
         <div class="form-field-v">
           <label class="form-label">Início</label>
           <input type="time" id="f-time" value="09:00">
@@ -1548,6 +1682,39 @@
     <div class="form-footer">
       <button class="btn-cancel-form" onclick="closeForm()">cancelar</button>
       <button class="btn-save" id="btn-save-task" onclick="saveTask()">salvar</button>
+    </div>
+  </div>
+</div>
+
+<div class="form-overlay" id="schedule-overlay" onclick="if(event.target===this) closeScheduleModal()">
+  <div class="form-panel" style="max-width:380px;">
+    <div class="form-header">
+      <h2 class="form-title">Agendar atividade</h2>
+      <button class="form-close" onclick="closeScheduleModal()"><svg class="icon" width="18" height="18" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M205.66,194.34a8,8,0,0,1-11.32,11.32L128,139.31,61.66,205.66a8,8,0,0,1-11.32-11.32L116.69,128,50.34,61.66A8,8,0,0,1,61.66,50.34L128,116.69l66.34-66.35a8,8,0,0,1,11.32,11.32L139.31,128Z"/></svg></button>
+    </div>
+    <div class="form-body">
+      <p style="font-size: 13px; color: var(--text2); margin-bottom: 4px;" id="sched-task-name"></p>
+      <div class="form-field-v" style="margin-top:8px;">
+        <label class="form-label">Quando fazer?</label>
+        <div class="context-selector">
+          <button type="button" class="ctx-btn active" id="sched-ctx-today" onclick="selectSchedContext('today')">Hoje</button>
+          <button type="button" class="ctx-btn" id="sched-ctx-tomorrow" onclick="selectSchedContext('tomorrow')">Amanhã</button>
+        </div>
+      </div>
+      <div class="form-row-2" style="margin-top:12px;">
+        <div class="form-field-v">
+          <label class="form-label">Início</label>
+          <input type="time" id="sched-time" value="09:00">
+        </div>
+        <div class="form-field-v">
+          <label class="form-label">Duração (min)</label>
+          <input type="number" id="sched-dur" min="5" max="480" value="60">
+        </div>
+      </div>
+    </div>
+    <div class="form-footer">
+      <button class="btn-cancel-form" onclick="closeScheduleModal()">cancelar</button>
+      <button class="btn-save" onclick="saveQuickSchedule()">confirmar</button>
     </div>
   </div>
 </div>
@@ -2299,6 +2466,20 @@
     return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
   }
 
+  function tomorrowStr() {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+
+  function getTaskContext(t) {
+    if (t.context === 'later') return 'later';
+    if (!t.date || !t.time) return 'later';
+    if (t.date === tomorrowStr()) return 'tomorrow';
+    if (t.date === todayStr() || t.date < todayStr()) return 'today';
+    return 'later';
+  }
+
   function getNowMins() {
     const d = new Date();
     return d.getHours() * 60 + d.getMinutes();
@@ -2347,9 +2528,10 @@
       if (!t.status) {
         changed = true;
         t.status = t.done ? 'done' : 'pending';
-        t.elapsed = t.done ? t.dur * 60000 : 0;
+        t.elapsed = t.done ? (t.dur || 0) * 60000 : 0;
         t.startedAt = null;
-        if (!t.date) t.date = todayStr();
+        if (!t.context) t.context = (t.date || t.time) ? 'today' : 'later';
+        if (!t.date && t.context === 'today') t.date = todayStr();
         if (t.tag && !t.projectId) {
           const names = { work: 'Trabalho', break: 'Pausa', personal: 'Pessoal' };
           const nm = names[t.tag] || 'Geral';
@@ -2364,8 +2546,8 @@
         if (!t.projectId) t.projectId = projects[0].id;
         delete t.done;
         delete t.tag;
-      } else if (!t.date) {
-        t.date = todayStr();
+      } else if (!t.context) {
+        t.context = (t.date || t.time) ? 'today' : 'later';
         changed = true;
       }
     });
@@ -2549,6 +2731,31 @@
     editingId = null;
   }
 
+  let currentContext = 'today';
+  let currentFormContext = 'today';
+  let schedulingTaskId = null;
+  let selectedSchedContext = 'today';
+
+  function setTaskContext(ctx) {
+    currentContext = ctx;
+    document.querySelectorAll('.context-pill').forEach(b => {
+      b.classList.toggle('active', b.dataset.context === ctx);
+    });
+    render();
+  }
+
+  function selectFormContext(ctx) {
+    currentFormContext = ctx;
+    document.getElementById('btn-ctx-today').classList.toggle('active', ctx === 'today');
+    document.getElementById('btn-ctx-tomorrow').classList.toggle('active', ctx === 'tomorrow');
+    document.getElementById('btn-ctx-later').classList.toggle('active', ctx === 'later');
+
+    const timeDurRow = document.getElementById('form-row-time-dur');
+    if (timeDurRow) {
+      timeDurRow.style.display = ctx === 'later' ? 'none' : 'grid';
+    }
+  }
+
   function openCreateForm() {
     editingId = null;
     document.getElementById('form-title').textContent = 'Nova atividade';
@@ -2558,6 +2765,7 @@
     document.getElementById('f-dur').value = 60;
     populateProjectSelect();
     document.getElementById('f-project').value = projects[0] ? projects[0].id : '';
+    selectFormContext(currentContext || 'today');
     openFormPanel();
   }
 
@@ -2568,29 +2776,113 @@
     document.getElementById('form-title').textContent = 'Editar atividade';
     document.getElementById('btn-save-task').textContent = 'salvar alterações';
     document.getElementById('f-name').value = t.name;
-    document.getElementById('f-time').value = t.time;
-    document.getElementById('f-dur').value = t.dur;
+    document.getElementById('f-time').value = t.time || '09:00';
+    document.getElementById('f-dur').value = t.dur || 60;
     populateProjectSelect();
     document.getElementById('f-project').value = t.projectId;
+    const ctx = getTaskContext(t);
+    selectFormContext(ctx);
     openFormPanel();
   }
 
   function saveTask() {
     const name = document.getElementById('f-name').value.trim();
-    const time = document.getElementById('f-time').value;
-    const dur = parseInt(document.getElementById('f-dur').value) || 60;
     let projectId = document.getElementById('f-project').value;
     if (!projectId || projectId === '__new__') projectId = projects[0].id;
     if (!name) { document.getElementById('f-name').focus(); return; }
 
+    let time = null;
+    let dur = null;
+    let date = null;
+
+    if (currentFormContext === 'today') {
+      time = document.getElementById('f-time').value || '09:00';
+      dur = parseInt(document.getElementById('f-dur').value) || 60;
+      date = todayStr();
+    } else if (currentFormContext === 'tomorrow') {
+      time = document.getElementById('f-time').value || '09:00';
+      dur = parseInt(document.getElementById('f-dur').value) || 60;
+      date = tomorrowStr();
+    } else {
+      time = null;
+      dur = null;
+      date = null;
+    }
+
     if (editingId) {
       const t = tasks.find(x => x.id === editingId);
-      if (t) { t.name = name; t.time = time; t.dur = dur; t.projectId = projectId; }
+      if (t) {
+        t.name = name;
+        t.time = time;
+        t.dur = dur;
+        t.projectId = projectId;
+        t.context = currentFormContext;
+        t.date = date;
+      }
     } else {
-      tasks.push({ id: Date.now().toString(), name, time, dur, projectId, status: 'pending', elapsed: 0, startedAt: null, date: todayStr() });
+      tasks.push({
+        id: Date.now().toString(),
+        name,
+        time,
+        dur,
+        projectId,
+        status: 'pending',
+        elapsed: 0,
+        startedAt: null,
+        date,
+        context: currentFormContext
+      });
     }
     save();
     closeForm();
+    render();
+  }
+
+  /* Quick schedule modal functions */
+  function openQuickScheduleModal(id) {
+    const t = tasks.find(x => x.id === id);
+    if (!t) return;
+    schedulingTaskId = id;
+    selectedSchedContext = 'today';
+    document.getElementById('sched-task-name').textContent = t.name;
+    document.getElementById('sched-time').value = t.time || '09:00';
+    document.getElementById('sched-dur').value = t.dur || 60;
+    selectSchedContext('today');
+    document.getElementById('schedule-overlay').classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeScheduleModal() {
+    schedulingTaskId = null;
+    document.getElementById('schedule-overlay').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  function selectSchedContext(ctx) {
+    selectedSchedContext = ctx;
+    document.getElementById('sched-ctx-today').classList.toggle('active', ctx === 'today');
+    document.getElementById('sched-ctx-tomorrow').classList.toggle('active', ctx === 'tomorrow');
+  }
+
+  function saveQuickSchedule() {
+    if (!schedulingTaskId) return;
+    const t = tasks.find(x => x.id === schedulingTaskId);
+    if (!t) return;
+    const time = document.getElementById('sched-time').value || '09:00';
+    const dur = parseInt(document.getElementById('sched-dur').value) || 60;
+
+    t.time = time;
+    t.dur = dur;
+    if (selectedSchedContext === 'today') {
+      t.date = todayStr();
+      t.context = 'today';
+    } else {
+      t.date = tomorrowStr();
+      t.context = 'tomorrow';
+    }
+
+    save();
+    closeScheduleModal();
     render();
   }
 
@@ -2676,6 +2968,7 @@
   }
 
   function getProgress(t) {
+    if (!t.dur || !t.time) return { pct: 0, label: 'Sem horário', cls: 'pending' };
     const plannedMs = t.dur * 60000;
     const spent = effectiveElapsed(t);
     if (t.status === 'done') {
@@ -2689,6 +2982,9 @@
     if (t.status === 'paused') {
       const pct = plannedMs ? Math.min(100, Math.round(spent / plannedMs * 100)) : 0;
       return { pct, label: minsToHm(Math.round(spent / 60000)) + ' pausado', cls: 'paused-fill' };
+    }
+    if (getTaskContext(t) === 'tomorrow') {
+      return { pct: 0, label: 'previsto p/ amanhã', cls: 'pending' };
     }
     const now = getNowMins();
     const start = toMins(t.time);
@@ -2714,14 +3010,44 @@
 
   function taskRowHtml(t, opts) {
     opts = opts || {};
-    const p = getProgress(t);
     const showTag = opts.showTag !== false;
+    const ctx = getTaskContext(t);
+
+    if (ctx === 'later' || !t.time) {
+      return `
+        <div class="task-row status-${t.status}">
+          <div class="status-dot ${t.status}" title="${statusTitle(t.status)}"></div>
+          <div class="time-block">
+            <span class="later-badge">fazer depois</span>
+          </div>
+          <div class="task-info">
+            <div class="task-top">
+              <span class="task-name">${t.name}</span>
+              ${showTag ? projectTagHtml(t) : ''}
+            </div>
+            <div class="progress-row">
+              <span class="bar-label">Sem horário definido</span>
+            </div>
+          </div>
+          <div class="task-actions">
+            <button class="btn-schedule" onclick="openQuickScheduleModal('${t.id}')" title="Agendar para hoje ou amanhã">
+              <svg class="icon" width="14" height="14" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M208,32H184V24a8,8,0,0,0-16,0v8H88V24a8,8,0,0,0-16,0v8H48A16,16,0,0,0,32,48V208a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V48A16,16,0,0,0,208,32ZM48,48H72v8a8,8,0,0,0,16,0V48h80v8a8,8,0,0,0,16,0V48h24V80H48ZM208,208H48V96H208V208Z"/></svg>
+              Agendar
+            </button>
+            <button class="btn-icon" onclick="openEditForm('${t.id}')" title="Editar">${icon('pencil')}</button>
+            ${actionButtons(t)}
+            <button class="btn-del" onclick="del('${t.id}')" title="Remover"><svg class="icon" width="16" height="16" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M216,48H176V40a24,24,0,0,0-24-24H104A24,24,0,0,0,80,40v8H40a8,8,0,0,0,0,16h8V208a16,16,0,0,0,16,16H192a16,16,0,0,0,16-16V64h8a8,8,0,0,0,0-16ZM96,40a8,8,0,0,1,8-8h48a8,8,0,0,1,8,8v8H96Zm96,168H64V64H192ZM112,104v64a8,8,0,0,1-16,0V104a8,8,0,0,1,16,0Zm48,0v64a8,8,0,0,1-16,0V104a8,8,0,0,1,16,0Z"/></svg></button>
+          </div>
+        </div>`;
+    }
+
+    const p = getProgress(t);
     return `
       <div class="task-row status-${t.status}">
         <div class="status-dot ${t.status}" title="${statusTitle(t.status)}"></div>
         <div class="time-block">
           <span class="time-val">${t.time}</span>
-          <span class="time-end">${padTime(toMins(t.time) + t.dur)} · ${minsToHm(t.dur)}</span>
+          <span class="time-end">${padTime(toMins(t.time) + (t.dur || 0))} · ${minsToHm(t.dur || 0)}</span>
         </div>
         <div class="task-info">
           <div class="task-top">
@@ -2748,7 +3074,7 @@
     let nowInserted = false;
     sorted.forEach((t, i) => {
       const start = toMins(t.time);
-      const end = start + t.dur;
+      const end = start + (t.dur || 0);
       if (t.status !== 'done' && !nowInserted && start <= now && now <= end) {
         html += `<div class="now-line"><div class="now-dot"></div><span class="now-label">agora · ${padTime(now)}</span></div>`;
         nowInserted = true;
@@ -2767,7 +3093,7 @@
       const group = todays.filter(t => t.projectId === p.id).sort((a, b) => toMins(a.time) - toMins(b.time));
       if (!group.length) return;
       const c = PALETTE[p.colorIndex % PALETTE.length];
-      const totalDur = group.reduce((s, t) => s + t.dur, 0);
+      const totalDur = group.reduce((s, t) => s + (t.dur || 0), 0);
       html += `<div class="project-group">
         <div class="project-group-header">
           <span class="project-dot" style="background:${c.fg}"></span>
@@ -2782,21 +3108,48 @@
     return html;
   }
 
+  function updateContextBadges() {
+    const countToday = tasks.filter(t => getTaskContext(t) === 'today').length;
+    const countTomorrow = tasks.filter(t => getTaskContext(t) === 'tomorrow').length;
+    const countLater = tasks.filter(t => getTaskContext(t) === 'later').length;
+
+    const elToday = document.getElementById('count-today');
+    const elTomorrow = document.getElementById('count-tomorrow');
+    const elLater = document.getElementById('count-later');
+    if (elToday) elToday.textContent = countToday;
+    if (elTomorrow) elTomorrow.textContent = countTomorrow;
+    if (elLater) elLater.textContent = countLater;
+  }
+
   function render() {
     updateHeader();
-    const todays = tasks.filter(t => t.date === todayStr());
+    updateContextBadges();
+
+    const currentTasks = tasks.filter(t => getTaskContext(t) === currentContext);
     const list = document.getElementById('task-list');
 
-    if (!todays.length) {
-      list.innerHTML = '<div class="empty">nenhuma atividade — adicione a primeira acima</div>';
-    } else {
-      list.innerHTML = listView === 'project' ? renderGroupedByProject(todays) : renderChronological(todays);
+    const viewOptionsBar = document.getElementById('view-options-bar');
+    if (viewOptionsBar) {
+      viewOptionsBar.style.display = currentContext === 'later' ? 'none' : 'flex';
     }
 
-    const done = todays.filter(t => t.status === 'done').length;
-    const totalMin = todays.reduce((s, t) => s + t.dur, 0);
-    const pct = todays.length ? Math.round((done / todays.length) * 100) : 0;
-    document.getElementById('s-total').textContent = todays.length;
+    if (!currentTasks.length) {
+      const emptyMsg = currentContext === 'today' ? 'nenhuma atividade para hoje — adicione a primeira acima' :
+                       currentContext === 'tomorrow' ? 'nenhuma atividade agendada para amanhã' :
+                       'nenhuma atividade em "fazer depois"';
+      list.innerHTML = `<div class="empty">${emptyMsg}</div>`;
+    } else {
+      if (currentContext === 'later') {
+        list.innerHTML = currentTasks.map(t => taskRowHtml(t)).join('');
+      } else {
+        list.innerHTML = listView === 'project' ? renderGroupedByProject(currentTasks) : renderChronological(currentTasks);
+      }
+    }
+
+    const done = currentTasks.filter(t => t.status === 'done').length;
+    const totalMin = currentTasks.reduce((s, t) => s + (t.dur || 0), 0);
+    const pct = currentTasks.length ? Math.round((done / currentTasks.length) * 100) : 0;
+    document.getElementById('s-total').textContent = currentTasks.length;
     document.getElementById('s-done').textContent = done;
     document.getElementById('s-hours').textContent = minsToHm(totalMin);
     document.getElementById('s-pct').textContent = pct + '%';
@@ -2859,6 +3212,7 @@
   }
 
   function inPeriod(dateStr) {
+    if (!dateStr) return currentPeriod === 'all';
     if (currentPeriod === 'all') return true;
     if (currentPeriod === 'today') return dateStr === todayStr();
     if (currentPeriod === 'month') return dateStr.slice(0, 7) === todayStr().slice(0, 7);
@@ -2870,6 +3224,7 @@
   }
 
   function inPreviousPeriod(dateStr) {
+    if (!dateStr) return false;
     if (currentPeriod === 'today') return dateStr === getPreviousDateStr(todayStr());
     if (currentPeriod === 'week') {
       const [pws, pwe] = getPreviousWeekRange();
@@ -2880,6 +3235,7 @@
   }
 
   function formatDateShort(ds) {
+    if (!ds) return '—';
     const [, m, d] = ds.split('-');
     return d + '/' + m;
   }
@@ -2889,18 +3245,13 @@
     const fmt = x => x.getFullYear() + '-' + String(x.getMonth() + 1).padStart(2, '0') + '-' + String(x.getDate()).padStart(2, '0');
 
     if (period === 'today') {
-      const today = new Date();
-      for (let i = 6; i >= 0; i--) {
-        const d = new Date(today);
-        d.setDate(today.getDate() - i);
-        daysArr.push(fmt(d));
-      }
+      daysArr.push(fmt(new Date()));
     } else if (period === 'week') {
       const [ws] = getWeekRange();
-      const mon = new Date(ws + 'T00:00:00');
+      const monday = new Date(ws + 'T00:00:00');
       for (let i = 0; i < 7; i++) {
-        const d = new Date(mon);
-        d.setDate(mon.getDate() + i);
+        const d = new Date(monday);
+        d.setDate(monday.getDate() + i);
         daysArr.push(fmt(d));
       }
     } else if (period === 'month') {
@@ -2913,7 +3264,7 @@
         daysArr.push(fmt(d));
       }
     } else {
-      const taskDates = Array.from(new Set(tasks.map(t => t.date))).sort();
+      const taskDates = Array.from(new Set(tasks.map(t => t.date).filter(Boolean))).sort();
       if (taskDates.length > 0) {
         const minDate = new Date(taskDates[0] + 'T00:00:00');
         const maxDate = new Date(taskDates[taskDates.length - 1] + 'T00:00:00');
@@ -3257,7 +3608,7 @@
     if (!filtered.length) {
       tbody.innerHTML = '<tr><td colspan="6" class="empty-report">sem atividades neste período</td></tr>';
     } else {
-      const sortedRows = [...filtered].sort((a, b) => (b.date + b.time).localeCompare(a.date + a.time));
+      const sortedRows = [...filtered].sort((a, b) => ((b.date || '') + (b.time || '')).localeCompare((a.date || '') + (a.time || '')));
       const statusLabels = { pending: 'pendente', active: 'em andamento', paused: 'pausada', done: 'concluída' };
       tbody.innerHTML = sortedRows.map(t => {
         const proj = projects.find(p => p.id === t.projectId);
@@ -3265,7 +3616,7 @@
           <td>${formatDateShort(t.date)}</td>
           <td>${t.name}</td>
           <td>${proj ? proj.name : '—'}</td>
-          <td>${minsToHm(t.dur)}</td>
+          <td>${t.dur ? minsToHm(t.dur) : '—'}</td>
           <td>${minsToHm(Math.round(effectiveElapsed(t) / 60000))}</td>
           <td>${statusLabels[t.status] || t.status}</td>
         </tr>`;
