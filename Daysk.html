@@ -1295,10 +1295,6 @@
             <p class="sync-option-desc">Salva e sincroniza seus dados em uma pasta no seu Google Drive para acesso entre múltiplos dispositivos.</p>
             <div class="sync-detail-panel" id="sync-panel-gdrive" style="display:none">
               <div class="sync-status" id="gdrive-status-box">Não conectado ao Google Drive.</div>
-              <div class="gdrive-input-group" id="gdrive-clientid-wrap">
-                <label class="gdrive-input-label">Google OAuth Client ID (opcional / personal):</label>
-                <input type="text" class="gdrive-input" id="gdrive-client-id-input" placeholder="seu-client-id.apps.googleusercontent.com" onclick="event.stopPropagation()" onchange="saveGDriveClientId(this.value)">
-              </div>
               <div class="sync-actions">
                 <button class="btn-cancel-form" id="gdrive-disconnect-btn" onclick="event.stopPropagation(); disconnectGoogleDrive()" style="display:none">desconectar</button>
                 <button class="btn-cancel-form" id="gdrive-picker-btn" onclick="event.stopPropagation(); openGoogleDrivePicker()" style="display:none">alterar pasta</button>
@@ -1416,16 +1412,11 @@
   let gdriveTokenClient = null;
   let gdriveWriteQueued = false;
 
+  // INSIRA O SEU GOOGLE OAUTH CLIENT ID NA CONSTANTE ABAIXO:
   const DEFAULT_GDRIVE_CLIENT_ID = '';
 
   function getGDriveClientId() {
     return localStorage.getItem('daysk-gdrive-client-id') || DEFAULT_GDRIVE_CLIENT_ID;
-  }
-
-  function saveGDriveClientId(val) {
-    if (val) localStorage.setItem('daysk-gdrive-client-id', val.trim());
-    else localStorage.removeItem('daysk-gdrive-client-id');
-    updateSyncUI();
   }
 
   /* ---------- local folder sync (File System Access API) ---------- */
@@ -1668,15 +1659,8 @@
   function connectGoogleDrive() {
     const clientId = getGDriveClientId();
     if (!clientId) {
-      const userKey = prompt('Informe seu Google OAuth Client ID para autenticar com o Google Drive:', '');
-      if (userKey && userKey.trim()) {
-        saveGDriveClientId(userKey.trim());
-        const input = document.getElementById('gdrive-client-id-input');
-        if (input) input.value = userKey.trim();
-      } else {
-        alert('É necessário um Client ID válido para conectar ao Google Drive.');
-        return;
-      }
+      alert('Configuração do Google Client ID ausente no código. Por favor, defina o DEFAULT_GDRIVE_CLIENT_ID no arquivo Daysk.html.');
+      return;
     }
 
     if (typeof google === 'undefined' || !google.accounts || !google.accounts.oauth2) {
@@ -1836,12 +1820,6 @@
     const gconnectBtn = document.getElementById('gdrive-connect-btn');
     const gdisconnectBtn = document.getElementById('gdrive-disconnect-btn');
     const gpickerBtn = document.getElementById('gdrive-picker-btn');
-    const ginput = document.getElementById('gdrive-client-id-input');
-
-    if (ginput && !ginput.value) {
-      const curId = getGDriveClientId();
-      if (curId) ginput.value = curId;
-    }
 
     if (gbox) {
       if (gdriveAccessToken && gdriveFolderId) {
