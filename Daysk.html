@@ -1689,7 +1689,7 @@
 
     gdriveTokenClient = google.accounts.oauth2.initTokenClient({
       client_id: getGDriveClientId(),
-      scope: 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/oauth2/v2/auth/userinfo.email',
+      scope: 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.email',
       callback: async (response) => {
         if (response.error) {
           console.error('Erro de autorização Google:', response);
