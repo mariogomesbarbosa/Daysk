@@ -6,6 +6,8 @@
 <title>Daysk</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTAiIGhlaWdodD0iNTAiIHZpZXdCb3g9IjAgMCA1MCA1MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjUwIiBoZWlnaHQ9IjUwIiByeD0iMTAiIGZpbGw9IiMzOTQxNDkiLz4KPHBhdGggZD0iTTM5IDI1TDIxIDM5TDExIDM5TDExIDMxLjcySDE4LjMzMzNMMzEgMjEuNjcwNFYxOC4yOEwxMSAxOC4yOEwxMSAxMUwzOSAxMVYyNVoiIGZpbGw9IndoaXRlIi8+CjxwYXRoIGQ9Ik0zOSAzMS4xNkwzOSAzOUwzMS4xNiAzOUwzMS4xNiAzMS4xNkwzOSAzMS4xNloiIGZpbGw9IndoaXRlIi8+Cjwvc3ZnPgo=">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script src="https://apis.google.com/js/api.js" async defer></script>
 <script>
   (function() {
     var saved = localStorage.getItem('daysk-theme');
@@ -872,12 +874,93 @@
   .project-group-tasks { display: flex; flex-direction: column; gap: 8px; }
 
   /* Sync */
+  .sync-subtitle {
+    font-size: 13px;
+    color: var(--text2);
+    margin-bottom: 16px;
+    line-height: 1.4;
+  }
+
+  .sync-options-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .sync-option-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 14px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--surface);
+    cursor: pointer;
+    transition: border-color .15s, background-color .15s, box-shadow .15s;
+  }
+
+  .sync-option-card:hover {
+    border-color: var(--border2);
+  }
+
+  .sync-option-card.active {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 1px var(--accent);
+  }
+
+  .sync-option-card input[type="radio"] {
+    margin-top: 3px;
+    accent-color: var(--accent);
+    cursor: pointer;
+  }
+
+  .sync-option-content {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .sync-option-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+  }
+
+  .sync-option-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .sync-badge {
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: var(--surface2);
+    color: var(--text2);
+    font-weight: 600;
+  }
+
+  .sync-option-desc {
+    font-size: 12px;
+    color: var(--text2);
+    line-height: 1.45;
+    margin: 0;
+  }
+
+  .sync-detail-panel {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px dashed var(--border);
+  }
+
   .sync-status {
     font-family: var(--mono);
     font-size: 12px;
     padding: 10px 12px;
     border-radius: var(--radius-sm);
-    margin-bottom: 14px;
+    margin-bottom: 10px;
     line-height: 1.5;
   }
 
@@ -885,10 +968,36 @@
   .sync-status.on { background: var(--green-bg); color: var(--green); }
   .sync-status.warn { background: var(--amber-bg); color: var(--amber); }
 
-  .sync-help {
-    font-size: 13px;
+  .sync-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    margin-top: 8px;
+  }
+
+  .gdrive-input-group {
+    margin-top: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .gdrive-input-label {
+    font-size: 11px;
+    font-weight: 600;
     color: var(--text2);
-    line-height: 1.5;
+  }
+
+  .gdrive-input {
+    width: 100%;
+    padding: 6px 10px;
+    font-size: 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    color: var(--text);
+    box-sizing: border-box;
   }
 
   /* Theme toggle */
@@ -1136,19 +1245,72 @@
 </div>
 
 <div class="form-overlay" id="sync-overlay" onclick="if(event.target===this) closeSyncManager()">
-  <div class="form-panel">
+  <div class="form-panel" style="max-width:540px;">
     <div class="form-header">
-      <h2 class="form-title">Sincronização local</h2>
+      <h2 class="form-title">Modo de Sincronização</h2>
       <button class="form-close" onclick="closeSyncManager()"><svg class="icon" width="18" height="18" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M205.66,194.34a8,8,0,0,1-11.32,11.32L128,139.31,61.66,205.66a8,8,0,0,1-11.32-11.32L116.69,128,50.34,61.66A8,8,0,0,1,61.66,50.34L128,116.69l66.34-66.35a8,8,0,0,1,11.32,11.32L139.31,128Z"/></svg></button>
     </div>
     <div class="form-body">
-      <div class="sync-status" id="sync-status-box">verificando...</div>
-      <p class="sync-help">Escolha uma pasta no seu computador para salvar automaticamente <code>tasks.json</code> e <code>projects.json</code> nela a cada alteração. Isso permite abrir este arquivo em outro navegador ou computador apontando para a mesma pasta, e serve como backup. Recurso disponível apenas em Chrome/Edge no computador.</p>
+      <p class="sync-subtitle">Escolha como seus dados do Daysk devem ser salvos e mantidos em sincronia:</p>
+      
+      <div class="sync-options-list">
+        <!-- Option 1: Cache do Navegador -->
+        <label class="sync-option-card" id="sync-opt-cache" onclick="switchSyncMode('cache')">
+          <input type="radio" name="syncMode" value="cache" id="radio-sync-cache">
+          <div class="sync-option-content">
+            <div class="sync-option-header">
+              <span class="sync-option-title">Cache do navegador</span>
+              <span class="sync-badge">Default</span>
+            </div>
+            <p class="sync-option-desc">Salva os dados diretamente no <code>localStorage</code> deste navegador. Funciona totalmente offline.</p>
+          </div>
+        </label>
+
+        <!-- Option 2: Pasta Local -->
+        <label class="sync-option-card" id="sync-opt-local" onclick="switchSyncMode('local')">
+          <input type="radio" name="syncMode" value="local" id="radio-sync-local">
+          <div class="sync-option-content">
+            <div class="sync-option-header">
+              <span class="sync-option-title">Pasta local (PC)</span>
+            </div>
+            <p class="sync-option-desc">Sincroniza automaticamente <code>tasks.json</code> e <code>projects.json</code> em uma pasta do seu computador (Chrome/Edge).</p>
+            <div class="sync-detail-panel" id="sync-panel-local" style="display:none">
+              <div class="sync-status" id="sync-status-box">verificando...</div>
+              <div class="sync-actions">
+                <button class="btn-cancel-form" id="sync-disconnect-btn" onclick="event.stopPropagation(); disconnectSyncFolder()" style="display:none">desconectar</button>
+                <button class="btn-cancel-form" id="sync-reconnect-btn" onclick="event.stopPropagation(); reconnectSyncFolder()" style="display:none">reconectar</button>
+                <button class="btn-save" onclick="event.stopPropagation(); chooseSyncFolder()">escolher pasta</button>
+              </div>
+            </div>
+          </div>
+        </label>
+
+        <!-- Option 3: Google Drive -->
+        <label class="sync-option-card" id="sync-opt-gdrive" onclick="switchSyncMode('gdrive')">
+          <input type="radio" name="syncMode" value="gdrive" id="radio-sync-gdrive">
+          <div class="sync-option-content">
+            <div class="sync-option-header">
+              <span class="sync-option-title">Sincronizar com o Google Drive</span>
+            </div>
+            <p class="sync-option-desc">Salva e sincroniza seus dados em uma pasta no seu Google Drive para acesso entre múltiplos dispositivos.</p>
+            <div class="sync-detail-panel" id="sync-panel-gdrive" style="display:none">
+              <div class="sync-status" id="gdrive-status-box">Não conectado ao Google Drive.</div>
+              <div class="gdrive-input-group" id="gdrive-clientid-wrap">
+                <label class="gdrive-input-label">Google OAuth Client ID (opcional / personal):</label>
+                <input type="text" class="gdrive-input" id="gdrive-client-id-input" placeholder="seu-client-id.apps.googleusercontent.com" onclick="event.stopPropagation()" onchange="saveGDriveClientId(this.value)">
+              </div>
+              <div class="sync-actions">
+                <button class="btn-cancel-form" id="gdrive-disconnect-btn" onclick="event.stopPropagation(); disconnectGoogleDrive()" style="display:none">desconectar</button>
+                <button class="btn-cancel-form" id="gdrive-picker-btn" onclick="event.stopPropagation(); openGoogleDrivePicker()" style="display:none">alterar pasta</button>
+                <button class="btn-save" id="gdrive-connect-btn" onclick="event.stopPropagation(); connectGoogleDrive()">conectar Google Drive</button>
+              </div>
+            </div>
+          </div>
+        </label>
+      </div>
     </div>
     <div class="form-footer">
-      <button class="btn-cancel-form" id="sync-disconnect-btn" onclick="disconnectSyncFolder()" style="display:none">desconectar</button>
-      <button class="btn-cancel-form" id="sync-reconnect-btn" onclick="reconnectSyncFolder()" style="display:none">reconectar</button>
-      <button class="btn-save" onclick="chooseSyncFolder()">escolher pasta</button>
+      <button class="btn-save" onclick="closeSyncManager()">Concluído</button>
     </div>
   </div>
 </div>
@@ -1230,8 +1392,44 @@
     applyTheme(getEffectiveTheme() === 'dark' ? 'light' : 'dark');
   }
 
-  function save() { localStorage.setItem('daily-tasks', JSON.stringify(tasks)); writeToFolder(); }
-  function saveProjects() { localStorage.setItem('daily-projects', JSON.stringify(projects)); writeToFolder(); }
+  function save() {
+    localStorage.setItem('daily-tasks', JSON.stringify(tasks));
+    if (syncMode === 'local') writeToFolder();
+    else if (syncMode === 'gdrive') writeToGoogleDrive();
+  }
+
+  function saveProjects() {
+    localStorage.setItem('daily-projects', JSON.stringify(projects));
+    if (syncMode === 'local') writeToFolder();
+    else if (syncMode === 'gdrive') writeToGoogleDrive();
+  }
+
+  /* ---------- Unified Sync State ---------- */
+  let syncMode = localStorage.getItem('daysk-sync-mode') || 'cache'; // 'cache' | 'local' | 'gdrive'
+  let syncManagerOpen = false;
+  let syncDirHandle = null;
+  let syncStatus = 'checking';
+
+  // Google Drive state
+  let gdriveStatus = 'disconnected'; // 'disconnected' | 'connecting' | 'connected' | 'error' | 'needs-auth'
+  let gdriveAccessToken = localStorage.getItem('daysk-gdrive-token') || null;
+  let gdriveFolderId = localStorage.getItem('daysk-gdrive-folder-id') || null;
+  let gdriveFolderName = localStorage.getItem('daysk-gdrive-folder-name') || 'Daysk';
+  let gdriveUserEmail = localStorage.getItem('daysk-gdrive-email') || null;
+  let gdriveTokenClient = null;
+  let gdriveWriteQueued = false;
+
+  const DEFAULT_GDRIVE_CLIENT_ID = '';
+
+  function getGDriveClientId() {
+    return localStorage.getItem('daysk-gdrive-client-id') || DEFAULT_GDRIVE_CLIENT_ID;
+  }
+
+  function saveGDriveClientId(val) {
+    if (val) localStorage.setItem('daysk-gdrive-client-id', val.trim());
+    else localStorage.removeItem('daysk-gdrive-client-id');
+    updateSyncUI();
+  }
 
   /* ---------- local folder sync (File System Access API) ---------- */
 
@@ -1318,46 +1516,402 @@
     if (p !== null) { projects = JSON.parse(p); localStorage.setItem('daily-projects', p); }
   }
 
+  /* ---------- Google Drive Sync ---------- */
+
+  async function gdriveFetch(url, options = {}) {
+    if (!gdriveAccessToken) throw new Error('Sem token do Google Drive');
+    options.headers = options.headers || {};
+    options.headers['Authorization'] = 'Bearer ' + gdriveAccessToken;
+    const res = await fetch(url, options);
+    if (res.status === 401) {
+      gdriveStatus = 'needs-auth';
+      updateSyncUI();
+      throw new Error('Sessão do Google expirada. Reconecte a conta.');
+    }
+    return res;
+  }
+
+  async function fetchGDriveUserInfo() {
+    try {
+      const res = await gdriveFetch('https://www.googleapis.com/oauth2/v2/userinfo');
+      if (res.ok) {
+        const info = await res.json();
+        gdriveUserEmail = info.email || null;
+        if (gdriveUserEmail) localStorage.setItem('daysk-gdrive-email', gdriveUserEmail);
+      }
+    } catch (e) {
+      console.warn('Não foi possível obter email do usuário Google:', e);
+    }
+  }
+
+  async function findOrCreateGDriveFolder() {
+    if (gdriveFolderId) {
+      try {
+        const res = await gdriveFetch(`https://www.googleapis.com/drive/v3/files/${gdriveFolderId}?fields=id,name,trashed`);
+        if (res.ok) {
+          const data = await res.json();
+          if (!data.trashed) return gdriveFolderId;
+        }
+      } catch(e) {}
+    }
+
+    const q = encodeURIComponent("name = 'Daysk' and mimeType = 'application/vnd.google-apps.folder' and trashed = false");
+    const res = await gdriveFetch(`https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id,name)`);
+    if (res.ok) {
+      const data = await res.json();
+      if (data.files && data.files.length > 0) {
+        gdriveFolderId = data.files[0].id;
+        gdriveFolderName = data.files[0].name;
+        localStorage.setItem('daysk-gdrive-folder-id', gdriveFolderId);
+        localStorage.setItem('daysk-gdrive-folder-name', gdriveFolderName);
+        return gdriveFolderId;
+      }
+    }
+
+    const createRes = await gdriveFetch('https://www.googleapis.com/drive/v3/files', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: 'Daysk',
+        mimeType: 'application/vnd.google-apps.folder'
+      })
+    });
+    if (createRes.ok) {
+      const folder = await createRes.json();
+      gdriveFolderId = folder.id;
+      gdriveFolderName = folder.name;
+      localStorage.setItem('daysk-gdrive-folder-id', gdriveFolderId);
+      localStorage.setItem('daysk-gdrive-folder-name', gdriveFolderName);
+      return gdriveFolderId;
+    }
+    throw new Error('Falha ao criar pasta Daysk no Google Drive');
+  }
+
+  async function findGDriveFileId(filename) {
+    if (!gdriveFolderId) return null;
+    const q = encodeURIComponent(`'${gdriveFolderId}' in parents and name = '${filename}' and trashed = false`);
+    const res = await gdriveFetch(`https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id,name)`);
+    if (res.ok) {
+      const data = await res.json();
+      if (data.files && data.files.length > 0) {
+        return data.files[0].id;
+      }
+    }
+    return null;
+  }
+
+  async function writeGDriveFile(filename, content) {
+    if (!gdriveFolderId) await findOrCreateGDriveFolder();
+    const existingId = await findGDriveFileId(filename);
+
+    if (existingId) {
+      await gdriveFetch(`https://www.googleapis.com/upload/drive/v3/files/${existingId}?uploadType=media`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: content
+      });
+    } else {
+      const metadata = { name: filename, parents: [gdriveFolderId], mimeType: 'application/json' };
+      const boundary = '-------314159265358979323846';
+      const delimiter = "\r\n--" + boundary + "\r\n";
+      const close_delim = "\r\n--" + boundary + "--";
+
+      const multipartRequestBody =
+        delimiter +
+        'Content-Type: application/json\r\n\r\n' +
+        JSON.stringify(metadata) +
+        delimiter +
+        'Content-Type: application/json\r\n\r\n' +
+        content +
+        close_delim;
+
+      await gdriveFetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+        method: 'POST',
+        headers: { 'Content-Type': `multipart/related; boundary="${boundary}"` },
+        body: multipartRequestBody
+      });
+    }
+  }
+
+  async function readGDriveFile(filename) {
+    const fileId = await findGDriveFileId(filename);
+    if (!fileId) return null;
+    const res = await gdriveFetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`);
+    if (res.ok) {
+      return await res.text();
+    }
+    return null;
+  }
+
+  async function writeToGoogleDrive() {
+    if (syncMode !== 'gdrive' || gdriveStatus !== 'connected') return;
+    if (gdriveWriteQueued) return;
+    gdriveWriteQueued = true;
+    try {
+      await writeGDriveFile('tasks.json', JSON.stringify(tasks, null, 2));
+      await writeGDriveFile('projects.json', JSON.stringify(projects, null, 2));
+    } catch (e) {
+      console.error('Falha ao sincronizar com Google Drive:', e);
+    } finally {
+      gdriveWriteQueued = false;
+    }
+  }
+
+  async function loadFromGoogleDrive() {
+    try {
+      const t = await readGDriveFile('tasks.json');
+      const p = await readGDriveFile('projects.json');
+      if (t !== null) { tasks = JSON.parse(t); localStorage.setItem('daily-tasks', t); }
+      if (p !== null) { projects = JSON.parse(p); localStorage.setItem('daily-projects', p); }
+    } catch (e) {
+      console.error('Falha ao carregar dados do Google Drive:', e);
+    }
+  }
+
+  function connectGoogleDrive() {
+    const clientId = getGDriveClientId();
+    if (!clientId) {
+      const userKey = prompt('Informe seu Google OAuth Client ID para autenticar com o Google Drive:', '');
+      if (userKey && userKey.trim()) {
+        saveGDriveClientId(userKey.trim());
+        const input = document.getElementById('gdrive-client-id-input');
+        if (input) input.value = userKey.trim();
+      } else {
+        alert('É necessário um Client ID válido para conectar ao Google Drive.');
+        return;
+      }
+    }
+
+    if (typeof google === 'undefined' || !google.accounts || !google.accounts.oauth2) {
+      alert('A biblioteca do Google ainda está sendo carregada. Tente novamente em instantes.');
+      return;
+    }
+
+    gdriveStatus = 'connecting';
+    updateSyncUI();
+
+    gdriveTokenClient = google.accounts.oauth2.initTokenClient({
+      client_id: getGDriveClientId(),
+      scope: 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/oauth2/v2/auth/userinfo.email',
+      callback: async (response) => {
+        if (response.error) {
+          console.error('Erro de autorização Google:', response);
+          gdriveStatus = 'error';
+          updateSyncUI();
+          return;
+        }
+        gdriveAccessToken = response.access_token;
+        localStorage.setItem('daysk-gdrive-token', gdriveAccessToken);
+
+        try {
+          await fetchGDriveUserInfo();
+          await findOrCreateGDriveFolder();
+          
+          const existingTasks = await readGDriveFile('tasks.json');
+          const existingProjects = await readGDriveFile('projects.json');
+          if (existingTasks !== null || existingProjects !== null) {
+            const useRemote = confirm('A pasta do Google Drive já possui dados salvos. Clique em OK para usar os dados do Google Drive (substituindo os locais), ou Cancelar para manter os dados atuais e sobrescrever a nuvem.');
+            if (useRemote) {
+              if (existingTasks !== null) tasks = JSON.parse(existingTasks);
+              if (existingProjects !== null) projects = JSON.parse(existingProjects);
+              localStorage.setItem('daily-tasks', JSON.stringify(tasks));
+              localStorage.setItem('daily-projects', JSON.stringify(projects));
+              populateProjectSelect();
+              render();
+            }
+          }
+
+          gdriveStatus = 'connected';
+          switchSyncMode('gdrive');
+          await writeToGoogleDrive();
+        } catch(e) {
+          console.error('Erro ao preparar pasta do Google Drive:', e);
+          gdriveStatus = 'error';
+        }
+        updateSyncUI();
+      }
+    });
+
+    gdriveTokenClient.requestAccessToken({ prompt: '' });
+  }
+
+  function openGoogleDrivePicker() {
+    if (!gdriveAccessToken) {
+      alert('Conecte-se ao Google Drive primeiro.');
+      return;
+    }
+    if (typeof gapi === 'undefined') {
+      alert('Biblioteca do Google API não disponível.');
+      return;
+    }
+
+    gapi.load('picker', () => {
+      const view = new google.picker.DocsView(google.picker.ViewId.FOLDERS)
+        .setMimeTypes('application/vnd.google-apps.folder')
+        .setSelectFolderEnabled(true);
+
+      const picker = new google.picker.PickerBuilder()
+        .addView(view)
+        .setOAuthToken(gdriveAccessToken)
+        .setCallback((data) => {
+          if (data.action === google.picker.Action.PICKED) {
+            const doc = data.docs[0];
+            gdriveFolderId = doc.id;
+            gdriveFolderName = doc.name;
+            localStorage.setItem('daysk-gdrive-folder-id', gdriveFolderId);
+            localStorage.setItem('daysk-gdrive-folder-name', gdriveFolderName);
+            gdriveStatus = 'connected';
+            updateSyncUI();
+            writeToGoogleDrive();
+          }
+        })
+        .build();
+      picker.setVisible(true);
+    });
+  }
+
+  async function disconnectGoogleDrive() {
+    gdriveAccessToken = null;
+    gdriveFolderId = null;
+    gdriveFolderName = 'Daysk';
+    gdriveUserEmail = null;
+    gdriveStatus = 'disconnected';
+    localStorage.removeItem('daysk-gdrive-token');
+    localStorage.removeItem('daysk-gdrive-folder-id');
+    localStorage.removeItem('daysk-gdrive-folder-name');
+    localStorage.removeItem('daysk-gdrive-email');
+    if (syncMode === 'gdrive') {
+      switchSyncMode('cache');
+    } else {
+      updateSyncUI();
+    }
+  }
+
+  function switchSyncMode(mode) {
+    syncMode = mode;
+    localStorage.setItem('daysk-sync-mode', mode);
+    updateSyncUI();
+  }
+
   function updateSyncUI() {
+    // 1. Radio buttons & Active Cards styling
+    const modes = ['cache', 'local', 'gdrive'];
+    modes.forEach(m => {
+      const card = document.getElementById('sync-opt-' + m);
+      const radio = document.getElementById('radio-sync-' + m);
+      const panel = document.getElementById('sync-panel-' + m);
+      if (card) {
+        if (m === syncMode) {
+          card.classList.add('active');
+          if (radio) radio.checked = true;
+        } else {
+          card.classList.remove('active');
+          if (radio) radio.checked = false;
+        }
+      }
+      if (panel) {
+        panel.style.display = (m === syncMode) ? '' : 'none';
+      }
+    });
+
+    // 2. Local Folder status UI
     const box = document.getElementById('sync-status-box');
     const disconnectBtn = document.getElementById('sync-disconnect-btn');
     const reconnectBtn = document.getElementById('sync-reconnect-btn');
-    if (!box) return;
-    const labels = {
-      checking: { text: 'Verificando pasta configurada...', cls: 'off' },
-      disconnected: { text: 'Nenhuma pasta configurada. Os dados ficam salvos apenas neste navegador.', cls: 'off' },
-      connected: { text: 'Conectado à pasta "' + (syncDirHandle ? syncDirHandle.name : '') + '". Salvando automaticamente.', cls: 'on' },
-      'needs-permission': { text: 'A permissão de acesso à pasta expirou. Clique em "reconectar" para continuar sincronizando.', cls: 'warn' },
-      unsupported: { text: 'Este navegador não suporta sincronização com pasta (funciona no Chrome ou Edge, no computador).', cls: 'warn' },
-      error: { text: 'Ocorreu um erro ao acessar a pasta. Tente escolher a pasta novamente.', cls: 'warn' },
-    };
-    const s = labels[syncStatus] || labels.disconnected;
-    box.className = 'sync-status ' + s.cls;
-    box.textContent = s.text;
-    if (disconnectBtn) disconnectBtn.style.display = (syncStatus === 'connected' || syncStatus === 'needs-permission') ? '' : 'none';
-    if (reconnectBtn) reconnectBtn.style.display = syncStatus === 'needs-permission' ? '' : 'none';
+    if (box) {
+      const labels = {
+        checking: { text: 'Verificando pasta configurada...', cls: 'off' },
+        disconnected: { text: 'Nenhuma pasta local configurada.', cls: 'off' },
+        connected: { text: 'Conectado à pasta "' + (syncDirHandle ? syncDirHandle.name : '') + '". Salvando automaticamente.', cls: 'on' },
+        'needs-permission': { text: 'A permissão de acesso à pasta expirou. Clique em "reconectar".', cls: 'warn' },
+        unsupported: { text: 'Este navegador não suporta sincronização com pasta local (funciona no Chrome/Edge).', cls: 'warn' },
+        error: { text: 'Ocorreu um erro ao acessar a pasta.', cls: 'warn' },
+      };
+      const s = labels[syncStatus] || labels.disconnected;
+      box.className = 'sync-status ' + s.cls;
+      box.textContent = s.text;
+      if (disconnectBtn) disconnectBtn.style.display = (syncStatus === 'connected' || syncStatus === 'needs-permission') ? '' : 'none';
+      if (reconnectBtn) reconnectBtn.style.display = syncStatus === 'needs-permission' ? '' : 'none';
+    }
+
+    // 3. Google Drive status UI
+    const gbox = document.getElementById('gdrive-status-box');
+    const gconnectBtn = document.getElementById('gdrive-connect-btn');
+    const gdisconnectBtn = document.getElementById('gdrive-disconnect-btn');
+    const gpickerBtn = document.getElementById('gdrive-picker-btn');
+    const ginput = document.getElementById('gdrive-client-id-input');
+
+    if (ginput && !ginput.value) {
+      const curId = getGDriveClientId();
+      if (curId) ginput.value = curId;
+    }
+
+    if (gbox) {
+      if (gdriveAccessToken && gdriveFolderId) {
+        gdriveStatus = 'connected';
+      }
+      const glabels = {
+        disconnected: { text: 'Não conectado ao Google Drive.', cls: 'off' },
+        connecting: { text: 'Autenticando no Google...', cls: 'off' },
+        connected: { text: 'Conectado como ' + (gdriveUserEmail || 'Google User') + ' | Pasta: "' + gdriveFolderName + '". Salvando automaticamente.', cls: 'on' },
+        'needs-auth': { text: 'Sessão expirada. Clique em reconectar.', cls: 'warn' },
+        error: { text: 'Erro na conexão com Google Drive. Verifique seu Client ID.', cls: 'warn' }
+      };
+      const gs = glabels[gdriveStatus] || glabels.disconnected;
+      gbox.className = 'sync-status ' + gs.cls;
+      gbox.textContent = gs.text;
+
+      if (gconnectBtn) {
+        gconnectBtn.textContent = (gdriveStatus === 'needs-auth' || gdriveStatus === 'error') ? 'reconectar Google Drive' : 'conectar Google Drive';
+        gconnectBtn.style.display = (gdriveStatus === 'connected') ? 'none' : '';
+      }
+      if (gdisconnectBtn) gdisconnectBtn.style.display = (gdriveStatus === 'connected' || gdriveStatus === 'needs-auth') ? '' : 'none';
+      if (gpickerBtn) gpickerBtn.style.display = (gdriveStatus === 'connected') ? '' : 'none';
+    }
   }
 
   async function initSync() {
-    if (!('showDirectoryPicker' in window)) { syncStatus = 'unsupported'; updateSyncUI(); return; }
-    try {
-      const handle = await idbGet('syncDir');
-      if (!handle) { syncStatus = 'disconnected'; updateSyncUI(); return; }
-      syncDirHandle = handle;
-      const perm = await handle.queryPermission({ mode: 'readwrite' });
-      if (perm === 'granted') {
-        syncStatus = 'connected';
-        await loadFromFolder();
-        populateProjectSelect();
-        render();
-        if (currentTab === 'report') renderReport();
-      } else {
-        syncStatus = 'needs-permission';
+    if ('showDirectoryPicker' in window) {
+      try {
+        const handle = await idbGet('syncDir');
+        if (handle) {
+          syncDirHandle = handle;
+          const perm = await handle.queryPermission({ mode: 'readwrite' });
+          if (perm === 'granted') {
+            syncStatus = 'connected';
+            if (syncMode === 'local') {
+              await loadFromFolder();
+              populateProjectSelect();
+              render();
+              if (currentTab === 'report') renderReport();
+            }
+          } else {
+            syncStatus = 'needs-permission';
+          }
+        } else {
+          syncStatus = 'disconnected';
+        }
+      } catch (e) {
+        syncStatus = 'error';
       }
-    } catch (e) {
-      console.error('Falha ao inicializar sincronização', e);
-      syncStatus = 'error';
+    } else {
+      syncStatus = 'unsupported';
     }
+
+    if (gdriveAccessToken && gdriveFolderId) {
+      gdriveStatus = 'connected';
+      if (syncMode === 'gdrive') {
+        try {
+          await loadFromGoogleDrive();
+          populateProjectSelect();
+          render();
+          if (currentTab === 'report') renderReport();
+        } catch (e) {
+          console.warn('Erro na carga do Google Drive:', e);
+        }
+      }
+    }
+
     updateSyncUI();
   }
 
@@ -1402,6 +1956,7 @@
       }
       await idbSet('syncDir', handle);
       syncStatus = 'connected';
+      switchSyncMode('local');
       await writeFolderFile('tasks.json', JSON.stringify(tasks, null, 2));
       await writeFolderFile('projects.json', JSON.stringify(projects, null, 2));
       populateProjectSelect();
@@ -1421,7 +1976,8 @@
     syncDirHandle = null;
     syncStatus = 'disconnected';
     await idbDelete('syncDir');
-    updateSyncUI();
+    if (syncMode === 'local') switchSyncMode('cache');
+    else updateSyncUI();
   }
 
   function openSyncManager() {
