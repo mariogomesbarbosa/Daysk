@@ -2177,22 +2177,15 @@
     } else {
       const metadata = { name: filename, parents: [gdriveFolderId], mimeType: 'application/json' };
       const boundary = '-------314159265358979323846';
-      const delimiter = "
---" + boundary + "
-";
-      const close_delim = "
---" + boundary + "--";
+      const delimiter = `\r\n--${boundary}\r\n`;
+      const close_delim = `\r\n--${boundary}--`;
 
       const multipartRequestBody =
         delimiter +
-        'Content-Type: application/json
-
-' +
+        'Content-Type: application/json\r\n\r\n' +
         JSON.stringify(metadata) +
         delimiter +
-        'Content-Type: application/json
-
-' +
+        'Content-Type: application/json\r\n\r\n' +
         content +
         close_delim;
 
