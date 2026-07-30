@@ -2069,17 +2069,7 @@
     }
   }
 
-  async function findOrCreateGDriveFolder() {
-    if (gdriveFolderId) {
-      try {
-        const res = await gdriveFetch(`https://www.googleapis.com/drive/v3/files/${gdriveFolderId}?fields=id,name,trashed`);
-        if (res.ok) {
-          const data = await res.json();
-          if (!data.trashed) return gdriveFolderId;
-        }
-      } catch(e) {}
-    }
-
+    async function findOrCreateGDriveFolder() {
     const q = encodeURIComponent("name = 'Daysk' and mimeType = 'application/vnd.google-apps.folder' and trashed = false");
     const res = await gdriveFetch(`https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id,name,createdTime)&orderBy=createdTime desc`);
     if (res.ok) {
@@ -2087,10 +2077,10 @@
       if (data.files && data.files.length > 0) {
         for (const folder of data.files) {
           const tQ = encodeURIComponent(`'${folder.id}' in parents and (name = 'tasks.json' or name = 'projects.json') and trashed = false`);
-          const tRes = await gdriveFetch(`https://www.googleapis.com/drive/v3/files?q=${tQ}&fields=files(id,name)`);
+          const tRes = await gdriveFetch(`https://www.googleapis.com/drive/v3/files?q=${tQ}&fields=files(id,name,size)`);
           if (tRes.ok) {
             const tData = await tRes.json();
-            if (tData.files && tData.files.length > 0) {
+            if (tData.files && tData.files.some(f => parseInt(f.size || 0) > 10)) {
               gdriveFolderId = folder.id;
               gdriveFolderName = folder.name;
               localStorage.setItem('daysk-gdrive-folder-id', gdriveFolderId);
@@ -2098,6 +2088,9 @@
               return gdriveFolderId;
             }
           }
+        }
+        if (gdriveFolderId && data.files.some(f => f.id === gdriveFolderId)) {
+          return gdriveFolderId;
         }
         gdriveFolderId = data.files[0].id;
         gdriveFolderName = data.files[0].name;
@@ -2126,22 +2119,54 @@
     throw new Error('Falha ao criar pasta Daysk no Google Drive');
   }
 
-  async function findGDriveFileId(filename) {
+    async function findGDriveFileId(filename, deduplicate = true) {
+    if (!gdriveFolderId) await findOrCreateGDriveFolder();
     if (!gdriveFolderId) return null;
+
     const q = encodeURIComponent(`'${gdriveFolderId}' in parents and name = '${filename}' and trashed = false`);
-    const res = await gdriveFetch(`https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id,name)`);
+    const res = await gdriveFetch(`https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id,name,size,modifiedTime)`);
     if (res.ok) {
       const data = await res.json();
       if (data.files && data.files.length > 0) {
-        return data.files[0].id;
+        data.files.sort((a, b) => (parseInt(b.size || 0) - parseInt(a.size || 0)));
+        const primaryFile = data.files[0];
+
+        if (deduplicate && data.files.length > 1) {
+          for (let i = 1; i < data.files.length; i++) {
+            const dupId = data.files[i].id;
+            try {
+              await gdriveFetch(`https://www.googleapis.com/drive/v3/files/${dupId}`, { method: 'DELETE' });
+              console.log(`Duplicata removida no Google Drive: ${filename} (${dupId})`);
+            } catch(e) {
+              console.warn('Falha ao apagar duplicata:', dupId, e);
+            }
+          }
+        }
+        return primaryFile.id;
       }
     }
+
+    const globalQ = encodeURIComponent(`name = '${filename}' and trashed = false`);
+    const globalRes = await gdriveFetch(`https://www.googleapis.com/drive/v3/files?q=${globalQ}&fields=files(id,name,size,parents)&orderBy=createdTime desc`);
+    if (globalRes.ok) {
+      const gData = await globalRes.json();
+      if (gData.files && gData.files.length > 0) {
+        gData.files.sort((a, b) => (parseInt(b.size || 0) - parseInt(a.size || 0)));
+        const match = gData.files[0];
+        if (match.parents && match.parents.length > 0) {
+          gdriveFolderId = match.parents[0];
+          localStorage.setItem('daysk-gdrive-folder-id', gdriveFolderId);
+        }
+        return match.id;
+      }
+    }
+
     return null;
   }
 
   async function writeGDriveFile(filename, content) {
     if (!gdriveFolderId) await findOrCreateGDriveFolder();
-    const existingId = await findGDriveFileId(filename);
+    const existingId = await findGDriveFileId(filename, true);
 
     if (existingId) {
       await gdriveFetch(`https://www.googleapis.com/upload/drive/v3/files/${existingId}?uploadType=media`, {
@@ -2152,15 +2177,22 @@
     } else {
       const metadata = { name: filename, parents: [gdriveFolderId], mimeType: 'application/json' };
       const boundary = '-------314159265358979323846';
-      const delimiter = "\r\n--" + boundary + "\r\n";
-      const close_delim = "\r\n--" + boundary + "--";
+      const delimiter = "
+--" + boundary + "
+";
+      const close_delim = "
+--" + boundary + "--";
 
       const multipartRequestBody =
         delimiter +
-        'Content-Type: application/json\r\n\r\n' +
+        'Content-Type: application/json
+
+' +
         JSON.stringify(metadata) +
         delimiter +
-        'Content-Type: application/json\r\n\r\n' +
+        'Content-Type: application/json
+
+' +
         content +
         close_delim;
 
