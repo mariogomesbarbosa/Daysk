@@ -139,6 +139,12 @@
     margin-bottom: 22px;
   }
 
+  .brand-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
   .brand-logo { display: block; height: 26px; width: auto; }
   .brand-logo .brand-dark { fill: #394149; }
   .brand-logo .brand-light { fill: #FFFFFF; }
@@ -1455,7 +1461,17 @@
       <path class="brand-dark" d="M153.471 36.7064C150.599 36.7064 148.313 36.0213 146.613 34.6511C144.913 33.2809 143.946 31.4638 143.711 29.2H148.503C148.679 30.2426 149.192 31.0915 150.042 31.7468C150.921 32.4021 152.079 32.7298 153.515 32.7298C154.893 32.7298 155.948 32.4468 156.681 31.8808C157.443 31.2851 157.824 30.6 157.824 29.8255C157.824 28.6936 157.37 27.9191 156.461 27.5021C155.582 27.0851 154.277 26.7723 152.548 26.5638C151.053 26.3851 149.69 26.0426 148.459 25.5362C147.258 25 146.305 24.2851 145.602 23.3915C144.898 22.4681 144.547 21.3213 144.547 19.9511C144.547 18.0149 145.294 16.4511 146.789 15.2596C148.284 14.0681 150.365 13.4723 153.032 13.4723C155.699 13.4723 157.765 14.083 159.231 15.3043C160.696 16.5255 161.546 18.1936 161.781 20.3085H157.296C157.179 19.4149 156.725 18.7149 155.933 18.2085C155.142 17.6723 154.16 17.4043 152.988 17.4043C151.786 17.4043 150.834 17.6426 150.13 18.1191C149.427 18.566 149.075 19.1617 149.075 19.9064C149.075 21.5149 150.775 22.4979 154.175 22.8553C155.787 23.034 157.223 23.3468 158.483 23.7936C159.744 24.2106 160.74 24.8809 161.473 25.8043C162.206 26.6979 162.572 27.9638 162.572 29.6021C162.601 30.9426 162.22 32.1489 161.429 33.2213C160.667 34.2936 159.597 35.1426 158.22 35.7681C156.871 36.3936 155.289 36.7064 153.471 36.7064Z"/>
       <path class="brand-dark" d="M169.952 36.1702V4H174.612V23.3021L182.966 14.0085H188.813L179.712 23.8383V24.1957L190 36.1702H184.329L174.612 24.7766V36.1702H169.952Z"/>
     </svg>
-    <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" title="Alternar tema" aria-label="Alternar tema claro/escuro"></button>
+    <div class="brand-actions">
+      <button class="btn-add btn-secondary" onclick="openProjectsManager()" title="Gerenciar projetos">
+        <svg class="icon" width="14" height="14" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M216,72H131.31L104,44.69A15.86,15.86,0,0,0,92.69,40H40A16,16,0,0,0,24,56V200.62A15.4,15.4,0,0,0,39.38,216H216.89A15.13,15.13,0,0,0,232,200.89V88A16,16,0,0,0,216,72ZM40,56H92.69l16,16H40ZM216,200H40V88H216Z"/></svg>
+        projetos
+      </button>
+      <button class="btn-add btn-secondary" onclick="openSyncManager()" title="Modo de Sincronização">
+        <svg class="icon" width="14" height="14" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M224,48V96a8,8,0,0,1-8,8H168a8,8,0,0,1,0-16h28.69L182.06,73.37a79.56,79.56,0,0,0-56.13-23.43h-.45A79.52,79.52,0,0,0,69.59,72.71,8,8,0,0,1,58.41,61.27a96,96,0,0,1,135,.79L208,76.69V48a8,8,0,0,1,16,0ZM186.41,183.29a80,80,0,0,1-112.47-.66L59.31,168H88a8,8,0,0,0,0-16H40a8,8,0,0,0-8,8v48a8,8,0,0,0,16,0V179.31l14.63,14.63A95.43,95.43,0,0,0,130,222.06h.53a95.36,95.36,0,0,0,67.07-27.33,8,8,0,0,0-11.18-11.44Z"/></svg>
+        Sincronização
+      </button>
+      <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" title="Alternar tema" aria-label="Alternar tema claro/escuro"></button>
+    </div>
   </header>
 
   <div class="page-header">
@@ -1464,14 +1480,6 @@
       <h1 class="page-date" id="date-label">—</h1>
     </div>
     <div class="header-actions">
-      <button class="btn-add btn-secondary" onclick="openSyncManager()">
-        <svg class="icon" width="14" height="14" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M224,48V96a8,8,0,0,1-8,8H168a8,8,0,0,1,0-16h28.69L182.06,73.37a79.56,79.56,0,0,0-56.13-23.43h-.45A79.52,79.52,0,0,0,69.59,72.71,8,8,0,0,1,58.41,61.27a96,96,0,0,1,135,.79L208,76.69V48a8,8,0,0,1,16,0ZM186.41,183.29a80,80,0,0,1-112.47-.66L59.31,168H88a8,8,0,0,0,0-16H40a8,8,0,0,0-8,8v48a8,8,0,0,0,16,0V179.31l14.63,14.63A95.43,95.43,0,0,0,130,222.06h.53a95.36,95.36,0,0,0,67.07-27.33,8,8,0,0,0-11.18-11.44Z"/></svg>
-        Sincronização
-      </button>
-      <button class="btn-add btn-secondary" onclick="openProjectsManager()">
-        <svg class="icon" width="14" height="14" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M216,72H131.31L104,44.69A15.86,15.86,0,0,0,92.69,40H40A16,16,0,0,0,24,56V200.62A15.4,15.4,0,0,0,39.38,216H216.89A15.13,15.13,0,0,0,232,200.89V88A16,16,0,0,0,216,72ZM40,56H92.69l16,16H40ZM216,200H40V88H216Z"/></svg>
-        projetos
-      </button>
       <button class="btn-add" id="btn-add" onclick="openCreateForm()">
         <svg class="icon" width="14" height="14" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M224,128a8,8,0,0,1-8,8H136v80a8,8,0,0,1-16,0V136H40a8,8,0,0,1,0-16h80V40a8,8,0,0,1,16,0v80h80A8,8,0,0,1,224,128Z"/></svg>
         nova atividade
