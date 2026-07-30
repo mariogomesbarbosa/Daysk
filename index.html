@@ -1990,6 +1990,50 @@
     }
   }
 
+  
+  function mergeSyncData(remoteTasksJson, remoteProjectsJson) {
+    let loadedAny = false;
+
+    if (remoteProjectsJson) {
+      try {
+        const remoteProjects = JSON.parse(remoteProjectsJson);
+        if (Array.isArray(remoteProjects) && remoteProjects.length > 0) {
+          const pMap = new Map();
+          projects.forEach(p => pMap.set(p.id || p.name, p));
+          remoteProjects.forEach(p => pMap.set(p.id || p.name, p));
+          projects = Array.from(pMap.values());
+          localStorage.setItem('daily-projects', JSON.stringify(projects));
+          loadedAny = true;
+        }
+      } catch (e) {
+        console.error('Erro ao ler projects.json:', e);
+      }
+    }
+
+    if (remoteTasksJson) {
+      try {
+        const remoteTasks = JSON.parse(remoteTasksJson);
+        if (Array.isArray(remoteTasks) && remoteTasks.length > 0) {
+          const tMap = new Map();
+          tasks.forEach(t => tMap.set(t.id, t));
+          remoteTasks.forEach(t => tMap.set(t.id, t));
+          tasks = Array.from(tMap.values());
+          localStorage.setItem('daily-tasks', JSON.stringify(tasks));
+          loadedAny = true;
+        }
+      } catch (e) {
+        console.error('Erro ao ler tasks.json:', e);
+      }
+    }
+
+    if (loadedAny) {
+      populateProjectSelect();
+      render();
+      if (typeof renderReport === 'function' && currentTab === 'report') renderReport();
+    }
+    return loadedAny;
+  }
+
   async function loadFromFolder() {
     const t = await readFolderFile('tasks.json');
     const p = await readFolderFile('projects.json');
@@ -2037,10 +2081,24 @@
     }
 
     const q = encodeURIComponent("name = 'Daysk' and mimeType = 'application/vnd.google-apps.folder' and trashed = false");
-    const res = await gdriveFetch(`https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id,name)`);
+    const res = await gdriveFetch(`https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id,name,createdTime)&orderBy=createdTime desc`);
     if (res.ok) {
       const data = await res.json();
       if (data.files && data.files.length > 0) {
+        for (const folder of data.files) {
+          const tQ = encodeURIComponent(`'${folder.id}' in parents and (name = 'tasks.json' or name = 'projects.json') and trashed = false`);
+          const tRes = await gdriveFetch(`https://www.googleapis.com/drive/v3/files?q=${tQ}&fields=files(id,name)`);
+          if (tRes.ok) {
+            const tData = await tRes.json();
+            if (tData.files && tData.files.length > 0) {
+              gdriveFolderId = folder.id;
+              gdriveFolderName = folder.name;
+              localStorage.setItem('daysk-gdrive-folder-id', gdriveFolderId);
+              localStorage.setItem('daysk-gdrive-folder-name', gdriveFolderName);
+              return gdriveFolderId;
+            }
+          }
+        }
         gdriveFolderId = data.files[0].id;
         gdriveFolderName = data.files[0].name;
         localStorage.setItem('daysk-gdrive-folder-id', gdriveFolderId);
