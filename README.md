@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="Daysk trademark.svg" alt="Daysk Logo" width="320" />
+  <img src="assets/trademark.svg" alt="Daysk Logo" width="320" />
 </p>
 
 <p align="center">
@@ -29,7 +29,7 @@ Você pode utilizar o produto diretamente pelo navegador em [Daysk](https://mari
 ## 📸 Captura de Tela
 
 <p align="center">
-  <img src="docs/screenshots/preview.png" alt="Daysk Interface" width="100%" />
+  <img src="assets/preview.png" alt="Daysk Interface" width="100%" />
 </p>
 
 ---
@@ -83,14 +83,11 @@ Como o Daysk foi construído de forma leve e direta com tecnologias web nativas,
 
 ```text
 Daysk/
-├── data/
-│   ├── projects.json        # Cadastro de projetos e categorias
-│   └── tasks.json           # Base de tarefas e histórico de tempo
-├── docs/
-│   └── screenshots/         # Capturas de tela da aplicação
+├── assets/
+│   ├── preview.png          # Captura de tela da aplicação
+│   └── trademark.svg        # Logotipo oficial
+├── .gitignore               # Configuração de arquivos ignorados no Git
 ├── index.html               # Aplicação web completa (UI + Lógica + Estilos)
-├── Daysk logo.svg           # Ícone do aplicativo
-├── Daysk trademark.svg      # Logotipo oficial com marca registrada
 └── README.md                # Documentação do projeto
 ```
 
