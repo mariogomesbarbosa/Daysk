@@ -1,14 +1,3690 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta http-equiv="refresh" content="0; url=Daysk.html">
-  <title>Daysk</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Daysk</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTAiIGhlaWdodD0iNTAiIHZpZXdCb3g9IjAgMCA1MCA1MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjUwIiBoZWlnaHQ9IjUwIiByeD0iMTAiIGZpbGw9IiMzOTQxNDkiLz4KPHBhdGggZD0iTTM5IDI1TDIxIDM5TDExIDM5TDExIDMxLjcySDE4LjMzMzNMMzEgMjEuNjcwNFYxOC4yOEwxMSAxOC4yOEwxMSAxMUwzOSAxMVYyNVoiIGZpbGw9IndoaXRlIi8+CjxwYXRoIGQ9Ik0zOSAzMS4xNkwzOSAzOUwzMS4xNiAzOUwzMS4xNiAzMS4xNkwzOSAzMS4xNloiIGZpbGw9IndoaXRlIi8+Cjwvc3ZnPgo=">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script src="https://apis.google.com/js/api.js" async defer></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  (function() {
+    var saved = localStorage.getItem('daysk-theme');
+    if (saved === 'light' || saved === 'dark') {
+      document.documentElement.setAttribute('data-theme', saved);
+      document.documentElement.style.colorScheme = saved;
+    }
+  })();
+</script>
+<style>
+  :root {
+    color-scheme: light;
+    --bg: #F5F6F8;
+    --surface: #FFFFFF;
+    --surface2: #EEF0F3;
+    --border: #E3E6EA;
+    --border2: #CBD2D9;
+    --text: #14171B;
+    --text2: #5B6472;
+    --text3: #94A0AE;
+    --green: #15803D;
+    --green-bg: #E3F5EA;
+    --amber: #B45309;
+    --amber-bg: #FCF1E1;
+    --red: #DC2626;
+    --red-bg: #FCEAEA;
+    --accent: #394149;
+    --accent-hover: #262C31;
+    --accent-bg: #EBECEE;
+    --on-accent: #FFFFFF;
+    --shadow-sm: 0 1px 2px rgba(20,23,27,.05), 0 1px 1px rgba(20,23,27,.04);
+    --shadow-md: 0 16px 32px rgba(20,23,27,.12), 0 2px 6px rgba(20,23,27,.06);
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 18px;
+    --mono: 'JetBrains Mono', monospace;
+    --sans: 'JetBrains Mono', monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --bg: #15181B;
+      --surface: #1E2226;
+      --surface2: #282D33;
+      --border: #33393F;
+      --border2: #454C53;
+      --text: #F1F2F4;
+      --text2: #9CA6AF;
+      --text3: #6C7680;
+      --green: #4ADE80;
+      --green-bg: #14301F;
+      --amber: #FBBF24;
+      --amber-bg: #3A2A0C;
+      --red: #F87171;
+      --red-bg: #3A1414;
+      --accent: #E7E9EC;
+      --accent-hover: #D3D7DB;
+      --accent-bg: #2A2E33;
+      --on-accent: #14171A;
+      --shadow-sm: 0 1px 2px rgba(0,0,0,.3);
+      --shadow-md: 0 16px 32px rgba(0,0,0,.45), 0 2px 6px rgba(0,0,0,.3);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #15181B;
+    --surface: #1E2226;
+    --surface2: #282D33;
+    --border: #33393F;
+    --border2: #454C53;
+    --text: #F1F2F4;
+    --text2: #9CA6AF;
+    --text3: #6C7680;
+    --green: #4ADE80;
+    --green-bg: #14301F;
+    --amber: #FBBF24;
+    --amber-bg: #3A2A0C;
+    --red: #F87171;
+    --red-bg: #3A1414;
+    --accent: #E7E9EC;
+    --accent-hover: #D3D7DB;
+    --accent-bg: #2A2E33;
+    --on-accent: #14171A;
+    --shadow-sm: 0 1px 2px rgba(0,0,0,.3);
+    --shadow-md: 0 16px 32px rgba(0,0,0,.45), 0 2px 6px rgba(0,0,0,.3);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 2rem 1rem;
+    transition: background .2s ease, color .2s ease;
+  }
+
+  .container {
+    max-width: 720px;
+    margin: 0 auto;
+  }
+
+  button, input, select { font-family: inherit; }
+
+  .icon { display: block; flex-shrink: 0; }
+
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: .001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: .001ms !important;
+    }
+  }
+
+  /* Brand bar */
+  .brand-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 22px;
+  }
+
+  .brand-logo { display: block; height: 26px; width: auto; }
+  .brand-logo .brand-dark { fill: #394149; }
+  .brand-logo .brand-light { fill: #FFFFFF; }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .brand-logo .brand-dark { fill: #FFFFFF; }
+    :root:not([data-theme="light"]) .brand-logo .brand-light { fill: #394149; }
+  }
+
+  [data-theme="dark"] .brand-logo .brand-dark { fill: #FFFFFF; }
+  [data-theme="dark"] .brand-logo .brand-light { fill: #394149; }
+
+  /* Header */
+  .page-header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1.25rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .page-title {
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--accent);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  .page-date {
+    font-size: 27px;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: -0.03em;
+  }
+
+  .btn-add {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.03em;
+    padding: 9px 16px;
+    background: var(--accent);
+    color: var(--on-accent);
+    border: none;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: background .15s;
+  }
+
+  .btn-add:hover { background: var(--accent-hover); }
+
+  .header-actions { display: flex; align-items: center; gap: 8px; }
+
+  .btn-secondary {
+    background: none;
+    border: 1px solid var(--border2);
+    color: var(--text);
+  }
+
+  .btn-secondary:hover { background: var(--surface2); }
+
+  /* Tabs */
+  .tabs {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 1.5rem;
+  }
+
+  .tab-btn {
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.03em;
+    padding: 8px 16px;
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text2);
+    cursor: pointer;
+    transition: all .15s;
+  }
+
+  .tab-btn:hover:not(.active) { border-color: var(--border2); color: var(--text); }
+
+  .tab-btn.active {
+    background: var(--accent);
+    color: var(--on-accent);
+    border-color: var(--accent);
+  }
+
+  /* Context Bar & Pills */
+  .context-bar {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 1.25rem;
+  }
+
+  .context-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.03em;
+    padding: 8px 14px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text2);
+    cursor: pointer;
+    transition: all .15s ease;
+  }
+
+  .context-pill:hover:not(.active) {
+    border-color: var(--border2);
+    color: var(--text);
+    background: var(--surface2);
+  }
+
+  .context-pill.active {
+    background: var(--accent);
+    color: var(--on-accent);
+    border-color: var(--accent);
+    font-weight: 500;
+  }
+
+  .ctx-count {
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 10px;
+    background: var(--bg);
+    color: var(--text2);
+    transition: all .15s;
+  }
+
+  .context-pill.active .ctx-count {
+    background: rgba(255,255,255,.25);
+    color: var(--on-accent);
+  }
+
+  /* Form Context Selector */
+  .context-selector {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+  }
+
+  .ctx-btn {
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 8px 10px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text2);
+    cursor: pointer;
+    transition: all .15s;
+    text-align: center;
+  }
+
+  .ctx-btn:hover:not(.active) {
+    border-color: var(--border2);
+    color: var(--text);
+  }
+
+  .ctx-btn.active {
+    background: var(--accent);
+    color: var(--on-accent);
+    border-color: var(--accent);
+    font-weight: 500;
+  }
+
+  /* Schedule Button for Later Tasks */
+  .btn-schedule {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 5px 9px;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    cursor: pointer;
+    transition: all .15s;
+  }
+
+  .btn-schedule:hover {
+    background: var(--accent);
+    color: var(--on-accent);
+    border-color: var(--accent);
+  }
+
+  .later-badge {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text2);
+    background: var(--bg);
+    padding: 3px 6px;
+    border-radius: var(--radius-sm);
+    border: 1px dashed var(--border2);
+  }
+
+  /* Summary bar */
+  .summary-bar {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin-bottom: 1.5rem;
+  }
+
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 12px 14px;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .stat-val {
+    font-family: var(--mono);
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--text);
+    line-height: 1;
+  }
+
+  .stat-lbl {
+    font-size: 11px;
+    color: var(--text2);
+    margin-top: 4px;
+    letter-spacing: 0.02em;
+  }
+
+  /* ---- Form modal ---- */
+  .form-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(20,23,27,.5);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    padding: 20px;
+  }
+
+  .form-overlay.open { display: flex; animation: overlayFade .15s ease; }
+
+  @keyframes overlayFade { from { opacity: 0; } to { opacity: 1; } }
+
+  .form-panel {
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    width: min(440px, 100%);
+    max-height: 88vh;
+    overflow-y: auto;
+    box-shadow: var(--shadow-md);
+    animation: modalIn .18s ease;
+  }
+
+  @keyframes modalIn {
+    from { opacity: 0; transform: scale(.96) translateY(8px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+  }
+
+  .form-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 20px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .form-title {
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+
+  .form-close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: none;
+    color: var(--text2);
+    cursor: pointer;
+    padding: 6px;
+    border-radius: var(--radius-sm);
+    transition: background .15s, color .15s;
+  }
+
+  .form-close:hover { background: var(--surface2); color: var(--text); }
+
+  .form-body {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .form-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    padding: 16px 20px;
+    border-top: 1px solid var(--border);
+  }
+
+  .form-field-v { display: flex; flex-direction: column; gap: 6px; }
+
+  .form-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  .form-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text2);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .form-field-v input,
+  .form-field-v select {
+    font-family: var(--mono);
+    font-size: 13px;
+    padding: 9px 10px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    outline: none;
+    width: 100%;
+    transition: border-color .15s;
+  }
+
+  .form-field-v input:focus,
+  .form-field-v select:focus { border-color: var(--accent); }
+
+  .project-select-row { display: flex; gap: 4px; }
+  .project-select-row select { flex: 1; min-width: 0; }
+
+  .btn-mini {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 10px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    color: var(--text2);
+    height: 36px;
+    flex-shrink: 0;
+    transition: border-color .15s, color .15s;
+  }
+
+  .btn-mini:hover { border-color: var(--border2); color: var(--text); }
+
+  .new-project-row {
+    display: none;
+    gap: 8px;
+    margin-top: -4px;
+  }
+
+  .new-project-row.open { display: flex; }
+
+  .new-project-row input {
+    flex: 1;
+    font-family: var(--mono);
+    font-size: 13px;
+    padding: 8px 10px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    outline: none;
+  }
+
+  .new-project-row button {
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 8px 14px;
+    border: none;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    letter-spacing: 0.03em;
+  }
+
+  .btn-create { background: var(--accent); color: var(--on-accent); }
+  .btn-create:hover { background: var(--accent-hover); }
+  .btn-cancel { background: var(--surface2); color: var(--text2); }
+
+  .btn-save {
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 500;
+    padding: 8px 16px;
+    background: var(--accent);
+    color: var(--on-accent);
+    border: none;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: background .15s;
+    letter-spacing: 0.03em;
+    height: 36px;
+  }
+
+  .btn-save:hover { background: var(--accent-hover); }
+
+  .btn-cancel-form {
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 8px 16px;
+    background: var(--surface2);
+    color: var(--text2);
+    border: none;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    letter-spacing: 0.03em;
+    height: 36px;
+    transition: background .15s;
+  }
+
+  .btn-cancel-form:hover { background: var(--border); }
+
+  /* Task list */
+  .task-list { display: flex; flex-direction: column; gap: 8px; }
+
+  .task-row {
+    display: grid;
+    grid-template-columns: 14px 78px 1fr auto;
+    align-items: center;
+    gap: 12px;
+    padding: 13px 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    transition: opacity .2s, border-color .15s, box-shadow .15s;
+    animation: fadeIn .2s ease;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .task-row:hover { border-color: var(--border2); box-shadow: var(--shadow-md); }
+
+  .task-row.status-done { opacity: .55; }
+  .task-row.status-done .task-name { text-decoration: line-through; }
+
+  /* Status dot */
+  .status-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .status-dot.pending { background: var(--border2); }
+  .status-dot.active { background: var(--green); box-shadow: 0 0 0 3px rgba(21,128,61,.18); }
+  .status-dot.paused { background: var(--amber); }
+  .status-dot.done { background: var(--green); opacity: .5; }
+
+  /* Time block */
+  .time-block { display: flex; flex-direction: column; gap: 2px; }
+
+  .time-val {
+    font-family: var(--mono);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: 0.01em;
+  }
+
+  .time-end {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text2);
+  }
+
+  /* Task info */
+  .task-info { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+
+  .task-top { display: flex; align-items: center; gap: 8px; }
+
+  .task-name {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .tag {
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 2px 7px;
+    border-radius: 4px;
+    flex-shrink: 0;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+  }
+
+  /* Progress */
+  .progress-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .bar-track {
+    flex: 1;
+    height: 3px;
+    background: var(--surface2);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .bar-fill {
+    height: 3px;
+    border-radius: 2px;
+    transition: width .6s ease;
+  }
+
+  .bar-fill.active { background: var(--green); }
+  .bar-fill.pending { background: var(--border2); }
+  .bar-fill.ended { background: var(--amber); }
+  .bar-fill.done-fill { background: var(--green); }
+  .bar-fill.paused-fill { background: var(--amber); }
+
+  .bar-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text2);
+    min-width: 80px;
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  /* Actions */
+  .task-actions { display: flex; align-items: center; gap: 6px; }
+
+  .btn-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: 1px solid var(--border2);
+    color: var(--text);
+    cursor: pointer;
+    padding: 6px;
+    border-radius: var(--radius-sm);
+    transition: background .15s, color .15s, border-color .15s;
+  }
+
+  .btn-icon:hover { background: var(--surface2); }
+  .btn-icon.btn-start:hover { background: var(--green-bg); color: var(--green); border-color: var(--green); }
+  .btn-icon.btn-complete:hover { background: var(--green-bg); color: var(--green); border-color: var(--green); }
+
+  .btn-del {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: none;
+    color: var(--text3);
+    cursor: pointer;
+    padding: 6px;
+    border-radius: var(--radius-sm);
+    transition: color .15s, background .15s;
+  }
+
+  .btn-del:hover { color: var(--red); background: var(--red-bg); }
+
+  /* Empty */
+  .empty, .empty-report {
+    text-align: center;
+    padding: 3rem 0;
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--text2);
+    letter-spacing: 0.03em;
+  }
+
+  .empty-report { padding: 2rem 0; }
+
+  /* Now indicator */
+  .now-line {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 0;
+    margin: 4px 0;
+  }
+
+  .now-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--green);
+    flex-shrink: 0;
+    margin-left: 8px;
+    box-shadow: 0 0 0 3px rgba(21,128,61,.18);
+  }
+
+  .now-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--green);
+    letter-spacing: 0.04em;
+  }
+
+  /* Report */
+  .period-btns {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 1.25rem;
+    flex-wrap: wrap;
+  }
+
+  .period-btn {
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 7px 14px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    color: var(--text2);
+    cursor: pointer;
+    transition: all .15s;
+  }
+
+  .period-btn:hover:not(.active) { border-color: var(--border2); color: var(--text); }
+
+  .period-btn.active {
+    background: var(--accent);
+    color: var(--on-accent);
+    border-color: var(--accent);
+  }
+
+  /* Report Dashboard Grid (TickTick / Todoist style) */
+  .report-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    margin-bottom: 1.5rem;
+  }
+
+  @media (max-width: 860px) {
+    .report-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .report-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.25rem;
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    flex-direction: column;
+    min-height: 270px;
+    transition: border-color .2s, box-shadow .2s;
+  }
+
+  .report-card:hover {
+    border-color: var(--border2);
+    box-shadow: var(--shadow-md);
+  }
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.75rem;
+  }
+
+  .card-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    margin: 0;
+  }
+
+  .card-pills {
+    display: flex;
+    gap: 4px;
+    background: var(--surface2);
+    padding: 3px;
+    border-radius: 16px;
+  }
+
+  .pill-btn {
+    font-size: 11px;
+    font-weight: 500;
+    border: none;
+    background: transparent;
+    color: var(--text2);
+    padding: 3px 9px;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all .15s;
+  }
+
+  .pill-btn.active {
+    background: var(--surface);
+    color: var(--accent);
+    font-weight: 600;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+
+  /* Overview Card */
+  .overview-stats {
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    padding: 0.75rem 0;
+    margin-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border);
+    text-align: center;
+    flex: 1;
+  }
+
+  .overview-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .overview-num {
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1;
+  }
+
+  .overview-lbl {
+    font-size: 12px;
+    color: var(--text2);
+    font-weight: 500;
+  }
+
+  .overview-trend {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 12px;
+    margin-top: 4px;
+  }
+
+  .overview-trend.up {
+    background: rgba(34, 197, 94, 0.12);
+    color: #16a34a;
+  }
+
+  .overview-trend.down {
+    background: rgba(239, 68, 68, 0.12);
+    color: #dc2626;
+  }
+
+  .overview-trend.neutral {
+    background: var(--surface2);
+    color: var(--text2);
+  }
+
+  .overview-divider {
+    width: 1px;
+    height: 52px;
+    background: var(--border);
+  }
+
+  .overview-substats {
+    display: flex;
+    justify-content: space-between;
+    background: var(--surface2);
+    padding: 10px 14px;
+    border-radius: var(--radius-md);
+    font-size: 12px;
+  }
+
+  .substat-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .substat-lbl {
+    font-size: 11px;
+    color: var(--text2);
+  }
+
+  .substat-val {
+    font-weight: 600;
+    font-family: var(--mono);
+    color: var(--text);
+  }
+
+  /* Charts Container */
+  .chart-box {
+    position: relative;
+    flex: 1;
+    width: 100%;
+    min-height: 190px;
+    max-height: 220px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .donut-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    flex: 1;
+    min-height: 190px;
+  }
+
+  .donut-chart-box {
+    position: relative;
+    width: 140px;
+    height: 140px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .donut-center-overlay {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    text-align: center;
+  }
+
+  .donut-center-num {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1;
+  }
+
+  .donut-center-lbl {
+    font-size: 10px;
+    color: var(--text2);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 500;
+    margin-top: 2px;
+  }
+
+  .donut-legend {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex: 1;
+    max-height: 180px;
+    overflow-y: auto;
+    padding-right: 4px;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 12px;
+  }
+
+  .legend-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    flex: 1;
+  }
+
+  .legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .legend-name {
+    color: var(--text);
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .legend-count {
+    font-family: var(--mono);
+    color: var(--text2);
+    font-weight: 600;
+    white-space: nowrap;
+    margin-left: 6px;
+  }
+
+  .report-section { margin-top: 1.75rem; }
+
+  .section-title {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--text2);
+    margin-bottom: 10px;
+  }
+
+  .project-bars { display: flex; flex-direction: column; gap: 10px; }
+
+  .project-bar-row {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 10px 12px;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .project-bar-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 7px;
+  }
+
+  .project-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+
+  .project-name {
+    font-size: 13px;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .project-time {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text2);
+    white-space: nowrap;
+  }
+
+  .btn-mini-del {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: none;
+    color: var(--text3);
+    cursor: pointer;
+    padding: 4px;
+    border-radius: var(--radius-sm);
+  }
+
+  .btn-mini-del:hover:not(:disabled) { color: var(--red); }
+  .btn-mini-del:disabled { opacity: .3; cursor: not-allowed; }
+
+  .report-table-wrap {
+    overflow-x: auto;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .report-table { width: 100%; border-collapse: collapse; font-size: 12.5px; min-width: 480px; }
+
+  .report-table th {
+    text-align: left;
+    font-family: var(--mono);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text2);
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border2);
+    white-space: nowrap;
+  }
+
+  .report-table td {
+    padding: 9px 12px;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+
+  .report-table tr:last-child td { border-bottom: none; }
+
+  /* Projects manager */
+  .projects-list { display: flex; flex-direction: column; }
+
+  .project-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 2px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .project-row:last-child { border-bottom: none; }
+
+  .project-row-name {
+    flex: 1;
+    min-width: 0;
+    font-size: 13px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .project-row-count {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text2);
+    white-space: nowrap;
+  }
+
+  .project-edit-row {
+    padding: 12px 2px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .project-edit-row input {
+    font-family: var(--mono);
+    font-size: 13px;
+    padding: 8px 10px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    outline: none;
+    width: 100%;
+  }
+
+  .project-edit-actions { display: flex; justify-content: flex-end; gap: 8px; }
+
+  .new-project-section {
+    padding-top: 16px;
+    margin-top: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .new-project-section input {
+    font-family: var(--mono);
+    font-size: 13px;
+    padding: 9px 10px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    outline: none;
+    width: 100%;
+  }
+
+  .swatch-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+
+  .color-swatch {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    outline-offset: 2px;
+    transition: transform .1s ease;
+  }
+
+  .color-swatch:hover { transform: scale(1.12); }
+  .color-swatch.selected { outline: 2px solid var(--accent); }
+
+  .project-group { margin-bottom: 16px; }
+
+  .project-group-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 2px 2px 8px;
+  }
+
+  .project-group-name { font-size: 13px; font-weight: 600; }
+
+  .project-group-meta {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text2);
+    margin-left: auto;
+    white-space: nowrap;
+  }
+
+  .project-group-tasks { display: flex; flex-direction: column; gap: 8px; }
+
+  /* Sync */
+  .sync-subtitle {
+    font-size: 13px;
+    color: var(--text2);
+    margin-bottom: 16px;
+    line-height: 1.4;
+  }
+
+  .sync-options-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .sync-option-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 14px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--surface);
+    cursor: pointer;
+    transition: border-color .15s, background-color .15s, box-shadow .15s;
+  }
+
+  .sync-option-card:hover {
+    border-color: var(--border2);
+  }
+
+  .sync-option-card.active {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 1px var(--accent);
+  }
+
+  .sync-option-card input[type="radio"] {
+    margin-top: 3px;
+    accent-color: var(--accent);
+    cursor: pointer;
+  }
+
+  .sync-option-content {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .sync-option-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+  }
+
+  .sync-option-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .sync-badge {
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: var(--surface2);
+    color: var(--text2);
+    font-weight: 600;
+  }
+
+  .sync-option-desc {
+    font-size: 12px;
+    color: var(--text2);
+    line-height: 1.45;
+    margin: 0;
+  }
+
+  .sync-detail-panel {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px dashed var(--border);
+  }
+
+  .sync-status {
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 10px 12px;
+    border-radius: var(--radius-sm);
+    margin-bottom: 10px;
+    line-height: 1.5;
+  }
+
+  .sync-status.off { background: var(--surface2); color: var(--text2); }
+  .sync-status.on { background: var(--green-bg); color: var(--green); }
+  .sync-status.warn { background: var(--amber-bg); color: var(--amber); }
+
+  .sync-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    margin-top: 8px;
+  }
+
+  .gdrive-input-group {
+    margin-top: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .gdrive-input-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text2);
+  }
+
+  .gdrive-input {
+    width: 100%;
+    padding: 6px 10px;
+    font-size: 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    color: var(--text);
+    box-sizing: border-box;
+  }
+
+  /* Theme toggle */
+  .theme-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    cursor: pointer;
+    transition: background .15s, border-color .15s;
+  }
+
+  .theme-toggle:hover { background: var(--surface2); }
+
+  /* Dark mode fine-tuning */
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .status-dot.active,
+    :root:not([data-theme="light"]) .now-dot {
+      box-shadow: 0 0 0 3px rgba(74,222,128,.22);
+    }
+  }
+
+  [data-theme="dark"] .status-dot.active,
+  [data-theme="dark"] .now-dot {
+    box-shadow: 0 0 0 3px rgba(74,222,128,.22);
+  }
+
+  /* Footer */
+  .footer {
+    margin-top: 2.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .footer-time {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text2);
+  }
+
+  @media (max-width: 600px) {
+    .summary-bar { grid-template-columns: repeat(2, 1fr); }
+    .task-row { grid-template-columns: 12px 68px 1fr auto; gap: 8px; padding: 12px; }
+    .task-actions { flex-wrap: wrap; justify-content: flex-end; }
+    .report-table { min-width: 420px; }
+    .form-row-2 { grid-template-columns: 1fr; }
+    .form-overlay { padding: 0; align-items: flex-end; }
+    .form-panel { width: 100%; border-radius: var(--radius-lg) var(--radius-lg) 0 0; max-height: 92vh; }
+    .page-header { flex-wrap: wrap; gap: 12px; }
+    .header-actions { width: 100%; flex-wrap: wrap; }
+    .header-actions .btn-add { flex: 1 1 auto; justify-content: center; min-width: 110px; }
+  }
+</style>
 </head>
 <body>
-  <p>Redirecionando para <a href="Daysk.html">Daysk</a>...</p>
-  <script>
-    window.location.href = "Daysk.html";
-  </script>
+<div class="container">
+
+  <header class="brand-bar">
+    <svg class="brand-logo" viewBox="0 0 190 50" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Daysk">
+      <rect class="brand-dark" width="50" height="50" rx="10"/>
+      <path class="brand-light" d="M39 25L21 39L11 39L11 31.72L18.3333 31.72L31 21.6704L31 18.28L11 18.28L11 11L39 11L39 25Z"/>
+      <rect class="brand-light" x="39" y="31.1599" width="7.84" height="7.84" transform="rotate(90 39 31.1599)"/>
+      <path class="brand-dark" d="M66 36.1702V4.89362H73.3861C78.3395 4.89362 82.0178 6.29362 84.4213 9.09362C86.8247 11.8638 88.0264 15.6766 88.0264 20.5319C88.0264 25.3872 86.8247 29.2149 84.4213 32.0149C82.0178 34.7851 78.3395 36.1702 73.3861 36.1702H66ZM70.6603 31.7915H73.2102C76.786 31.7915 79.3653 30.7787 80.948 28.7532C82.5308 26.6979 83.3221 23.9574 83.3221 20.5319C83.3221 17.1064 82.5308 14.3808 80.948 12.3553C79.3653 10.3 76.786 9.27234 73.2102 9.27234H70.6603V31.7915Z"/>
+      <path class="brand-dark" d="M100.242 36.7064C98.5131 36.7064 97.0623 36.4085 95.8899 35.8128C94.7175 35.1872 93.8382 34.3681 93.252 33.3553C92.6658 32.3128 92.3727 31.1809 92.3727 29.9596C92.3727 27.7851 93.1494 26.0872 94.7028 24.866C96.2856 23.6447 98.5131 23.034 101.385 23.034H107.013V22.5426C107.013 19.2064 105.489 17.5383 102.441 17.5383C101.18 17.5383 100.111 17.8213 99.2312 18.3872C98.3812 18.9234 97.8097 19.8021 97.5166 21.0234H92.8563C93.0908 18.7 94.0727 16.8681 95.802 15.5277C97.5606 14.1574 99.7734 13.4723 102.441 13.4723C105.665 13.4723 108.01 14.2766 109.475 15.8851C110.941 17.4936 111.673 19.7128 111.673 22.5426V36.1702H107.716L107.321 32.9085H107.013C106.368 33.9511 105.562 34.8447 104.595 35.5894C103.628 36.334 102.177 36.7064 100.242 36.7064ZM101.122 32.7298C103.027 32.7298 104.448 32.1489 105.386 30.9872C106.354 29.7957 106.881 28.2915 106.969 26.4745H101.869C100.198 26.4745 99.0114 26.7574 98.308 27.3234C97.6338 27.8596 97.2968 28.6191 97.2968 29.6021C97.2968 30.5851 97.6338 31.3596 98.308 31.9255C99.0114 32.4617 99.9493 32.7298 101.122 32.7298Z"/>
+      <path class="brand-dark" d="M120.856 46L126.044 34.3383H124.769L116.283 14.0085H121.339L127.846 30.2277L134.749 14.0085H139.629L125.78 46H120.856Z"/>
+      <path class="brand-dark" d="M153.471 36.7064C150.599 36.7064 148.313 36.0213 146.613 34.6511C144.913 33.2809 143.946 31.4638 143.711 29.2H148.503C148.679 30.2426 149.192 31.0915 150.042 31.7468C150.921 32.4021 152.079 32.7298 153.515 32.7298C154.893 32.7298 155.948 32.4468 156.681 31.8808C157.443 31.2851 157.824 30.6 157.824 29.8255C157.824 28.6936 157.37 27.9191 156.461 27.5021C155.582 27.0851 154.277 26.7723 152.548 26.5638C151.053 26.3851 149.69 26.0426 148.459 25.5362C147.258 25 146.305 24.2851 145.602 23.3915C144.898 22.4681 144.547 21.3213 144.547 19.9511C144.547 18.0149 145.294 16.4511 146.789 15.2596C148.284 14.0681 150.365 13.4723 153.032 13.4723C155.699 13.4723 157.765 14.083 159.231 15.3043C160.696 16.5255 161.546 18.1936 161.781 20.3085H157.296C157.179 19.4149 156.725 18.7149 155.933 18.2085C155.142 17.6723 154.16 17.4043 152.988 17.4043C151.786 17.4043 150.834 17.6426 150.13 18.1191C149.427 18.566 149.075 19.1617 149.075 19.9064C149.075 21.5149 150.775 22.4979 154.175 22.8553C155.787 23.034 157.223 23.3468 158.483 23.7936C159.744 24.2106 160.74 24.8809 161.473 25.8043C162.206 26.6979 162.572 27.9638 162.572 29.6021C162.601 30.9426 162.22 32.1489 161.429 33.2213C160.667 34.2936 159.597 35.1426 158.22 35.7681C156.871 36.3936 155.289 36.7064 153.471 36.7064Z"/>
+      <path class="brand-dark" d="M169.952 36.1702V4H174.612V23.3021L182.966 14.0085H188.813L179.712 23.8383V24.1957L190 36.1702H184.329L174.612 24.7766V36.1702H169.952Z"/>
+    </svg>
+    <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" title="Alternar tema" aria-label="Alternar tema claro/escuro"></button>
+  </header>
+
+  <div class="page-header">
+    <div>
+      <p class="page-title" id="day-label">carregando...</p>
+      <h1 class="page-date" id="date-label">—</h1>
+    </div>
+    <div class="header-actions">
+      <button class="btn-add btn-secondary" onclick="openSyncManager()">
+        <svg class="icon" width="14" height="14" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M224,48V96a8,8,0,0,1-8,8H168a8,8,0,0,1,0-16h28.69L182.06,73.37a79.56,79.56,0,0,0-56.13-23.43h-.45A79.52,79.52,0,0,0,69.59,72.71,8,8,0,0,1,58.41,61.27a96,96,0,0,1,135,.79L208,76.69V48a8,8,0,0,1,16,0ZM186.41,183.29a80,80,0,0,1-112.47-.66L59.31,168H88a8,8,0,0,0,0-16H40a8,8,0,0,0-8,8v48a8,8,0,0,0,16,0V179.31l14.63,14.63A95.43,95.43,0,0,0,130,222.06h.53a95.36,95.36,0,0,0,67.07-27.33,8,8,0,0,0-11.18-11.44Z"/></svg>
+        Sincronização
+      </button>
+      <button class="btn-add btn-secondary" onclick="openProjectsManager()">
+        <svg class="icon" width="14" height="14" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M216,72H131.31L104,44.69A15.86,15.86,0,0,0,92.69,40H40A16,16,0,0,0,24,56V200.62A15.4,15.4,0,0,0,39.38,216H216.89A15.13,15.13,0,0,0,232,200.89V88A16,16,0,0,0,216,72ZM40,56H92.69l16,16H40ZM216,200H40V88H216Z"/></svg>
+        projetos
+      </button>
+      <button class="btn-add" id="btn-add" onclick="openCreateForm()">
+        <svg class="icon" width="14" height="14" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M224,128a8,8,0,0,1-8,8H136v80a8,8,0,0,1-16,0V136H40a8,8,0,0,1,0-16h80V40a8,8,0,0,1,16,0v80h80A8,8,0,0,1,224,128Z"/></svg>
+        nova atividade
+      </button>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="today" onclick="switchTab('today')">hoje</button>
+    <button class="tab-btn" data-tab="report" onclick="switchTab('report')">relatório</button>
+  </div>
+
+  <div id="view-today">
+
+    <div class="context-bar">
+      <button class="context-pill active" data-context="today" onclick="setTaskContext('today')">
+        Hoje <span class="ctx-count" id="count-today">0</span>
+      </button>
+      <button class="context-pill" data-context="tomorrow" onclick="setTaskContext('tomorrow')">
+        Amanhã <span class="ctx-count" id="count-tomorrow">0</span>
+      </button>
+      <button class="context-pill" data-context="later" onclick="setTaskContext('later')">
+        Fazer depois <span class="ctx-count" id="count-later">0</span>
+      </button>
+    </div>
+
+    <div class="summary-bar" id="summary-bar-container">
+      <div class="stat-card">
+        <div class="stat-val" id="s-total">0</div>
+        <div class="stat-lbl">total</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val" id="s-done">0</div>
+        <div class="stat-lbl">concluídas</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val" id="s-hours">0h</div>
+        <div class="stat-lbl">planejadas</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val" id="s-pct">0%</div>
+        <div class="stat-lbl">progresso</div>
+      </div>
+    </div>
+
+    <div class="period-btns" id="view-options-bar">
+      <button class="period-btn view-btn active" data-view="time" onclick="setListView('time')">por horário</button>
+      <button class="period-btn view-btn" data-view="project" onclick="setListView('project')">por projeto</button>
+    </div>
+
+    <div class="task-list" id="task-list"></div>
+
+  </div>
+
+  <div id="view-report" style="display:none">
+
+    <div class="period-btns">
+      <button class="period-btn active" data-period="today" onclick="setPeriod('today')">hoje</button>
+      <button class="period-btn" data-period="week" onclick="setPeriod('week')">semana</button>
+      <button class="period-btn" data-period="month" onclick="setPeriod('month')">mês</button>
+      <button class="period-btn" data-period="all" onclick="setPeriod('all')">tudo</button>
+    </div>
+
+    <!-- TICK TICK / TODOIST STYLE VISUAL DASHBOARD -->
+    <div class="report-grid">
+
+      <!-- CARD 1: Overview -->
+      <div class="report-card">
+        <div class="card-header">
+          <h3 class="card-title">Visão Geral</h3>
+        </div>
+        <div class="overview-stats">
+          <div class="overview-col">
+            <div class="overview-num" id="r-done">0</div>
+            <div class="overview-lbl">Tarefas Concluídas</div>
+            <div class="overview-trend neutral" id="r-done-trend">— vs anterior</div>
+          </div>
+          <div class="overview-divider"></div>
+          <div class="overview-col">
+            <div class="overview-num" id="r-rate">0%</div>
+            <div class="overview-lbl">Taxa de Conclusão</div>
+            <div class="overview-trend neutral" id="r-rate-trend">— vs anterior</div>
+          </div>
+        </div>
+        <div class="overview-substats">
+          <div class="substat-item">
+            <span class="substat-lbl">Tempo Registrado</span>
+            <span class="substat-val" id="r-time">0min</span>
+          </div>
+          <div class="substat-item">
+            <span class="substat-lbl">Média Diária</span>
+            <span class="substat-val" id="r-avg">0min</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- CARD 2: Completion Distribution (Bar Chart) -->
+      <div class="report-card">
+        <div class="card-header">
+          <h3 class="card-title">Distribuição de Conclusão</h3>
+        </div>
+        <div class="chart-box">
+          <canvas id="chart-distribution"></canvas>
+        </div>
+      </div>
+
+      <!-- CARD 3: Recent Completion Curve (Line Area Chart) -->
+      <div class="report-card">
+        <div class="card-header">
+          <h3 class="card-title">Curva de Desempenho</h3>
+          <div class="card-pills" id="curve-metric-pills">
+            <button class="pill-btn active" data-metric="tasks" onclick="setCurveMetric('tasks')">Tarefas</button>
+            <button class="pill-btn" data-metric="time" onclick="setCurveMetric('time')">Tempo</button>
+          </div>
+        </div>
+        <div class="chart-box">
+          <canvas id="chart-curve"></canvas>
+        </div>
+      </div>
+
+      <!-- CARD 4: Classified Completion Statistics (Donut Chart) -->
+      <div class="report-card">
+        <div class="card-header">
+          <h3 class="card-title">Estatísticas por Projeto</h3>
+        </div>
+        <div class="donut-wrapper">
+          <div class="donut-chart-box">
+            <canvas id="chart-donut"></canvas>
+            <div class="donut-center-overlay">
+              <span class="donut-center-num" id="r-donut-total">0</span>
+              <span class="donut-center-lbl">Concluídas</span>
+            </div>
+          </div>
+          <div class="donut-legend" id="r-donut-legend"></div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Tempo por Projeto / Demanda (Barras) -->
+    <div class="report-section">
+      <h2 class="section-title">tempo por projeto / demanda</h2>
+      <div id="r-projects" class="project-bars"></div>
+    </div>
+
+    <!-- Detalhamento das Atividades (Tabela) -->
+    <div class="report-section">
+      <h2 class="section-title">detalhamento das atividades</h2>
+      <div class="report-table-wrap">
+        <table class="report-table">
+          <thead><tr><th>data</th><th>atividade</th><th>projeto</th><th>previsto</th><th>registrado</th><th>status</th></tr></thead>
+          <tbody id="r-table-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="footer">
+    <span class="footer-time" id="clock">00:00</span>
+    <span class="footer-time">atualiza a cada minuto</span>
+  </div>
+
+</div>
+
+<div class="form-overlay" id="form-overlay" onclick="if(event.target===this) closeForm()">
+  <div class="form-panel">
+    <div class="form-header">
+      <h2 class="form-title" id="form-title">Nova atividade</h2>
+      <button class="form-close" onclick="closeForm()"><svg class="icon" width="18" height="18" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M205.66,194.34a8,8,0,0,1-11.32,11.32L128,139.31,61.66,205.66a8,8,0,0,1-11.32-11.32L116.69,128,50.34,61.66A8,8,0,0,1,61.66,50.34L128,116.69l66.34-66.35a8,8,0,0,1,11.32,11.32L139.31,128Z"/></svg></button>
+    </div>
+    <div class="form-body">
+      <div class="form-field-v">
+        <label class="form-label">Atividade</label>
+        <input type="text" id="f-name" placeholder="Ex: Revisão de handoff">
+      </div>
+      <div class="form-field-v">
+        <label class="form-label">Quando fazer?</label>
+        <div class="context-selector">
+          <button type="button" class="ctx-btn active" id="btn-ctx-today" onclick="selectFormContext('today')">Hoje</button>
+          <button type="button" class="ctx-btn" id="btn-ctx-tomorrow" onclick="selectFormContext('tomorrow')">Amanhã</button>
+          <button type="button" class="ctx-btn" id="btn-ctx-later" onclick="selectFormContext('later')">Fazer depois</button>
+        </div>
+      </div>
+      <div class="form-row-2" id="form-row-time-dur">
+        <div class="form-field-v">
+          <label class="form-label">Início</label>
+          <input type="time" id="f-time" value="09:00">
+        </div>
+        <div class="form-field-v">
+          <label class="form-label">Duração (min)</label>
+          <input type="number" id="f-dur" min="5" max="480" value="60">
+        </div>
+      </div>
+      <div class="form-field-v">
+        <label class="form-label">Projeto/Demanda</label>
+        <div class="project-select-row">
+          <select id="f-project"></select>
+          <button type="button" class="btn-mini" onclick="toggleNewProject()" title="Novo projeto/demanda"><svg class="icon" width="14" height="14" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M224,128a8,8,0,0,1-8,8H136v80a8,8,0,0,1-16,0V136H40a8,8,0,0,1,0-16h80V40a8,8,0,0,1,16,0v80h80A8,8,0,0,1,224,128Z"/></svg></button>
+        </div>
+      </div>
+      <div class="new-project-row" id="new-project-row">
+        <input type="text" id="np-name" placeholder="Nome do novo projeto/demanda">
+        <button class="btn-create" onclick="createProject()">criar</button>
+        <button class="btn-cancel" onclick="toggleNewProject(false)">cancelar</button>
+      </div>
+    </div>
+    <div class="form-footer">
+      <button class="btn-cancel-form" onclick="closeForm()">cancelar</button>
+      <button class="btn-save" id="btn-save-task" onclick="saveTask()">salvar</button>
+    </div>
+  </div>
+</div>
+
+<div class="form-overlay" id="schedule-overlay" onclick="if(event.target===this) closeScheduleModal()">
+  <div class="form-panel" style="max-width:380px;">
+    <div class="form-header">
+      <h2 class="form-title">Agendar atividade</h2>
+      <button class="form-close" onclick="closeScheduleModal()"><svg class="icon" width="18" height="18" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M205.66,194.34a8,8,0,0,1-11.32,11.32L128,139.31,61.66,205.66a8,8,0,0,1-11.32-11.32L116.69,128,50.34,61.66A8,8,0,0,1,61.66,50.34L128,116.69l66.34-66.35a8,8,0,0,1,11.32,11.32L139.31,128Z"/></svg></button>
+    </div>
+    <div class="form-body">
+      <p style="font-size: 13px; color: var(--text2); margin-bottom: 4px;" id="sched-task-name"></p>
+      <div class="form-field-v" style="margin-top:8px;">
+        <label class="form-label">Quando fazer?</label>
+        <div class="context-selector">
+          <button type="button" class="ctx-btn active" id="sched-ctx-today" onclick="selectSchedContext('today')">Hoje</button>
+          <button type="button" class="ctx-btn" id="sched-ctx-tomorrow" onclick="selectSchedContext('tomorrow')">Amanhã</button>
+        </div>
+      </div>
+      <div class="form-row-2" style="margin-top:12px;">
+        <div class="form-field-v">
+          <label class="form-label">Início</label>
+          <input type="time" id="sched-time" value="09:00">
+        </div>
+        <div class="form-field-v">
+          <label class="form-label">Duração (min)</label>
+          <input type="number" id="sched-dur" min="5" max="480" value="60">
+        </div>
+      </div>
+    </div>
+    <div class="form-footer">
+      <button class="btn-cancel-form" onclick="closeScheduleModal()">cancelar</button>
+      <button class="btn-save" onclick="saveQuickSchedule()">confirmar</button>
+    </div>
+  </div>
+</div>
+
+<div class="form-overlay" id="projects-overlay" onclick="if(event.target===this) closeProjectsManager()">
+  <div class="form-panel">
+    <div class="form-header">
+      <h2 class="form-title">Projetos</h2>
+      <button class="form-close" onclick="closeProjectsManager()"><svg class="icon" width="18" height="18" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M205.66,194.34a8,8,0,0,1-11.32,11.32L128,139.31,61.66,205.66a8,8,0,0,1-11.32-11.32L116.69,128,50.34,61.66A8,8,0,0,1,61.66,50.34L128,116.69l66.34-66.35a8,8,0,0,1,11.32,11.32L139.31,128Z"/></svg></button>
+    </div>
+    <div class="form-body">
+      <div id="projects-list" class="projects-list"></div>
+      <div class="new-project-section">
+        <label class="form-label">Novo projeto</label>
+        <input type="text" id="new-proj-name" placeholder="Nome do projeto/demanda">
+        <div id="draft-swatches-wrap"></div>
+        <button class="btn-save" style="align-self:flex-start" onclick="addProjectFromManager()">adicionar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="form-overlay" id="sync-overlay" onclick="if(event.target===this) closeSyncManager()">
+  <div class="form-panel" style="max-width:540px;">
+    <div class="form-header">
+      <h2 class="form-title">Modo de Sincronização</h2>
+      <button class="form-close" onclick="closeSyncManager()"><svg class="icon" width="18" height="18" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M205.66,194.34a8,8,0,0,1-11.32,11.32L128,139.31,61.66,205.66a8,8,0,0,1-11.32-11.32L116.69,128,50.34,61.66A8,8,0,0,1,61.66,50.34L128,116.69l66.34-66.35a8,8,0,0,1,11.32,11.32L139.31,128Z"/></svg></button>
+    </div>
+    <div class="form-body">
+      <p class="sync-subtitle">Escolha como seus dados do Daysk devem ser salvos e mantidos em sincronia:</p>
+      
+      <div class="sync-options-list">
+        <!-- Option 1: Cache do Navegador -->
+        <label class="sync-option-card" id="sync-opt-cache" onclick="switchSyncMode('cache')">
+          <input type="radio" name="syncMode" value="cache" id="radio-sync-cache">
+          <div class="sync-option-content">
+            <div class="sync-option-header">
+              <span class="sync-option-title">Cache do navegador</span>
+              <span class="sync-badge">Default</span>
+            </div>
+            <p class="sync-option-desc">Salva os dados diretamente no <code>localStorage</code> deste navegador. Funciona totalmente offline.</p>
+          </div>
+        </label>
+
+        <!-- Option 2: Pasta Local -->
+        <label class="sync-option-card" id="sync-opt-local" onclick="switchSyncMode('local')">
+          <input type="radio" name="syncMode" value="local" id="radio-sync-local">
+          <div class="sync-option-content">
+            <div class="sync-option-header">
+              <span class="sync-option-title">Pasta local (PC)</span>
+            </div>
+            <p class="sync-option-desc">Sincroniza automaticamente <code>tasks.json</code> e <code>projects.json</code> em uma pasta do seu computador (Chrome/Edge).</p>
+            <div class="sync-detail-panel" id="sync-panel-local" style="display:none">
+              <div class="sync-status" id="sync-status-box">verificando...</div>
+              <div class="sync-actions">
+                <button class="btn-cancel-form" id="sync-disconnect-btn" onclick="event.stopPropagation(); disconnectSyncFolder()" style="display:none">desconectar</button>
+                <button class="btn-cancel-form" id="sync-reconnect-btn" onclick="event.stopPropagation(); reconnectSyncFolder()" style="display:none">reconectar</button>
+                <button class="btn-save" onclick="event.stopPropagation(); chooseSyncFolder()">escolher pasta</button>
+              </div>
+            </div>
+          </div>
+        </label>
+
+        <!-- Option 3: Google Drive -->
+        <label class="sync-option-card" id="sync-opt-gdrive" onclick="switchSyncMode('gdrive')">
+          <input type="radio" name="syncMode" value="gdrive" id="radio-sync-gdrive">
+          <div class="sync-option-content">
+            <div class="sync-option-header">
+              <span class="sync-option-title">Sincronizar com o Google Drive</span>
+            </div>
+            <p class="sync-option-desc">Salva e sincroniza seus dados em uma pasta no seu Google Drive para acesso entre múltiplos dispositivos.</p>
+            <div class="sync-detail-panel" id="sync-panel-gdrive" style="display:none">
+              <div class="sync-status" id="gdrive-status-box">Não conectado ao Google Drive.</div>
+              <div class="sync-actions">
+                <button class="btn-cancel-form" id="gdrive-disconnect-btn" onclick="event.stopPropagation(); disconnectGoogleDrive()" style="display:none">desconectar</button>
+                <button class="btn-cancel-form" id="gdrive-picker-btn" onclick="event.stopPropagation(); openGoogleDrivePicker()" style="display:none">alterar pasta</button>
+                <button class="btn-save" id="gdrive-connect-btn" onclick="event.stopPropagation(); connectGoogleDrive()">conectar Google Drive</button>
+              </div>
+            </div>
+          </div>
+        </label>
+      </div>
+    </div>
+    <div class="form-footer">
+      <button class="btn-save" onclick="closeSyncManager()">Concluído</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  let tasks = JSON.parse(localStorage.getItem('daily-tasks') || '[]');
+  let projects = JSON.parse(localStorage.getItem('daily-projects') || '[]');
+  let formOpen = false;
+  let editingId = null;
+  let currentTab = 'today';
+  let currentPeriod = 'today';
+  let listView = 'time';
+  let projectsManagerOpen = false;
+  let editingProjectId = null;
+  let draftColorIndex = 0;
+  let editColorIndex = null;
+
+  const days = ['domingo','segunda-feira','terça-feira','quarta-feira','quinta-feira','sexta-feira','sábado'];
+  const months = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+
+  const PALETTE = [
+    { bg: '#ECEBFC', fg: '#4F46E5' },
+    { bg: '#E1F5F2', fg: '#0F766E' },
+    { bg: '#FDF1DF', fg: '#B45309' },
+    { bg: '#FCE7EC', fg: '#BE185D' },
+    { bg: '#E3F2FC', fg: '#0369A1' },
+    { bg: '#E1F5E8', fg: '#15803D' },
+    { bg: '#FDE9DE', fg: '#C2410C' },
+    { bg: '#F1E9FC', fg: '#7C3AED' },
+    { bg: '#DFF6F8', fg: '#0E7490' },
+    { bg: '#EAECEF', fg: '#475569' },
+  ];
+
+  function nextAvailableColorIndex() {
+    return projects.length % PALETTE.length;
+  }
+
+  const ICON_PATHS = {
+    play: 'M232.4,114.49,88.32,26.35a16,16,0,0,0-16.2-.3A15.86,15.86,0,0,0,64,39.87V216.13A15.94,15.94,0,0,0,80,232a16.07,16.07,0,0,0,8.36-2.35L232.4,141.51a15.81,15.81,0,0,0,0-27ZM80,215.94V40l143.83,88Z',
+    pause: 'M200,32H160a16,16,0,0,0-16,16V208a16,16,0,0,0,16,16h40a16,16,0,0,0,16-16V48A16,16,0,0,0,200,32Zm0,176H160V48h40ZM96,32H56A16,16,0,0,0,40,48V208a16,16,0,0,0,16,16H96a16,16,0,0,0,16-16V48A16,16,0,0,0,96,32Zm0,176H56V48H96Z',
+    check: 'M229.66,77.66l-128,128a8,8,0,0,1-11.32,0l-56-56a8,8,0,0,1,11.32-11.32L96,188.69,218.34,66.34a8,8,0,0,1,11.32,11.32Z',
+    counterClockwise: 'M224,128a96,96,0,0,1-94.71,96H128A95.38,95.38,0,0,1,62.1,197.8a8,8,0,0,1,11-11.63A80,80,0,1,0,71.43,71.39a3.07,3.07,0,0,1-.26.25L44.59,96H72a8,8,0,0,1,0,16H24a8,8,0,0,1-8-8V56a8,8,0,0,1,16,0V85.8L60.25,60A96,96,0,0,1,224,128Z',
+    pencil: 'M227.31,73.37,182.63,28.68a16,16,0,0,0-22.63,0L36.69,152A15.86,15.86,0,0,0,32,163.31V208a16,16,0,0,0,16,16H92.69A15.86,15.86,0,0,0,104,219.31L227.31,96a16,16,0,0,0,0-22.63ZM92.69,208H48V163.31l88-88L180.69,120ZM192,108.68,147.31,64l24-24L216,84.68Z',
+    sun: 'M120,40V16a8,8,0,0,1,16,0V40a8,8,0,0,1-16,0Zm72,88a64,64,0,1,1-64-64A64.07,64.07,0,0,1,192,128Zm-16,0a48,48,0,1,0-48,48A48.05,48.05,0,0,0,176,128ZM58.34,69.66A8,8,0,0,0,69.66,58.34l-16-16A8,8,0,0,0,42.34,53.66Zm0,116.68-16,16a8,8,0,0,0,11.32,11.32l16-16a8,8,0,0,0-11.32-11.32ZM192,72a8,8,0,0,0,5.66-2.34l16-16a8,8,0,0,0-11.32-11.32l-16,16A8,8,0,0,0,192,72Zm5.66,114.34a8,8,0,0,0-11.32,11.32l16,16a8,8,0,0,0,11.32-11.32ZM48,128a8,8,0,0,0-8-8H16a8,8,0,0,0,0,16H40A8,8,0,0,0,48,128Zm80,80a8,8,0,0,0-8,8v24a8,8,0,0,0,16,0V216A8,8,0,0,0,128,208Zm112-88H216a8,8,0,0,0,0,16h24a8,8,0,0,0,0-16Z',
+    moon: 'M233.54,142.23a8,8,0,0,0-8-2,88.08,88.08,0,0,1-109.8-109.8,8,8,0,0,0-10-10,104.84,104.84,0,0,0-52.91,37A104,104,0,0,0,136,224a103.09,103.09,0,0,0,62.52-20.88,104.84,104.84,0,0,0,37-52.91A8,8,0,0,0,233.54,142.23ZM188.9,190.34A88,88,0,0,1,65.66,67.11a89,89,0,0,1,31.4-26A106,106,0,0,0,96,56,104.11,104.11,0,0,0,200,160a106,106,0,0,0,14.92-1.06A89,89,0,0,1,188.9,190.34Z',
+  };
+
+  function icon(name, size) {
+    size = size || 14;
+    return `<svg class="icon" width="${size}" height="${size}" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="${ICON_PATHS[name]}"/></svg>`;
+  }
+
+  /* ---------- theme ---------- */
+
+  function getEffectiveTheme() {
+    const attr = document.documentElement.getAttribute('data-theme');
+    if (attr === 'light' || attr === 'dark') return attr;
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  }
+
+  function renderThemeToggleIcon() {
+    const btn = document.getElementById('theme-toggle');
+    if (!btn) return;
+    const eff = getEffectiveTheme();
+    btn.innerHTML = icon(eff === 'dark' ? 'sun' : 'moon', 16);
+  }
+
+  function applyTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    document.documentElement.style.colorScheme = theme;
+    localStorage.setItem('daysk-theme', theme);
+    renderThemeToggleIcon();
+  }
+
+  function toggleTheme() {
+    applyTheme(getEffectiveTheme() === 'dark' ? 'light' : 'dark');
+  }
+
+  function save() {
+    localStorage.setItem('daily-tasks', JSON.stringify(tasks));
+    if (syncMode === 'local') writeToFolder();
+    else if (syncMode === 'gdrive') writeToGoogleDrive();
+  }
+
+  function saveProjects() {
+    localStorage.setItem('daily-projects', JSON.stringify(projects));
+    if (syncMode === 'local') writeToFolder();
+    else if (syncMode === 'gdrive') writeToGoogleDrive();
+  }
+
+  /* ---------- Unified Sync State ---------- */
+  let syncMode = localStorage.getItem('daysk-sync-mode') || 'cache'; // 'cache' | 'local' | 'gdrive'
+  let syncManagerOpen = false;
+  let syncDirHandle = null;
+  let syncStatus = 'checking';
+
+  // Google Drive state
+  let gdriveStatus = 'disconnected'; // 'disconnected' | 'connecting' | 'connected' | 'error' | 'needs-auth'
+  let gdriveAccessToken = localStorage.getItem('daysk-gdrive-token') || null;
+  let gdriveFolderId = localStorage.getItem('daysk-gdrive-folder-id') || null;
+  let gdriveFolderName = localStorage.getItem('daysk-gdrive-folder-name') || 'Daysk';
+  let gdriveUserEmail = localStorage.getItem('daysk-gdrive-email') || null;
+  let gdriveTokenClient = null;
+  let gdriveWriteQueued = false;
+
+  // GOOGLE OAUTH CLIENT ID CONFIGURADO:
+  const DEFAULT_GDRIVE_CLIENT_ID = '664945687530-k0dl56iffpl3f222jvlur6deuoe8h18l.apps.googleusercontent.com';
+
+  function getGDriveClientId() {
+    return localStorage.getItem('daysk-gdrive-client-id') || DEFAULT_GDRIVE_CLIENT_ID;
+  }
+
+  /* ---------- local folder sync (File System Access API) ---------- */
+
+  const IDB_NAME = 'daily-task-fs';
+  const IDB_STORE = 'handles';
+
+  function idbOpen() {
+    return new Promise((resolve, reject) => {
+      const req = indexedDB.open(IDB_NAME, 1);
+      req.onupgradeneeded = () => req.result.createObjectStore(IDB_STORE);
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+  }
+
+  async function idbSet(key, value) {
+    const db = await idbOpen();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(IDB_STORE, 'readwrite');
+      tx.objectStore(IDB_STORE).put(value, key);
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+  }
+
+  async function idbGet(key) {
+    const db = await idbOpen();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(IDB_STORE, 'readonly');
+      const req = tx.objectStore(IDB_STORE).get(key);
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+  }
+
+  async function idbDelete(key) {
+    const db = await idbOpen();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(IDB_STORE, 'readwrite');
+      tx.objectStore(IDB_STORE).delete(key);
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+  }
+
+  async function readFolderFile(name) {
+    try {
+      const fh = await syncDirHandle.getFileHandle(name);
+      const file = await fh.getFile();
+      return await file.text();
+    } catch (e) {
+      return null;
+    }
+  }
+
+  async function writeFolderFile(name, content) {
+    const fh = await syncDirHandle.getFileHandle(name, { create: true });
+    const writable = await fh.createWritable();
+    await writable.write(content);
+    await writable.close();
+  }
+
+  let writeQueued = false;
+  async function writeToFolder() {
+    if (!syncDirHandle || syncStatus !== 'connected') return;
+    if (writeQueued) return;
+    writeQueued = true;
+    try {
+      await writeFolderFile('tasks.json', JSON.stringify(tasks, null, 2));
+      await writeFolderFile('projects.json', JSON.stringify(projects, null, 2));
+    } catch (e) {
+      console.error('Falha ao gravar na pasta sincronizada', e);
+      syncStatus = 'error';
+      updateSyncUI();
+    } finally {
+      writeQueued = false;
+    }
+  }
+
+  async function loadFromFolder() {
+    const t = await readFolderFile('tasks.json');
+    const p = await readFolderFile('projects.json');
+    if (t !== null) { tasks = JSON.parse(t); localStorage.setItem('daily-tasks', t); }
+    if (p !== null) { projects = JSON.parse(p); localStorage.setItem('daily-projects', p); }
+  }
+
+  /* ---------- Google Drive Sync ---------- */
+
+  async function gdriveFetch(url, options = {}) {
+    if (!gdriveAccessToken) throw new Error('Sem token do Google Drive');
+    options.headers = options.headers || {};
+    options.headers['Authorization'] = 'Bearer ' + gdriveAccessToken;
+    const res = await fetch(url, options);
+    if (res.status === 401) {
+      gdriveStatus = 'needs-auth';
+      updateSyncUI();
+      throw new Error('Sessão do Google expirada. Reconecte a conta.');
+    }
+    return res;
+  }
+
+  async function fetchGDriveUserInfo() {
+    try {
+      const res = await gdriveFetch('https://www.googleapis.com/oauth2/v2/userinfo');
+      if (res.ok) {
+        const info = await res.json();
+        gdriveUserEmail = info.email || null;
+        if (gdriveUserEmail) localStorage.setItem('daysk-gdrive-email', gdriveUserEmail);
+      }
+    } catch (e) {
+      console.warn('Não foi possível obter email do usuário Google:', e);
+    }
+  }
+
+  async function findOrCreateGDriveFolder() {
+    if (gdriveFolderId) {
+      try {
+        const res = await gdriveFetch(`https://www.googleapis.com/drive/v3/files/${gdriveFolderId}?fields=id,name,trashed`);
+        if (res.ok) {
+          const data = await res.json();
+          if (!data.trashed) return gdriveFolderId;
+        }
+      } catch(e) {}
+    }
+
+    const q = encodeURIComponent("name = 'Daysk' and mimeType = 'application/vnd.google-apps.folder' and trashed = false");
+    const res = await gdriveFetch(`https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id,name)`);
+    if (res.ok) {
+      const data = await res.json();
+      if (data.files && data.files.length > 0) {
+        gdriveFolderId = data.files[0].id;
+        gdriveFolderName = data.files[0].name;
+        localStorage.setItem('daysk-gdrive-folder-id', gdriveFolderId);
+        localStorage.setItem('daysk-gdrive-folder-name', gdriveFolderName);
+        return gdriveFolderId;
+      }
+    }
+
+    const createRes = await gdriveFetch('https://www.googleapis.com/drive/v3/files', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: 'Daysk',
+        mimeType: 'application/vnd.google-apps.folder'
+      })
+    });
+    if (createRes.ok) {
+      const folder = await createRes.json();
+      gdriveFolderId = folder.id;
+      gdriveFolderName = folder.name;
+      localStorage.setItem('daysk-gdrive-folder-id', gdriveFolderId);
+      localStorage.setItem('daysk-gdrive-folder-name', gdriveFolderName);
+      return gdriveFolderId;
+    }
+    throw new Error('Falha ao criar pasta Daysk no Google Drive');
+  }
+
+  async function findGDriveFileId(filename) {
+    if (!gdriveFolderId) return null;
+    const q = encodeURIComponent(`'${gdriveFolderId}' in parents and name = '${filename}' and trashed = false`);
+    const res = await gdriveFetch(`https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id,name)`);
+    if (res.ok) {
+      const data = await res.json();
+      if (data.files && data.files.length > 0) {
+        return data.files[0].id;
+      }
+    }
+    return null;
+  }
+
+  async function writeGDriveFile(filename, content) {
+    if (!gdriveFolderId) await findOrCreateGDriveFolder();
+    const existingId = await findGDriveFileId(filename);
+
+    if (existingId) {
+      await gdriveFetch(`https://www.googleapis.com/upload/drive/v3/files/${existingId}?uploadType=media`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: content
+      });
+    } else {
+      const metadata = { name: filename, parents: [gdriveFolderId], mimeType: 'application/json' };
+      const boundary = '-------314159265358979323846';
+      const delimiter = "\r\n--" + boundary + "\r\n";
+      const close_delim = "\r\n--" + boundary + "--";
+
+      const multipartRequestBody =
+        delimiter +
+        'Content-Type: application/json\r\n\r\n' +
+        JSON.stringify(metadata) +
+        delimiter +
+        'Content-Type: application/json\r\n\r\n' +
+        content +
+        close_delim;
+
+      await gdriveFetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+        method: 'POST',
+        headers: { 'Content-Type': `multipart/related; boundary="${boundary}"` },
+        body: multipartRequestBody
+      });
+    }
+  }
+
+  async function readGDriveFile(filename) {
+    const fileId = await findGDriveFileId(filename);
+    if (!fileId) return null;
+    const res = await gdriveFetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`);
+    if (res.ok) {
+      return await res.text();
+    }
+    return null;
+  }
+
+  async function writeToGoogleDrive() {
+    if (syncMode !== 'gdrive' || gdriveStatus !== 'connected') return;
+    if (gdriveWriteQueued) return;
+    gdriveWriteQueued = true;
+    try {
+      await writeGDriveFile('tasks.json', JSON.stringify(tasks, null, 2));
+      await writeGDriveFile('projects.json', JSON.stringify(projects, null, 2));
+    } catch (e) {
+      console.error('Falha ao sincronizar com Google Drive:', e);
+    } finally {
+      gdriveWriteQueued = false;
+    }
+  }
+
+  async function loadFromGoogleDrive() {
+    try {
+      const t = await readGDriveFile('tasks.json');
+      const p = await readGDriveFile('projects.json');
+      if (t !== null) { tasks = JSON.parse(t); localStorage.setItem('daily-tasks', t); }
+      if (p !== null) { projects = JSON.parse(p); localStorage.setItem('daily-projects', p); }
+    } catch (e) {
+      console.error('Falha ao carregar dados do Google Drive:', e);
+    }
+  }
+
+  function connectGoogleDrive() {
+    const clientId = getGDriveClientId();
+    if (!clientId) {
+      alert('Configuração do Google Client ID ausente no código. Por favor, defina o DEFAULT_GDRIVE_CLIENT_ID no arquivo index.html.');
+      return;
+    }
+
+    if (typeof google === 'undefined' || !google.accounts || !google.accounts.oauth2) {
+      alert('A biblioteca do Google ainda está sendo carregada. Tente novamente em instantes.');
+      return;
+    }
+
+    gdriveStatus = 'connecting';
+    updateSyncUI();
+
+    gdriveTokenClient = google.accounts.oauth2.initTokenClient({
+      client_id: getGDriveClientId(),
+      scope: 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.email',
+      callback: async (response) => {
+        if (response.error) {
+          console.error('Erro de autorização Google:', response);
+          gdriveStatus = 'error';
+          updateSyncUI();
+          return;
+        }
+        gdriveAccessToken = response.access_token;
+        localStorage.setItem('daysk-gdrive-token', gdriveAccessToken);
+
+        try {
+          await fetchGDriveUserInfo();
+          await findOrCreateGDriveFolder();
+          
+          const existingTasks = await readGDriveFile('tasks.json');
+          const existingProjects = await readGDriveFile('projects.json');
+          if (existingTasks !== null || existingProjects !== null) {
+            const useRemote = confirm('A pasta do Google Drive já possui dados salvos. Clique em OK para usar os dados do Google Drive (substituindo os locais), ou Cancelar para manter os dados atuais e sobrescrever a nuvem.');
+            if (useRemote) {
+              if (existingTasks !== null) tasks = JSON.parse(existingTasks);
+              if (existingProjects !== null) projects = JSON.parse(existingProjects);
+              localStorage.setItem('daily-tasks', JSON.stringify(tasks));
+              localStorage.setItem('daily-projects', JSON.stringify(projects));
+              populateProjectSelect();
+              render();
+            }
+          }
+
+          gdriveStatus = 'connected';
+          switchSyncMode('gdrive');
+          await writeToGoogleDrive();
+        } catch(e) {
+          console.error('Erro ao preparar pasta do Google Drive:', e);
+          gdriveStatus = 'error';
+        }
+        updateSyncUI();
+      }
+    });
+
+    gdriveTokenClient.requestAccessToken({ prompt: '' });
+  }
+
+  function openGoogleDrivePicker() {
+    if (!gdriveAccessToken) {
+      alert('Conecte-se ao Google Drive primeiro.');
+      return;
+    }
+    if (typeof gapi === 'undefined') {
+      alert('Biblioteca do Google API não disponível.');
+      return;
+    }
+
+    gapi.load('picker', () => {
+      const view = new google.picker.DocsView(google.picker.ViewId.FOLDERS)
+        .setMimeTypes('application/vnd.google-apps.folder')
+        .setSelectFolderEnabled(true);
+
+      const picker = new google.picker.PickerBuilder()
+        .addView(view)
+        .setOAuthToken(gdriveAccessToken)
+        .setCallback((data) => {
+          if (data.action === google.picker.Action.PICKED) {
+            const doc = data.docs[0];
+            gdriveFolderId = doc.id;
+            gdriveFolderName = doc.name;
+            localStorage.setItem('daysk-gdrive-folder-id', gdriveFolderId);
+            localStorage.setItem('daysk-gdrive-folder-name', gdriveFolderName);
+            gdriveStatus = 'connected';
+            updateSyncUI();
+            writeToGoogleDrive();
+          }
+        })
+        .build();
+      picker.setVisible(true);
+    });
+  }
+
+  async function disconnectGoogleDrive() {
+    gdriveAccessToken = null;
+    gdriveFolderId = null;
+    gdriveFolderName = 'Daysk';
+    gdriveUserEmail = null;
+    gdriveStatus = 'disconnected';
+    localStorage.removeItem('daysk-gdrive-token');
+    localStorage.removeItem('daysk-gdrive-folder-id');
+    localStorage.removeItem('daysk-gdrive-folder-name');
+    localStorage.removeItem('daysk-gdrive-email');
+    if (syncMode === 'gdrive') {
+      switchSyncMode('cache');
+    } else {
+      updateSyncUI();
+    }
+  }
+
+  function switchSyncMode(mode) {
+    syncMode = mode;
+    localStorage.setItem('daysk-sync-mode', mode);
+    updateSyncUI();
+  }
+
+  function updateSyncUI() {
+    // 1. Radio buttons & Active Cards styling
+    const modes = ['cache', 'local', 'gdrive'];
+    modes.forEach(m => {
+      const card = document.getElementById('sync-opt-' + m);
+      const radio = document.getElementById('radio-sync-' + m);
+      const panel = document.getElementById('sync-panel-' + m);
+      if (card) {
+        if (m === syncMode) {
+          card.classList.add('active');
+          if (radio) radio.checked = true;
+        } else {
+          card.classList.remove('active');
+          if (radio) radio.checked = false;
+        }
+      }
+      if (panel) {
+        panel.style.display = (m === syncMode) ? '' : 'none';
+      }
+    });
+
+    // 2. Local Folder status UI
+    const box = document.getElementById('sync-status-box');
+    const disconnectBtn = document.getElementById('sync-disconnect-btn');
+    const reconnectBtn = document.getElementById('sync-reconnect-btn');
+    if (box) {
+      const labels = {
+        checking: { text: 'Verificando pasta configurada...', cls: 'off' },
+        disconnected: { text: 'Nenhuma pasta local configurada.', cls: 'off' },
+        connected: { text: 'Conectado à pasta "' + (syncDirHandle ? syncDirHandle.name : '') + '". Salvando automaticamente.', cls: 'on' },
+        'needs-permission': { text: 'A permissão de acesso à pasta expirou. Clique em "reconectar".', cls: 'warn' },
+        unsupported: { text: 'Este navegador não suporta sincronização com pasta local (funciona no Chrome/Edge).', cls: 'warn' },
+        error: { text: 'Ocorreu um erro ao acessar a pasta.', cls: 'warn' },
+      };
+      const s = labels[syncStatus] || labels.disconnected;
+      box.className = 'sync-status ' + s.cls;
+      box.textContent = s.text;
+      if (disconnectBtn) disconnectBtn.style.display = (syncStatus === 'connected' || syncStatus === 'needs-permission') ? '' : 'none';
+      if (reconnectBtn) reconnectBtn.style.display = syncStatus === 'needs-permission' ? '' : 'none';
+    }
+
+    // 3. Google Drive status UI
+    const gbox = document.getElementById('gdrive-status-box');
+    const gconnectBtn = document.getElementById('gdrive-connect-btn');
+    const gdisconnectBtn = document.getElementById('gdrive-disconnect-btn');
+    const gpickerBtn = document.getElementById('gdrive-picker-btn');
+
+    if (gbox) {
+      if (gdriveAccessToken && gdriveFolderId) {
+        gdriveStatus = 'connected';
+      }
+      const glabels = {
+        disconnected: { text: 'Não conectado ao Google Drive.', cls: 'off' },
+        connecting: { text: 'Autenticando no Google...', cls: 'off' },
+        connected: { text: 'Conectado como ' + (gdriveUserEmail || 'Google User') + ' | Pasta: "' + gdriveFolderName + '". Salvando automaticamente.', cls: 'on' },
+        'needs-auth': { text: 'Sessão expirada. Clique em reconectar.', cls: 'warn' },
+        error: { text: 'Erro na conexão com Google Drive. Verifique seu Client ID.', cls: 'warn' }
+      };
+      const gs = glabels[gdriveStatus] || glabels.disconnected;
+      gbox.className = 'sync-status ' + gs.cls;
+      gbox.textContent = gs.text;
+
+      if (gconnectBtn) {
+        gconnectBtn.textContent = (gdriveStatus === 'needs-auth' || gdriveStatus === 'error') ? 'reconectar Google Drive' : 'conectar Google Drive';
+        gconnectBtn.style.display = (gdriveStatus === 'connected') ? 'none' : '';
+      }
+      if (gdisconnectBtn) gdisconnectBtn.style.display = (gdriveStatus === 'connected' || gdriveStatus === 'needs-auth') ? '' : 'none';
+      if (gpickerBtn) gpickerBtn.style.display = (gdriveStatus === 'connected') ? '' : 'none';
+    }
+  }
+
+  async function initSync() {
+    if ('showDirectoryPicker' in window) {
+      try {
+        const handle = await idbGet('syncDir');
+        if (handle) {
+          syncDirHandle = handle;
+          const perm = await handle.queryPermission({ mode: 'readwrite' });
+          if (perm === 'granted') {
+            syncStatus = 'connected';
+            if (syncMode === 'local') {
+              await loadFromFolder();
+              populateProjectSelect();
+              render();
+              if (currentTab === 'report') renderReport();
+            }
+          } else {
+            syncStatus = 'needs-permission';
+          }
+        } else {
+          syncStatus = 'disconnected';
+        }
+      } catch (e) {
+        syncStatus = 'error';
+      }
+    } else {
+      syncStatus = 'unsupported';
+    }
+
+    if (gdriveAccessToken && gdriveFolderId) {
+      gdriveStatus = 'connected';
+      if (syncMode === 'gdrive') {
+        try {
+          await loadFromGoogleDrive();
+          populateProjectSelect();
+          render();
+          if (currentTab === 'report') renderReport();
+        } catch (e) {
+          console.warn('Erro na carga do Google Drive:', e);
+        }
+      }
+    }
+
+    updateSyncUI();
+  }
+
+  async function reconnectSyncFolder() {
+    if (!syncDirHandle) return;
+    try {
+      const perm = await syncDirHandle.requestPermission({ mode: 'readwrite' });
+      if (perm === 'granted') {
+        syncStatus = 'connected';
+        await loadFromFolder();
+        populateProjectSelect();
+        render();
+        if (currentTab === 'report') renderReport();
+      } else {
+        syncStatus = 'needs-permission';
+      }
+    } catch (e) {
+      console.error('Falha ao reconectar pasta', e);
+      syncStatus = 'error';
+    }
+    updateSyncUI();
+  }
+
+  async function chooseSyncFolder() {
+    if (!('showDirectoryPicker' in window)) {
+      alert('Este navegador não suporta este recurso. Use Chrome ou Edge no computador.');
+      return;
+    }
+    try {
+      const handle = await window.showDirectoryPicker({ mode: 'readwrite' });
+      syncDirHandle = handle;
+      const existingTasks = await readFolderFile('tasks.json');
+      const existingProjects = await readFolderFile('projects.json');
+      if (existingTasks !== null || existingProjects !== null) {
+        const useFolder = confirm('Esta pasta já contém dados salvos. Clique em OK para usar os dados da pasta (substituindo os desta aba), ou Cancelar para manter os dados atuais e sobrescrever a pasta.');
+        if (useFolder) {
+          if (existingTasks !== null) tasks = JSON.parse(existingTasks);
+          if (existingProjects !== null) projects = JSON.parse(existingProjects);
+          localStorage.setItem('daily-tasks', JSON.stringify(tasks));
+          localStorage.setItem('daily-projects', JSON.stringify(projects));
+        }
+      }
+      await idbSet('syncDir', handle);
+      syncStatus = 'connected';
+      switchSyncMode('local');
+      await writeFolderFile('tasks.json', JSON.stringify(tasks, null, 2));
+      await writeFolderFile('projects.json', JSON.stringify(projects, null, 2));
+      populateProjectSelect();
+      render();
+      if (currentTab === 'report') renderReport();
+    } catch (e) {
+      if (e.name !== 'AbortError') {
+        console.error('Falha ao conectar pasta', e);
+        syncStatus = 'error';
+        alert('Não foi possível conectar à pasta.');
+      }
+    }
+    updateSyncUI();
+  }
+
+  async function disconnectSyncFolder() {
+    syncDirHandle = null;
+    syncStatus = 'disconnected';
+    await idbDelete('syncDir');
+    if (syncMode === 'local') switchSyncMode('cache');
+    else updateSyncUI();
+  }
+
+  function openSyncManager() {
+    syncManagerOpen = true;
+    updateSyncUI();
+    document.getElementById('sync-overlay').classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeSyncManager() {
+    syncManagerOpen = false;
+    document.getElementById('sync-overlay').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  function todayStr() {
+    const d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+
+  function tomorrowStr() {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+
+  function getTaskContext(t) {
+    if (t.context === 'later') return 'later';
+    if (!t.date || !t.time) return 'later';
+    if (t.date === tomorrowStr()) return 'tomorrow';
+    if (t.date === todayStr() || t.date < todayStr()) return 'today';
+    return 'later';
+  }
+
+  function getNowMins() {
+    const d = new Date();
+    return d.getHours() * 60 + d.getMinutes();
+  }
+
+  function toMins(t) {
+    const [h, m] = t.split(':').map(Number);
+    return h * 60 + m;
+  }
+
+  function minsToHm(m) {
+    const h = Math.floor(Math.abs(m) / 60);
+    const mm = Math.abs(m) % 60;
+    if (h === 0) return mm + 'min';
+    return h + 'h' + (mm ? mm + 'min' : '');
+  }
+
+  function padTime(m) {
+    const h = String(Math.floor(m / 60)).padStart(2, '0');
+    const mm = String(m % 60).padStart(2, '0');
+    return h + ':' + mm;
+  }
+
+  function effectiveElapsed(t) {
+    let e = t.elapsed || 0;
+    if (t.status === 'active' && t.startedAt) e += Date.now() - t.startedAt;
+    return e;
+  }
+
+  function statusTitle(s) {
+    return { pending: 'pendente', active: 'em andamento', paused: 'pausada', done: 'concluída' }[s] || s;
+  }
+
+  /* ---------- migration & setup ---------- */
+
+  function ensureDefaultProject() {
+    if (projects.length === 0) {
+      projects.push({ id: 'default', name: 'Geral', colorIndex: 0 });
+      saveProjects();
+    }
+  }
+
+  function migrate() {
+    let changed = false;
+    tasks.forEach(t => {
+      if (!t.status) {
+        changed = true;
+        t.status = t.done ? 'done' : 'pending';
+        t.elapsed = t.done ? (t.dur || 0) * 60000 : 0;
+        t.startedAt = null;
+        if (!t.context) t.context = (t.date || t.time) ? 'today' : 'later';
+        if (!t.date && t.context === 'today') t.date = todayStr();
+        if (t.tag && !t.projectId) {
+          const names = { work: 'Trabalho', break: 'Pausa', personal: 'Pessoal' };
+          const nm = names[t.tag] || 'Geral';
+          let p = projects.find(pr => pr.name === nm);
+          if (!p) {
+            const idx = { work: 0, break: 1, personal: 2 }[t.tag] || 0;
+            p = { id: 'legacy-' + t.tag, name: nm, colorIndex: idx };
+            projects.push(p);
+          }
+          t.projectId = p.id;
+        }
+        if (!t.projectId) t.projectId = projects[0].id;
+        delete t.done;
+        delete t.tag;
+      } else if (!t.context) {
+        t.context = (t.date || t.time) ? 'today' : 'later';
+        changed = true;
+      }
+    });
+    if (changed) { save(); saveProjects(); }
+  }
+
+  /* ---------- projects ---------- */
+
+  function populateProjectSelect() {
+    const sel = document.getElementById('f-project');
+    const prevVal = sel.value;
+    sel.innerHTML = projects.map(p => `<option value="${p.id}">${p.name}</option>`).join('')
+      + '<option value="__new__">＋ novo projeto...</option>';
+    if (projects.some(p => p.id === prevVal)) sel.value = prevVal;
+  }
+
+  function toggleNewProject(force) {
+    const row = document.getElementById('new-project-row');
+    const open = typeof force === 'boolean' ? force : !row.classList.contains('open');
+    row.classList.toggle('open', open);
+    if (open) document.getElementById('np-name').focus();
+  }
+
+  function createProject() {
+    const name = document.getElementById('np-name').value.trim();
+    if (!name) { document.getElementById('np-name').focus(); return; }
+    const p = { id: 'p' + Date.now(), name, colorIndex: nextAvailableColorIndex() };
+    projects.push(p);
+    saveProjects();
+    populateProjectSelect();
+    document.getElementById('f-project').value = p.id;
+    document.getElementById('np-name').value = '';
+    toggleNewProject(false);
+  }
+
+  function deleteProject(pid) {
+    const proj = projects.find(p => p.id === pid);
+    if (!proj) return;
+    if (projects.length <= 1) { alert('Não é possível excluir o único projeto existente.'); return; }
+    const affected = tasks.filter(t => t.projectId === pid);
+    if (affected.length) {
+      const fallback = projects.find(p => p.id !== pid);
+      const ok = confirm(`"${proj.name}" tem ${affected.length} tarefa(s). Elas serão movidas para "${fallback.name}". Deseja continuar?`);
+      if (!ok) return;
+      affected.forEach(t => t.projectId = fallback.id);
+      save();
+    }
+    projects = projects.filter(p => p.id !== pid);
+    saveProjects();
+    populateProjectSelect();
+    renderProjectsManager();
+    render();
+    if (currentTab === 'report') renderReport();
+  }
+
+  function projectTagHtml(t) {
+    const proj = projects.find(p => p.id === t.projectId);
+    if (!proj) return '';
+    const c = PALETTE[proj.colorIndex % PALETTE.length];
+    return `<span class="tag" style="background:${c.bg};color:${c.fg}">${proj.name}</span>`;
+  }
+
+  /* ---------- projects manager ---------- */
+
+  function swatchGridHtml(idPrefix, selectedIndex, handlerName) {
+    return `<div class="swatch-grid" id="${idPrefix}-swatches">` + PALETTE.map((c, i) =>
+      `<button type="button" class="color-swatch${i === selectedIndex ? ' selected' : ''}" style="background:${c.fg}" onclick="${handlerName}(${i})" title="Cor ${i + 1}"></button>`
+    ).join('') + `</div>`;
+  }
+
+  function selectDraftColor(i) {
+    draftColorIndex = i;
+    document.querySelectorAll('#draft-swatches .color-swatch').forEach((el, idx) => el.classList.toggle('selected', idx === i));
+  }
+
+  function selectEditColor(i) {
+    editColorIndex = i;
+    document.querySelectorAll('#edit-swatches .color-swatch').forEach((el, idx) => el.classList.toggle('selected', idx === i));
+  }
+
+  function projectRowHtml(p) {
+    const count = tasks.filter(t => t.projectId === p.id).length;
+    const c = PALETTE[p.colorIndex % PALETTE.length];
+    return `<div class="project-row">
+      <span class="project-dot" style="background:${c.fg}"></span>
+      <span class="project-row-name">${p.name}</span>
+      <span class="project-row-count">${count} tarefa(s)</span>
+      <button class="btn-icon" onclick="startEditProject('${p.id}')" title="Editar">${icon('pencil')}</button>
+      <button class="btn-mini-del" onclick="deleteProject('${p.id}')" title="Remover projeto"><svg class="icon" width="16" height="16" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M216,48H176V40a24,24,0,0,0-24-24H104A24,24,0,0,0,80,40v8H40a8,8,0,0,0,0,16h8V208a16,16,0,0,0,16,16H192a16,16,0,0,0,16-16V64h8a8,8,0,0,0,0-16ZM96,40a8,8,0,0,1,8-8h48a8,8,0,0,1,8,8v8H96Zm96,168H64V64H192ZM112,104v64a8,8,0,0,1-16,0V104a8,8,0,0,1,16,0Zm48,0v64a8,8,0,0,1-16,0V104a8,8,0,0,1,16,0Z"/></svg></button>
+    </div>`;
+  }
+
+  function projectEditRowHtml(p) {
+    return `<div class="project-edit-row">
+      <input type="text" id="edit-proj-name" value="${p.name}">
+      ${swatchGridHtml('edit', editColorIndex, 'selectEditColor')}
+      <div class="project-edit-actions">
+        <button class="btn-cancel-form" onclick="cancelEditProject()">cancelar</button>
+        <button class="btn-save" onclick="saveEditProject('${p.id}')">salvar</button>
+      </div>
+    </div>`;
+  }
+
+  function renderProjectsManager() {
+    const list = document.getElementById('projects-list');
+    list.innerHTML = projects.map(p => p.id === editingProjectId ? projectEditRowHtml(p) : projectRowHtml(p)).join('');
+    document.getElementById('draft-swatches-wrap').innerHTML = swatchGridHtml('draft', draftColorIndex, 'selectDraftColor');
+  }
+
+  function startEditProject(id) {
+    const p = projects.find(x => x.id === id);
+    if (!p) return;
+    editingProjectId = id;
+    editColorIndex = p.colorIndex;
+    renderProjectsManager();
+  }
+
+  function cancelEditProject() {
+    editingProjectId = null;
+    renderProjectsManager();
+  }
+
+  function saveEditProject(id) {
+    const nameInput = document.getElementById('edit-proj-name');
+    const name = nameInput.value.trim();
+    if (!name) { nameInput.focus(); return; }
+    const p = projects.find(x => x.id === id);
+    if (p) { p.name = name; p.colorIndex = editColorIndex; }
+    saveProjects();
+    populateProjectSelect();
+    editingProjectId = null;
+    renderProjectsManager();
+    render();
+    if (currentTab === 'report') renderReport();
+  }
+
+  function addProjectFromManager() {
+    const nameInput = document.getElementById('new-proj-name');
+    const name = nameInput.value.trim();
+    if (!name) { nameInput.focus(); return; }
+    const p = { id: 'p' + Date.now(), name, colorIndex: draftColorIndex };
+    projects.push(p);
+    saveProjects();
+    populateProjectSelect();
+    nameInput.value = '';
+    draftColorIndex = nextAvailableColorIndex();
+    renderProjectsManager();
+  }
+
+  function openProjectsManager() {
+    projectsManagerOpen = true;
+    editingProjectId = null;
+    draftColorIndex = nextAvailableColorIndex();
+    renderProjectsManager();
+    document.getElementById('new-proj-name').value = '';
+    document.getElementById('projects-overlay').classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeProjectsManager() {
+    projectsManagerOpen = false;
+    editingProjectId = null;
+    document.getElementById('projects-overlay').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  /* ---------- form / tabs ---------- */
+
+  function openFormPanel() {
+    formOpen = true;
+    document.getElementById('form-overlay').classList.add('open');
+    document.body.style.overflow = 'hidden';
+    setTimeout(() => document.getElementById('f-name').focus(), 50);
+  }
+
+  function closeForm() {
+    formOpen = false;
+    document.getElementById('form-overlay').classList.remove('open');
+    document.body.style.overflow = '';
+    toggleNewProject(false);
+    editingId = null;
+  }
+
+  let currentContext = 'today';
+  let currentFormContext = 'today';
+  let schedulingTaskId = null;
+  let selectedSchedContext = 'today';
+
+  function setTaskContext(ctx) {
+    currentContext = ctx;
+    document.querySelectorAll('.context-pill').forEach(b => {
+      b.classList.toggle('active', b.dataset.context === ctx);
+    });
+    render();
+  }
+
+  function selectFormContext(ctx) {
+    currentFormContext = ctx;
+    document.getElementById('btn-ctx-today').classList.toggle('active', ctx === 'today');
+    document.getElementById('btn-ctx-tomorrow').classList.toggle('active', ctx === 'tomorrow');
+    document.getElementById('btn-ctx-later').classList.toggle('active', ctx === 'later');
+
+    const timeDurRow = document.getElementById('form-row-time-dur');
+    if (timeDurRow) {
+      timeDurRow.style.display = ctx === 'later' ? 'none' : 'grid';
+    }
+  }
+
+  function openCreateForm() {
+    editingId = null;
+    document.getElementById('form-title').textContent = 'Nova atividade';
+    document.getElementById('btn-save-task').textContent = 'salvar';
+    document.getElementById('f-name').value = '';
+    document.getElementById('f-time').value = '09:00';
+    document.getElementById('f-dur').value = 60;
+    populateProjectSelect();
+    document.getElementById('f-project').value = projects[0] ? projects[0].id : '';
+    selectFormContext(currentContext || 'today');
+    openFormPanel();
+  }
+
+  function openEditForm(id) {
+    const t = tasks.find(x => x.id === id);
+    if (!t) return;
+    editingId = id;
+    document.getElementById('form-title').textContent = 'Editar atividade';
+    document.getElementById('btn-save-task').textContent = 'salvar alterações';
+    document.getElementById('f-name').value = t.name;
+    document.getElementById('f-time').value = t.time || '09:00';
+    document.getElementById('f-dur').value = t.dur || 60;
+    populateProjectSelect();
+    document.getElementById('f-project').value = t.projectId;
+    const ctx = getTaskContext(t);
+    selectFormContext(ctx);
+    openFormPanel();
+  }
+
+  function saveTask() {
+    const name = document.getElementById('f-name').value.trim();
+    let projectId = document.getElementById('f-project').value;
+    if (!projectId || projectId === '__new__') projectId = projects[0].id;
+    if (!name) { document.getElementById('f-name').focus(); return; }
+
+    let time = null;
+    let dur = null;
+    let date = null;
+
+    if (currentFormContext === 'today') {
+      time = document.getElementById('f-time').value || '09:00';
+      dur = parseInt(document.getElementById('f-dur').value) || 60;
+      date = todayStr();
+    } else if (currentFormContext === 'tomorrow') {
+      time = document.getElementById('f-time').value || '09:00';
+      dur = parseInt(document.getElementById('f-dur').value) || 60;
+      date = tomorrowStr();
+    } else {
+      time = null;
+      dur = null;
+      date = null;
+    }
+
+    if (editingId) {
+      const t = tasks.find(x => x.id === editingId);
+      if (t) {
+        t.name = name;
+        t.time = time;
+        t.dur = dur;
+        t.projectId = projectId;
+        t.context = currentFormContext;
+        t.date = date;
+      }
+    } else {
+      tasks.push({
+        id: Date.now().toString(),
+        name,
+        time,
+        dur,
+        projectId,
+        status: 'pending',
+        elapsed: 0,
+        startedAt: null,
+        date,
+        context: currentFormContext
+      });
+    }
+    save();
+    closeForm();
+    render();
+  }
+
+  /* Quick schedule modal functions */
+  function openQuickScheduleModal(id) {
+    const t = tasks.find(x => x.id === id);
+    if (!t) return;
+    schedulingTaskId = id;
+    selectedSchedContext = 'today';
+    document.getElementById('sched-task-name').textContent = t.name;
+    document.getElementById('sched-time').value = t.time || '09:00';
+    document.getElementById('sched-dur').value = t.dur || 60;
+    selectSchedContext('today');
+    document.getElementById('schedule-overlay').classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeScheduleModal() {
+    schedulingTaskId = null;
+    document.getElementById('schedule-overlay').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  function selectSchedContext(ctx) {
+    selectedSchedContext = ctx;
+    document.getElementById('sched-ctx-today').classList.toggle('active', ctx === 'today');
+    document.getElementById('sched-ctx-tomorrow').classList.toggle('active', ctx === 'tomorrow');
+  }
+
+  function saveQuickSchedule() {
+    if (!schedulingTaskId) return;
+    const t = tasks.find(x => x.id === schedulingTaskId);
+    if (!t) return;
+    const time = document.getElementById('sched-time').value || '09:00';
+    const dur = parseInt(document.getElementById('sched-dur').value) || 60;
+
+    t.time = time;
+    t.dur = dur;
+    if (selectedSchedContext === 'today') {
+      t.date = todayStr();
+      t.context = 'today';
+    } else {
+      t.date = tomorrowStr();
+      t.context = 'tomorrow';
+    }
+
+    save();
+    closeScheduleModal();
+    render();
+  }
+
+  function switchTab(tab) {
+    currentTab = tab;
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+    document.getElementById('view-today').style.display = tab === 'today' ? '' : 'none';
+    document.getElementById('view-report').style.display = tab === 'report' ? '' : 'none';
+    document.getElementById('btn-add').style.display = tab === 'today' ? '' : 'none';
+    if (tab === 'report') renderReport(); else render();
+  }
+
+  function setPeriod(p) {
+    currentPeriod = p;
+    document.querySelectorAll('#view-report .period-btn').forEach(b => b.classList.toggle('active', b.dataset.period === p));
+    renderReport();
+  }
+
+  function setListView(v) {
+    listView = v;
+    document.querySelectorAll('.view-btn').forEach(b => b.classList.toggle('active', b.dataset.view === v));
+    render();
+  }
+
+  /* ---------- task lifecycle ---------- */
+
+  function startTask(id) {
+    const now = Date.now();
+    tasks.forEach(t => {
+      if (t.status === 'active' && t.id !== id) {
+        t.elapsed = (t.elapsed || 0) + (now - t.startedAt);
+        t.status = 'paused';
+        t.startedAt = null;
+      }
+    });
+    const t = tasks.find(x => x.id === id);
+    if (t) { t.status = 'active'; t.startedAt = now; }
+    save();
+    render();
+  }
+
+  function pauseTask(id) {
+    const t = tasks.find(x => x.id === id);
+    if (t && t.status === 'active') {
+      t.elapsed = (t.elapsed || 0) + (Date.now() - t.startedAt);
+      t.status = 'paused';
+      t.startedAt = null;
+      save();
+      render();
+    }
+  }
+
+  function completeTask(id) {
+    const t = tasks.find(x => x.id === id);
+    if (!t) return;
+    if (t.status === 'active') {
+      t.elapsed = (t.elapsed || 0) + (Date.now() - t.startedAt);
+      t.startedAt = null;
+    }
+    t.status = 'done';
+    t.completedAt = Date.now();
+    save();
+    render();
+  }
+
+  function reopenTask(id) {
+    const t = tasks.find(x => x.id === id);
+    if (t) { t.status = 'pending'; save(); render(); }
+  }
+
+  function del(id) {
+    tasks = tasks.filter(x => x.id !== id);
+    save();
+    render();
+  }
+
+  function actionButtons(t) {
+    if (t.status === 'pending') return `<button class="btn-icon btn-start" onclick="startTask('${t.id}')" title="Iniciar">${icon('play')}</button>`;
+    if (t.status === 'active') return `<button class="btn-icon" onclick="pauseTask('${t.id}')" title="Pausar">${icon('pause')}</button><button class="btn-icon btn-complete" onclick="completeTask('${t.id}')" title="Concluir">${icon('check')}</button>`;
+    if (t.status === 'paused') return `<button class="btn-icon btn-start" onclick="startTask('${t.id}')" title="Retomar">${icon('play')}</button><button class="btn-icon btn-complete" onclick="completeTask('${t.id}')" title="Concluir">${icon('check')}</button>`;
+    if (t.status === 'done') return `<button class="btn-icon" onclick="reopenTask('${t.id}')" title="Reabrir">${icon('counterClockwise')}</button>`;
+    return '';
+  }
+
+  function getProgress(t) {
+    if (!t.dur || !t.time) return { pct: 0, label: 'Sem horário', cls: 'pending' };
+    const plannedMs = t.dur * 60000;
+    const spent = effectiveElapsed(t);
+    if (t.status === 'done') {
+      const pct = plannedMs ? Math.min(100, Math.round(spent / plannedMs * 100)) : 100;
+      return { pct, label: minsToHm(Math.round(spent / 60000)) + ' registrado', cls: 'done-fill' };
+    }
+    if (t.status === 'active') {
+      const pct = plannedMs ? Math.min(100, Math.round(spent / plannedMs * 100)) : 0;
+      return { pct, label: minsToHm(Math.round(spent / 60000)) + ' em andamento', cls: 'active' };
+    }
+    if (t.status === 'paused') {
+      const pct = plannedMs ? Math.min(100, Math.round(spent / plannedMs * 100)) : 0;
+      return { pct, label: minsToHm(Math.round(spent / 60000)) + ' pausado', cls: 'paused-fill' };
+    }
+    if (getTaskContext(t) === 'tomorrow') {
+      return { pct: 0, label: 'previsto p/ amanhã', cls: 'pending' };
+    }
+    const now = getNowMins();
+    const start = toMins(t.time);
+    const end = start + t.dur;
+    if (now < start) return { pct: 0, label: 'em ' + minsToHm(start - now), cls: 'pending' };
+    if (now >= end) return { pct: 100, label: 'atrasada', cls: 'ended' };
+    const pct = Math.round(((now - start) / t.dur) * 100);
+    return { pct, label: 'previsto', cls: 'pending' };
+  }
+
+  /* ---------- render: today ---------- */
+
+  function updateHeader() {
+    const d = new Date();
+    const dayName = days[d.getDay()];
+    const dateStr = d.getDate() + ' de ' + months[d.getMonth()] + ' de ' + d.getFullYear();
+    document.getElementById('day-label').textContent = dayName;
+    document.getElementById('date-label').textContent = dateStr;
+    const h = String(d.getHours()).padStart(2, '0');
+    const m = String(d.getMinutes()).padStart(2, '0');
+    document.getElementById('clock').textContent = h + ':' + m;
+  }
+
+  function taskRowHtml(t, opts) {
+    opts = opts || {};
+    const showTag = opts.showTag !== false;
+    const ctx = getTaskContext(t);
+
+    if (ctx === 'later' || !t.time) {
+      return `
+        <div class="task-row status-${t.status}">
+          <div class="status-dot ${t.status}" title="${statusTitle(t.status)}"></div>
+          <div class="time-block">
+            <span class="later-badge">fazer depois</span>
+          </div>
+          <div class="task-info">
+            <div class="task-top">
+              <span class="task-name">${t.name}</span>
+              ${showTag ? projectTagHtml(t) : ''}
+            </div>
+            <div class="progress-row">
+              <span class="bar-label">Sem horário definido</span>
+            </div>
+          </div>
+          <div class="task-actions">
+            <button class="btn-schedule" onclick="openQuickScheduleModal('${t.id}')" title="Agendar para hoje ou amanhã">
+              <svg class="icon" width="14" height="14" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M208,32H184V24a8,8,0,0,0-16,0v8H88V24a8,8,0,0,0-16,0v8H48A16,16,0,0,0,32,48V208a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V48A16,16,0,0,0,208,32ZM48,48H72v8a8,8,0,0,0,16,0V48h80v8a8,8,0,0,0,16,0V48h24V80H48ZM208,208H48V96H208V208Z"/></svg>
+              Agendar
+            </button>
+            <button class="btn-icon" onclick="openEditForm('${t.id}')" title="Editar">${icon('pencil')}</button>
+            ${actionButtons(t)}
+            <button class="btn-del" onclick="del('${t.id}')" title="Remover"><svg class="icon" width="16" height="16" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M216,48H176V40a24,24,0,0,0-24-24H104A24,24,0,0,0,80,40v8H40a8,8,0,0,0,0,16h8V208a16,16,0,0,0,16,16H192a16,16,0,0,0,16-16V64h8a8,8,0,0,0,0-16ZM96,40a8,8,0,0,1,8-8h48a8,8,0,0,1,8,8v8H96Zm96,168H64V64H192ZM112,104v64a8,8,0,0,1-16,0V104a8,8,0,0,1,16,0Zm48,0v64a8,8,0,0,1-16,0V104a8,8,0,0,1,16,0Z"/></svg></button>
+          </div>
+        </div>`;
+    }
+
+    const p = getProgress(t);
+    return `
+      <div class="task-row status-${t.status}">
+        <div class="status-dot ${t.status}" title="${statusTitle(t.status)}"></div>
+        <div class="time-block">
+          <span class="time-val">${t.time}</span>
+          <span class="time-end">${padTime(toMins(t.time) + (t.dur || 0))} · ${minsToHm(t.dur || 0)}</span>
+        </div>
+        <div class="task-info">
+          <div class="task-top">
+            <span class="task-name">${t.name}</span>
+            ${showTag ? projectTagHtml(t) : ''}
+          </div>
+          <div class="progress-row">
+            <div class="bar-track"><div class="bar-fill ${p.cls}" id="bar-${t.id}" style="width:${p.pct}%"></div></div>
+            <span class="bar-label" id="barlbl-${t.id}">${p.label}</span>
+          </div>
+        </div>
+        <div class="task-actions">
+          <button class="btn-icon" onclick="openEditForm('${t.id}')" title="Editar">${icon('pencil')}</button>
+          ${actionButtons(t)}
+          <button class="btn-del" onclick="del('${t.id}')" title="Remover"><svg class="icon" width="16" height="16" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M216,48H176V40a24,24,0,0,0-24-24H104A24,24,0,0,0,80,40v8H40a8,8,0,0,0,0,16h8V208a16,16,0,0,0,16,16H192a16,16,0,0,0,16-16V64h8a8,8,0,0,0,0-16ZM96,40a8,8,0,0,1,8-8h48a8,8,0,0,1,8,8v8H96Zm96,168H64V64H192ZM112,104v64a8,8,0,0,1-16,0V104a8,8,0,0,1,16,0Zm48,0v64a8,8,0,0,1-16,0V104a8,8,0,0,1,16,0Z"/></svg></button>
+        </div>
+      </div>`;
+  }
+
+  function renderChronological(todays) {
+    const sorted = [...todays].sort((a, b) => toMins(a.time) - toMins(b.time));
+    const now = getNowMins();
+    let html = '';
+    let nowInserted = false;
+    sorted.forEach((t, i) => {
+      const start = toMins(t.time);
+      const end = start + (t.dur || 0);
+      if (t.status !== 'done' && !nowInserted && start <= now && now <= end) {
+        html += `<div class="now-line"><div class="now-dot"></div><span class="now-label">agora · ${padTime(now)}</span></div>`;
+        nowInserted = true;
+      } else if (!nowInserted && start > now && i === 0) {
+        html += `<div class="now-line"><div class="now-dot"></div><span class="now-label">agora · ${padTime(now)}</span></div>`;
+        nowInserted = true;
+      }
+      html += taskRowHtml(t);
+    });
+    return html;
+  }
+
+  function renderGroupedByProject(todays) {
+    let html = '';
+    projects.forEach(p => {
+      const group = todays.filter(t => t.projectId === p.id).sort((a, b) => toMins(a.time) - toMins(b.time));
+      if (!group.length) return;
+      const c = PALETTE[p.colorIndex % PALETTE.length];
+      const totalDur = group.reduce((s, t) => s + (t.dur || 0), 0);
+      html += `<div class="project-group">
+        <div class="project-group-header">
+          <span class="project-dot" style="background:${c.fg}"></span>
+          <span class="project-group-name">${p.name}</span>
+          <span class="project-group-meta">${group.length} · ${minsToHm(totalDur)}</span>
+        </div>
+        <div class="project-group-tasks">
+          ${group.map(t => taskRowHtml(t, { showTag: false })).join('')}
+        </div>
+      </div>`;
+    });
+    return html;
+  }
+
+  function updateContextBadges() {
+    const countToday = tasks.filter(t => getTaskContext(t) === 'today').length;
+    const countTomorrow = tasks.filter(t => getTaskContext(t) === 'tomorrow').length;
+    const countLater = tasks.filter(t => getTaskContext(t) === 'later').length;
+
+    const elToday = document.getElementById('count-today');
+    const elTomorrow = document.getElementById('count-tomorrow');
+    const elLater = document.getElementById('count-later');
+    if (elToday) elToday.textContent = countToday;
+    if (elTomorrow) elTomorrow.textContent = countTomorrow;
+    if (elLater) elLater.textContent = countLater;
+  }
+
+  function render() {
+    updateHeader();
+    updateContextBadges();
+
+    const currentTasks = tasks.filter(t => getTaskContext(t) === currentContext);
+    const list = document.getElementById('task-list');
+
+    const viewOptionsBar = document.getElementById('view-options-bar');
+    if (viewOptionsBar) {
+      viewOptionsBar.style.display = currentContext === 'later' ? 'none' : 'flex';
+    }
+
+    if (!currentTasks.length) {
+      const emptyMsg = currentContext === 'today' ? 'nenhuma atividade para hoje — adicione a primeira acima' :
+                       currentContext === 'tomorrow' ? 'nenhuma atividade agendada para amanhã' :
+                       'nenhuma atividade em "fazer depois"';
+      list.innerHTML = `<div class="empty">${emptyMsg}</div>`;
+    } else {
+      if (currentContext === 'later') {
+        list.innerHTML = currentTasks.map(t => taskRowHtml(t)).join('');
+      } else {
+        list.innerHTML = listView === 'project' ? renderGroupedByProject(currentTasks) : renderChronological(currentTasks);
+      }
+    }
+
+    const done = currentTasks.filter(t => t.status === 'done').length;
+    const totalMin = currentTasks.reduce((s, t) => s + (t.dur || 0), 0);
+    const pct = currentTasks.length ? Math.round((done / currentTasks.length) * 100) : 0;
+    document.getElementById('s-total').textContent = currentTasks.length;
+    document.getElementById('s-done').textContent = done;
+    document.getElementById('s-hours').textContent = minsToHm(totalMin);
+    document.getElementById('s-pct').textContent = pct + '%';
+
+    if (currentTab === 'report') renderReport();
+  }
+
+  /* ---------- render: report ---------- */
+
+  /* ---------- render: report & charts (TickTick / Todoist style) ---------- */
+
+  let chartDistribution = null;
+  let chartCurve = null;
+  let chartDonut = null;
+  let currentCurveMetric = 'tasks';
+
+  function setCurveMetric(metric) {
+    currentCurveMetric = metric;
+    document.querySelectorAll('#curve-metric-pills .pill-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.metric === metric);
+    });
+    renderReport();
+  }
+
+  function getWeekRange() {
+    const d = new Date();
+    const day = d.getDay();
+    const diffToMonday = (day === 0 ? -6 : 1 - day);
+    const monday = new Date(d);
+    monday.setDate(d.getDate() + diffToMonday);
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+    const fmt = x => x.getFullYear() + '-' + String(x.getMonth() + 1).padStart(2, '0') + '-' + String(x.getDate()).padStart(2, '0');
+    return [fmt(monday), fmt(sunday)];
+  }
+
+  function getPreviousDateStr(ds) {
+    const d = new Date(ds + 'T00:00:00');
+    d.setDate(d.getDate() - 1);
+    const fmt = x => x.getFullYear() + '-' + String(x.getMonth() + 1).padStart(2, '0') + '-' + String(x.getDate()).padStart(2, '0');
+    return fmt(d);
+  }
+
+  function getPreviousWeekRange() {
+    const [ws] = getWeekRange();
+    const dMon = new Date(ws + 'T00:00:00');
+    dMon.setDate(dMon.getDate() - 7);
+    const dSun = new Date(dMon);
+    dSun.setDate(dMon.getDate() + 6);
+    const fmt = x => x.getFullYear() + '-' + String(x.getMonth() + 1).padStart(2, '0') + '-' + String(x.getDate()).padStart(2, '0');
+    return [fmt(dMon), fmt(dSun)];
+  }
+
+  function getPreviousMonthStr() {
+    const t = todayStr();
+    const y = parseInt(t.slice(0, 4), 10);
+    const m = parseInt(t.slice(5, 7), 10);
+    const prevDate = new Date(y, m - 2, 1);
+    return prevDate.getFullYear() + '-' + String(prevDate.getMonth() + 1).padStart(2, '0');
+  }
+
+  function inPeriod(dateStr) {
+    if (!dateStr) return currentPeriod === 'all';
+    if (currentPeriod === 'all') return true;
+    if (currentPeriod === 'today') return dateStr === todayStr();
+    if (currentPeriod === 'month') return dateStr.slice(0, 7) === todayStr().slice(0, 7);
+    if (currentPeriod === 'week') {
+      const [ws, we] = getWeekRange();
+      return dateStr >= ws && dateStr <= we;
+    }
+    return true;
+  }
+
+  function inPreviousPeriod(dateStr) {
+    if (!dateStr) return false;
+    if (currentPeriod === 'today') return dateStr === getPreviousDateStr(todayStr());
+    if (currentPeriod === 'week') {
+      const [pws, pwe] = getPreviousWeekRange();
+      return dateStr >= pws && dateStr <= pwe;
+    }
+    if (currentPeriod === 'month') return dateStr.slice(0, 7) === getPreviousMonthStr();
+    return false;
+  }
+
+  function formatDateShort(ds) {
+    if (!ds) return '—';
+    const [, m, d] = ds.split('-');
+    return d + '/' + m;
+  }
+
+  function generateTimelineDays(period) {
+    const daysArr = [];
+    const fmt = x => x.getFullYear() + '-' + String(x.getMonth() + 1).padStart(2, '0') + '-' + String(x.getDate()).padStart(2, '0');
+
+    if (period === 'today') {
+      daysArr.push(fmt(new Date()));
+    } else if (period === 'week') {
+      const [ws] = getWeekRange();
+      const monday = new Date(ws + 'T00:00:00');
+      for (let i = 0; i < 7; i++) {
+        const d = new Date(monday);
+        d.setDate(monday.getDate() + i);
+        daysArr.push(fmt(d));
+      }
+    } else if (period === 'month') {
+      const t = todayStr();
+      const y = parseInt(t.slice(0, 4), 10);
+      const m = parseInt(t.slice(5, 7), 10);
+      const daysInMonth = new Date(y, m, 0).getDate();
+      for (let i = 1; i <= daysInMonth; i++) {
+        const d = new Date(y, m - 1, i);
+        daysArr.push(fmt(d));
+      }
+    } else {
+      const taskDates = Array.from(new Set(tasks.map(t => t.date).filter(Boolean))).sort();
+      if (taskDates.length > 0) {
+        const minDate = new Date(taskDates[0] + 'T00:00:00');
+        const maxDate = new Date(taskDates[taskDates.length - 1] + 'T00:00:00');
+        const diffDays = Math.min(30, Math.ceil((maxDate - minDate) / (1000 * 60 * 60 * 24)) + 1);
+        const end = new Date(maxDate);
+        for (let i = diffDays - 1; i >= 0; i--) {
+          const d = new Date(end);
+          d.setDate(end.getDate() - i);
+          daysArr.push(fmt(d));
+        }
+      } else {
+        const today = new Date();
+        for (let i = 6; i >= 0; i--) {
+          const d = new Date(today);
+          d.setDate(today.getDate() - i);
+          daysArr.push(fmt(d));
+        }
+      }
+    }
+    return daysArr;
+  }
+
+  function getThemeColors() {
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark' || 
+      (!document.documentElement.getAttribute('data-theme') && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    return {
+      text: isDark ? '#94A3B8' : '#64748B',
+      grid: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
+      accent: '#4F46E5'
+    };
+  }
+
+  function updateCharts(filtered, timelineDays) {
+    if (typeof Chart === 'undefined') return;
+    if (Chart.defaults && Chart.defaults.font) Chart.defaults.font.family = "'JetBrains Mono', monospace";
+
+    const theme = getThemeColors();
+
+    // 1. Completion Distribution (Bar Chart)
+    const distData = timelineDays.map(ds => filtered.filter(t => t.date === ds && t.status === 'done').length);
+    const distLabels = timelineDays.map(ds => {
+      const parts = ds.split('-');
+      return currentPeriod === 'month' ? parseInt(parts[2], 10) : parts[2] + '/' + parts[1];
+    });
+
+    const ctxDist = document.getElementById('chart-distribution');
+    if (ctxDist) {
+      if (chartDistribution && chartDistribution.data.labels.length === distLabels.length) {
+        chartDistribution.data.labels = distLabels;
+        chartDistribution.data.datasets[0].data = distData;
+        chartDistribution.data.datasets[0].backgroundColor = theme.accent;
+        chartDistribution.options.scales.x.ticks.color = theme.text;
+        chartDistribution.options.scales.y.ticks.color = theme.text;
+        chartDistribution.options.scales.y.grid.color = theme.grid;
+        chartDistribution.update('none');
+      } else {
+        if (chartDistribution) chartDistribution.destroy();
+        chartDistribution = new Chart(ctxDist, {
+          type: 'bar',
+          data: {
+            labels: distLabels,
+            datasets: [{
+              label: 'Concluídas',
+              data: distData,
+              backgroundColor: theme.accent,
+              borderRadius: 4,
+              maxBarThickness: 16
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+              x: {
+                grid: { display: false },
+                ticks: { color: theme.text, font: { size: 10 } }
+              },
+              y: {
+                beginAtZero: true,
+                grid: { color: theme.grid },
+                ticks: { color: theme.text, font: { size: 10 }, precision: 0 }
+              }
+            }
+          }
+        });
+      }
+    }
+
+    // 2. Recent Completion Curve (Line Area Chart)
+    const curveData = timelineDays.map(ds => {
+      const dayTasks = filtered.filter(t => t.date === ds);
+      if (currentCurveMetric === 'time') {
+        const totalMs = dayTasks.reduce((s, t) => s + effectiveElapsed(t), 0);
+        return Math.round((totalMs / 3600000) * 10) / 10;
+      } else {
+        return dayTasks.filter(t => t.status === 'done').length;
+      }
+    });
+
+    const ctxCurve = document.getElementById('chart-curve');
+    if (ctxCurve) {
+      if (chartCurve && chartCurve.data.labels.length === distLabels.length) {
+        chartCurve.data.labels = distLabels;
+        chartCurve.data.datasets[0].data = curveData;
+        chartCurve.data.datasets[0].label = currentCurveMetric === 'time' ? 'Horas Registradas' : 'Tarefas Concluídas';
+        chartCurve.data.datasets[0].borderColor = theme.accent;
+        chartCurve.options.scales.x.ticks.color = theme.text;
+        chartCurve.options.scales.y.ticks.color = theme.text;
+        chartCurve.options.scales.y.grid.color = theme.grid;
+        chartCurve.update('none');
+      } else {
+        if (chartCurve) chartCurve.destroy();
+
+        const canvasCtx = ctxCurve.getContext('2d');
+        const gradient = canvasCtx.createLinearGradient(0, 0, 0, 180);
+        gradient.addColorStop(0, 'rgba(79, 70, 229, 0.4)');
+        gradient.addColorStop(1, 'rgba(79, 70, 229, 0.0)');
+
+        chartCurve = new Chart(ctxCurve, {
+          type: 'line',
+          data: {
+            labels: distLabels,
+            datasets: [{
+              label: currentCurveMetric === 'time' ? 'Horas Registradas' : 'Tarefas Concluídas',
+              data: curveData,
+              borderColor: theme.accent,
+              borderWidth: 2,
+              backgroundColor: gradient,
+              fill: true,
+              tension: 0.35,
+              pointRadius: 2.5,
+              pointHoverRadius: 5
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+              x: {
+                grid: { display: false },
+                ticks: { color: theme.text, font: { size: 10 } }
+              },
+              y: {
+                beginAtZero: true,
+                grid: { color: theme.grid },
+                ticks: { color: theme.text, font: { size: 10 } }
+              }
+            }
+          }
+        });
+      }
+    }
+
+    // 3. Classified Completion Statistics (Donut Chart & Custom Legend)
+    const doneFiltered = filtered.filter(t => t.status === 'done');
+    const projectStats = {};
+
+    doneFiltered.forEach(t => {
+      const pid = t.projectId || 'none';
+      projectStats[pid] = (projectStats[pid] || 0) + 1;
+    });
+
+    const activeProjects = projects.filter(p => projectStats[p.id] > 0);
+    const unclassifiedCount = projectStats['none'] || 0;
+
+    const donutLabels = activeProjects.map(p => p.name);
+    const donutData = activeProjects.map(p => projectStats[p.id]);
+    const donutColors = activeProjects.map(p => PALETTE[p.colorIndex % PALETTE.length].fg);
+
+    if (unclassifiedCount > 0) {
+      donutLabels.push('Sem projeto');
+      donutData.push(unclassifiedCount);
+      donutColors.push('#94A3B8');
+    }
+
+    const totalDone = doneFiltered.length;
+    document.getElementById('r-donut-total').textContent = totalDone;
+
+    const ctxDonut = document.getElementById('chart-donut');
+    if (ctxDonut) {
+      if (donutData.length === 0) {
+        if (chartDonut) chartDonut.destroy();
+        chartDonut = new Chart(ctxDonut, {
+          type: 'doughnut',
+          data: {
+            labels: ['Sem tarefas'],
+            datasets: [{ data: [1], backgroundColor: ['rgba(148, 163, 184, 0.2)'], borderWidth: 0 }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '76%',
+            plugins: { legend: { display: false }, tooltip: { enabled: false } }
+          }
+        });
+      } else if (chartDonut && chartDonut.data.labels.length === donutLabels.length && chartDonut.data.labels.every((l, i) => l === donutLabels[i])) {
+        chartDonut.data.datasets[0].data = donutData;
+        chartDonut.data.datasets[0].backgroundColor = donutColors;
+        chartDonut.update('none');
+      } else {
+        if (chartDonut) chartDonut.destroy();
+        chartDonut = new Chart(ctxDonut, {
+          type: 'doughnut',
+          data: {
+            labels: donutLabels,
+            datasets: [{
+              data: donutData,
+              backgroundColor: donutColors,
+              borderWidth: 2,
+              borderColor: getComputedStyle(document.documentElement).getPropertyValue('--surface').trim() || '#FFFFFF'
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '76%',
+            plugins: { legend: { display: false } }
+          }
+        });
+      }
+    }
+
+    // Render side legend for Donut
+    const legendEl = document.getElementById('r-donut-legend');
+    if (legendEl) {
+      if (donutData.length === 0) {
+        legendEl.innerHTML = '<div class="empty-report">Nenhuma tarefa concluída</div>';
+      } else {
+        legendEl.innerHTML = donutLabels.map((name, i) => {
+          const cnt = donutData[i];
+          const pct = Math.round((cnt / (totalDone || 1)) * 100);
+          const color = donutColors[i];
+          return `<div class="legend-item">
+            <div class="legend-info">
+              <span class="legend-dot" style="background:${color}"></span>
+              <span class="legend-name">${name}</span>
+            </div>
+            <span class="legend-count">${cnt} (${pct}%)</span>
+          </div>`;
+        }).join('');
+      }
+    }
+  }
+
+  function renderReport() {
+    const filtered = tasks.filter(t => inPeriod(t.date));
+    const prevFiltered = tasks.filter(t => inPreviousPeriod(t.date));
+
+    const totalMs = filtered.reduce((s, t) => s + effectiveElapsed(t), 0);
+    const doneCount = filtered.filter(t => t.status === 'done').length;
+    const prevDoneCount = prevFiltered.filter(t => t.status === 'done').length;
+    const totalCount = filtered.length;
+    const prevTotalCount = prevFiltered.length;
+
+    const rate = totalCount ? Math.round((doneCount / totalCount) * 100) : 0;
+    const prevRate = prevTotalCount ? Math.round((prevDoneCount / prevTotalCount) * 100) : 0;
+
+    const distinctDays = new Set(filtered.map(t => t.date)).size;
+
+    // Overview KPIs
+    document.getElementById('r-time').textContent = minsToHm(Math.round(totalMs / 60000));
+    document.getElementById('r-done').textContent = doneCount;
+    document.getElementById('r-rate').textContent = rate + '%';
+    document.getElementById('r-avg').textContent = distinctDays ? minsToHm(Math.round(totalMs / 60000 / distinctDays)) : '0min';
+
+    // Trend indicators vs previous period
+    const doneTrendEl = document.getElementById('r-done-trend');
+    const rateTrendEl = document.getElementById('r-rate-trend');
+
+    if (currentPeriod === 'all') {
+      doneTrendEl.textContent = 'total acumulado';
+      doneTrendEl.className = 'overview-trend neutral';
+      rateTrendEl.textContent = 'taxa acumulada';
+      rateTrendEl.className = 'overview-trend neutral';
+    } else {
+      const doneDiff = doneCount - prevDoneCount;
+      if (doneDiff > 0) {
+        doneTrendEl.textContent = `↑ +${doneDiff} vs anterior`;
+        doneTrendEl.className = 'overview-trend up';
+      } else if (doneDiff < 0) {
+        doneTrendEl.textContent = `↓ ${doneDiff} vs anterior`;
+        doneTrendEl.className = 'overview-trend down';
+      } else {
+        doneTrendEl.textContent = `= igual ao anterior`;
+        doneTrendEl.className = 'overview-trend neutral';
+      }
+
+      const rateDiff = rate - prevRate;
+      if (rateDiff > 0) {
+        rateTrendEl.textContent = `↑ +${rateDiff}% vs anterior`;
+        rateTrendEl.className = 'overview-trend up';
+      } else if (rateDiff < 0) {
+        rateTrendEl.textContent = `↓ ${rateDiff}% vs anterior`;
+        rateTrendEl.className = 'overview-trend down';
+      } else {
+        rateTrendEl.textContent = `= igual ao anterior`;
+        rateTrendEl.className = 'overview-trend neutral';
+      }
+    }
+
+    // Render Charts
+    const timelineDays = generateTimelineDays(currentPeriod);
+    updateCharts(filtered, timelineDays);
+
+    // Project Bars Section
+    const byProject = {};
+    filtered.forEach(t => {
+      const pid = t.projectId || 'none';
+      if (!byProject[pid]) byProject[pid] = { total: 0, count: 0 };
+      byProject[pid].total += effectiveElapsed(t);
+      byProject[pid].count += 1;
+    });
+
+    const rows = projects.map(proj => {
+      const stats = byProject[proj.id] || { total: 0, count: 0 };
+      return { pid: proj.id, name: proj.name, colorIndex: proj.colorIndex, ...stats };
+    }).sort((a, b) => b.total - a.total);
+
+    const maxTotal = Math.max(1, ...rows.map(r => r.total));
+    const projWrap = document.getElementById('r-projects');
+    if (!rows.length) {
+      projWrap.innerHTML = '<div class="empty-report">sem dados neste período</div>';
+    } else {
+      projWrap.innerHTML = rows.map(r => {
+        const c = PALETTE[r.colorIndex % PALETTE.length];
+        const pct = Math.round(r.total / maxTotal * 100);
+        return `<div class="project-bar-row">
+          <div class="project-bar-head">
+            <span class="project-dot" style="background:${c.fg}"></span>
+            <span class="project-name">${r.name}</span>
+            <span class="project-time">${minsToHm(Math.round(r.total / 60000))} · ${r.count} tarefa(s)</span>
+          </div>
+          <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${c.fg}"></div></div>
+        </div>`;
+      }).join('');
+    }
+
+    // Detail Table Section
+    const tbody = document.getElementById('r-table-body');
+    if (!filtered.length) {
+      tbody.innerHTML = '<tr><td colspan="6" class="empty-report">sem atividades neste período</td></tr>';
+    } else {
+      const sortedRows = [...filtered].sort((a, b) => ((b.date || '') + (b.time || '')).localeCompare((a.date || '') + (a.time || '')));
+      const statusLabels = { pending: 'pendente', active: 'em andamento', paused: 'pausada', done: 'concluída' };
+      tbody.innerHTML = sortedRows.map(t => {
+        const proj = projects.find(p => p.id === t.projectId);
+        return `<tr>
+          <td>${formatDateShort(t.date)}</td>
+          <td>${t.name}</td>
+          <td>${proj ? proj.name : '—'}</td>
+          <td>${t.dur ? minsToHm(t.dur) : '—'}</td>
+          <td>${minsToHm(Math.round(effectiveElapsed(t) / 60000))}</td>
+          <td>${statusLabels[t.status] || t.status}</td>
+        </tr>`;
+      }).join('');
+    }
+  }
+
+  /* ---------- live tick for the running task ---------- */
+
+  function tick() {
+    const active = tasks.find(t => t.status === 'active');
+    if (active) {
+      const bar = document.getElementById('bar-' + active.id);
+      const lbl = document.getElementById('barlbl-' + active.id);
+      const plannedMs = active.dur * 60000;
+      const pct = plannedMs ? Math.min(100, Math.round(effectiveElapsed(active) / plannedMs * 100)) : 0;
+      if (bar) bar.style.width = pct + '%';
+      if (lbl) lbl.textContent = minsToHm(Math.round(effectiveElapsed(active) / 60000)) + ' em andamento';
+
+      if (currentTab === 'report') {
+        const filtered = tasks.filter(t => inPeriod(t.date));
+        const totalMs = filtered.reduce((s, t) => s + effectiveElapsed(t), 0);
+        const distinctDays = new Set(filtered.map(t => t.date)).size;
+        const rTimeEl = document.getElementById('r-time');
+        const rAvgEl = document.getElementById('r-avg');
+        if (rTimeEl) rTimeEl.textContent = minsToHm(Math.round(totalMs / 60000));
+        if (rAvgEl) rAvgEl.textContent = distinctDays ? minsToHm(Math.round(totalMs / 60000 / distinctDays)) : '0min';
+
+        if (currentCurveMetric === 'time' && chartCurve) {
+          const timelineDays = generateTimelineDays(currentPeriod);
+          const curveData = timelineDays.map(ds => {
+            const dayTasks = filtered.filter(t => t.date === ds);
+            const ms = dayTasks.reduce((s, t) => s + effectiveElapsed(t), 0);
+            return Math.round((ms / 3600000) * 10) / 10;
+          });
+          chartCurve.data.datasets[0].data = curveData;
+          chartCurve.update('none');
+        }
+      }
+    }
+  }
+
+  document.getElementById('f-name').addEventListener('keydown', e => { if (e.key === 'Enter') saveTask(); });
+  document.getElementById('f-project').addEventListener('change', e => {
+    if (e.target.value === '__new__') {
+      toggleNewProject(true);
+      e.target.value = projects[0] ? projects[0].id : '';
+    }
+  });
+  document.addEventListener('keydown', e => {
+    if (e.key !== 'Escape') return;
+    if (formOpen) closeForm();
+    if (projectsManagerOpen) closeProjectsManager();
+    if (syncManagerOpen) closeSyncManager();
+  });
+
+  ensureDefaultProject();
+  migrate();
+  populateProjectSelect();
+  render();
+  setInterval(render, 60000);
+  setInterval(tick, 1000);
+  initSync();
+  renderThemeToggleIcon();
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+    if (!localStorage.getItem('daysk-theme')) renderThemeToggleIcon();
+  });
+</script>
 </body>
 </html>

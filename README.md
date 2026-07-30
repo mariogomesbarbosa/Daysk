@@ -13,7 +13,7 @@
 </p>
 
 <p align="center">
-  🌐 <strong>Acesse a aplicação online: <a href="https://mariogomesbarbosa.github.io/Daysk/Daysk.html">Daysk</a></strong>
+  🌐 <strong>Acesse a aplicação online: <a href="https://mariogomesbarbosa.github.io/Daysk/">Daysk</a></strong>
 </p>
 
 ---
@@ -22,7 +22,7 @@
 
 O **Daysk** é uma aplicação web minimalista e elegante voltada para o acompanhamento produtivo de tarefas diárias, planejamento de tempo e organização de projetos. Projetado com uma interface focada em UX/UI de alta performance, o Daysk oferece uma experiência fluida, sem distrações, ideal para profissionais, equipes de design e desenvolvedores.
 
-Você pode utilizar o produto diretamente pelo navegador em [Daysk](https://mariogomesbarbosa.github.io/Daysk/Daysk.html).
+Você pode utilizar o produto diretamente pelo navegador em [Daysk](https://mariogomesbarbosa.github.io/Daysk/).
 
 ---
 
@@ -59,7 +59,7 @@ Você pode utilizar o produto diretamente pelo navegador em [Daysk](https://mari
 ## 🌐 Acesso Online & Como Executar
 
 ### 🚀 Acesso Online Direto
-Você pode acessar e usar o produto online em [Daysk](https://mariogomesbarbosa.github.io/Daysk/Daysk.html).
+Você pode acessar e usar o produto online em [Daysk](https://mariogomesbarbosa.github.io/Daysk/).
 
 ### 💻 Executar Localmente
 Como o Daysk foi construído de forma leve e direta com tecnologias web nativas, você também pode executá-lo localmente:
@@ -71,7 +71,7 @@ Como o Daysk foi construído de forma leve e direta com tecnologias web nativas,
    ```
 
 2. **Abrir a Aplicação**:
-   - Basta dar um duplo clique no arquivo `Daysk.html` para abrir diretamente no seu navegador.
+   - Basta dar um duplo clique no arquivo `index.html` para abrir diretamente no seu navegador.
    - *Ou*, para utilizar uma extensão como **Live Server** no VS Code ou um servidor local estático:
      ```bash
      npx serve .
@@ -88,7 +88,7 @@ Daysk/
 │   └── tasks.json           # Base de tarefas e histórico de tempo
 ├── docs/
 │   └── screenshots/         # Capturas de tela da aplicação
-├── Daysk.html               # Aplicação web completa (UI + Lógica + Estilos)
+├── index.html               # Aplicação web completa (UI + Lógica + Estilos)
 ├── Daysk logo.svg           # Ícone do aplicativo
 ├── Daysk trademark.svg      # Logotipo oficial com marca registrada
 └── README.md                # Documentação do projeto
