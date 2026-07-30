@@ -26,23 +26,11 @@ Você pode utilizar o produto diretamente pelo navegador em [Daysk](https://mari
 
 ---
 
-## 📸 Capturas de Tela
+## 📸 Captura de Tela
 
-<div align="center">
-
-### 📅 Atividades de Hoje
-![Tarefas de Hoje](docs/screenshots/hoje.png)
-
-### 🌅 Planejamento para Amanhã
-![Tarefas de Amanhã](docs/screenshots/amanha.png)
-
-### 📌 Fazer Depois (Sem horário fixo)
-![Fazer Depois](docs/screenshots/fazer-depois.png)
-
-### 📊 Relatório & Métricas de Produtividade
-![Dashboard e Relatórios](docs/screenshots/relatorio.png)
-
-</div>
+<p align="center">
+  <img src="docs/screenshots/preview.png" alt="Daysk Interface" width="100%" />
+</p>
 
 ---
 
