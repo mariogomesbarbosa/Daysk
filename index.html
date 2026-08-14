@@ -110,9 +110,28 @@
   }
 
   .container {
-    max-width: 720px;
+    max-width: 1180px;
     margin: 0 auto;
   }
+
+  /* Shell de duas colunas. O teto de 880px na coluna de conteúdo evita que
+     Calendário e Relatórios — que não têm sidebar — estiquem até 1180px. */
+  .app-shell {
+    display: grid;
+    grid-template-columns: 260px minmax(0, 880px);
+    gap: 28px;
+  }
+
+  /* Calendário e Relatórios não têm sidebar. O estado mora no <body> porque o
+     botão do menu vive na brand-bar, fora do shell. */
+  body.no-sidebar .app-shell {
+    grid-template-columns: minmax(0, 880px);
+  }
+
+  body.no-sidebar .sidebar,
+  body.no-sidebar .menu-btn { display: none; }
+
+  .content { min-width: 0; }
 
   button, input, select { font-family: inherit; }
 
@@ -251,42 +270,53 @@
 
   .nav-item:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
-  /* Context Bar & Pills */
-  .context-bar {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-bottom: 1.25rem;
+  /* Sidebar */
+  .sidebar {
+    position: sticky;
+    top: 2rem;
+    align-self: start;
   }
 
-  .context-pill {
-    display: inline-flex;
+  .sidebar-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .sidebar-item {
+    display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 10px;
+    width: 100%;
     font-family: var(--mono);
-    font-size: 12px;
-    letter-spacing: 0.03em;
-    padding: 8px 14px;
-    background: var(--surface);
-    border: 1px solid var(--border);
+    font-size: 13px;
+    letter-spacing: 0.02em;
+    text-align: left;
+    padding: 9px 12px;
+    background: none;
+    border: none;
     border-radius: var(--radius-sm);
     color: var(--text2);
     cursor: pointer;
-    transition: all .15s ease;
+    transition: background .15s, color .15s;
   }
 
-  .context-pill:hover:not(.active) {
-    border-color: var(--border2);
-    color: var(--text);
+  .sidebar-item .icon { color: var(--text3); transition: color .15s; }
+
+  .sidebar-item:hover:not(.active) { background: var(--surface2); color: var(--text); }
+  .sidebar-item:hover:not(.active) .icon { color: var(--text2); }
+
+  .sidebar-item.active {
     background: var(--surface2);
-  }
-
-  .context-pill.active {
-    background: var(--accent);
-    color: var(--on-accent);
-    border-color: var(--accent);
+    color: var(--text);
     font-weight: 500;
   }
+
+  .sidebar-item.active .icon { color: var(--text); }
+
+  .sidebar-item:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+  .sidebar-label { flex: 1; min-width: 0; }
 
   .ctx-count {
     font-size: 10px;
@@ -297,9 +327,55 @@
     transition: all .15s;
   }
 
-  .context-pill.active .ctx-count {
-    background: rgba(255,255,255,.25);
-    color: var(--on-accent);
+  .sidebar-item.active .ctx-count { background: var(--bg); color: var(--text); }
+
+  /* Botão do menu — só no mobile, onde o sidebar vira gaveta */
+  .menu-btn {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 7px;
+    background: none;
+    border: 1px solid var(--border2);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    cursor: pointer;
+  }
+
+  .menu-btn:hover { background: var(--surface2); }
+
+  .brand-left { display: flex; align-items: center; gap: 12px; }
+
+  .sidebar-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(20,23,27,.5);
+    display: none;
+    z-index: 94;
+  }
+
+  @media (max-width: 860px) {
+    .app-shell { grid-template-columns: minmax(0, 1fr); }
+    .menu-btn { display: inline-flex; }
+
+    .sidebar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      width: min(280px, 82vw);
+      padding: 20px 16px;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      box-shadow: var(--shadow-md);
+      transform: translateX(-100%);
+      transition: transform .2s ease;
+      overflow-y: auto;
+      z-index: 95;
+    }
+
+    .sidebar.open { transform: translateX(0); }
+    .sidebar-backdrop.open { display: block; }
   }
 
   /* Form Context Selector */
@@ -1467,6 +1543,10 @@
 <div class="container">
 
   <header class="brand-bar">
+    <div class="brand-left">
+    <button class="menu-btn" id="menu-btn" onclick="openSidebar()" aria-label="Abrir menu" aria-controls="sidebar" aria-expanded="false" title="Menu">
+      <svg class="icon" width="18" height="18" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M224,128a8,8,0,0,1-8,8H40a8,8,0,0,1,0-16H216A8,8,0,0,1,224,128ZM40,72H216a8,8,0,0,0,0-16H40a8,8,0,0,0,0,16ZM216,184H40a8,8,0,0,0,0,16H216a8,8,0,0,0,0-16Z"/></svg>
+    </button>
     <svg class="brand-logo" viewBox="0 0 190 50" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Daysk">
       <rect class="brand-dark" width="50" height="50" rx="10"/>
       <path class="brand-light" d="M39 25L21 39L11 39L11 31.72L18.3333 31.72L31 21.6704L31 18.28L11 18.28L11 11L39 11L39 25Z"/>
@@ -1477,6 +1557,7 @@
       <path class="brand-dark" d="M153.471 36.7064C150.599 36.7064 148.313 36.0213 146.613 34.6511C144.913 33.2809 143.946 31.4638 143.711 29.2H148.503C148.679 30.2426 149.192 31.0915 150.042 31.7468C150.921 32.4021 152.079 32.7298 153.515 32.7298C154.893 32.7298 155.948 32.4468 156.681 31.8808C157.443 31.2851 157.824 30.6 157.824 29.8255C157.824 28.6936 157.37 27.9191 156.461 27.5021C155.582 27.0851 154.277 26.7723 152.548 26.5638C151.053 26.3851 149.69 26.0426 148.459 25.5362C147.258 25 146.305 24.2851 145.602 23.3915C144.898 22.4681 144.547 21.3213 144.547 19.9511C144.547 18.0149 145.294 16.4511 146.789 15.2596C148.284 14.0681 150.365 13.4723 153.032 13.4723C155.699 13.4723 157.765 14.083 159.231 15.3043C160.696 16.5255 161.546 18.1936 161.781 20.3085H157.296C157.179 19.4149 156.725 18.7149 155.933 18.2085C155.142 17.6723 154.16 17.4043 152.988 17.4043C151.786 17.4043 150.834 17.6426 150.13 18.1191C149.427 18.566 149.075 19.1617 149.075 19.9064C149.075 21.5149 150.775 22.4979 154.175 22.8553C155.787 23.034 157.223 23.3468 158.483 23.7936C159.744 24.2106 160.74 24.8809 161.473 25.8043C162.206 26.6979 162.572 27.9638 162.572 29.6021C162.601 30.9426 162.22 32.1489 161.429 33.2213C160.667 34.2936 159.597 35.1426 158.22 35.7681C156.871 36.3936 155.289 36.7064 153.471 36.7064Z"/>
       <path class="brand-dark" d="M169.952 36.1702V4H174.612V23.3021L182.966 14.0085H188.813L179.712 23.8383V24.1957L190 36.1702H184.329L174.612 24.7766V36.1702H169.952Z"/>
     </svg>
+    </div>
     <div class="brand-actions">
       <button class="btn-add btn-secondary" onclick="openProjectsManager()" title="Gerenciar projetos">
         <svg class="icon" width="14" height="14" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M216,72H131.31L104,44.69A15.86,15.86,0,0,0,92.69,40H40A16,16,0,0,0,24,56V200.62A15.4,15.4,0,0,0,39.38,216H216.89A15.13,15.13,0,0,0,232,200.89V88A16,16,0,0,0,216,72ZM40,56H92.69l16,16H40ZM216,200H40V88H216Z"/></svg>
@@ -1489,6 +1570,37 @@
       <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" title="Alternar tema" aria-label="Alternar tema claro/escuro"></button>
     </div>
   </header>
+
+  <div class="sidebar-backdrop" id="sidebar-backdrop" onclick="closeSidebar()"></div>
+
+  <div class="app-shell">
+
+  <aside class="sidebar" id="sidebar" aria-label="Filtros por prazo">
+    <nav class="sidebar-nav">
+      <button class="sidebar-item active" data-bucket="today" onclick="setBucket('today')">
+        <svg class="icon" width="17" height="17" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M208,32H184V24a8,8,0,0,0-16,0v8H88V24a8,8,0,0,0-16,0v8H48A16,16,0,0,0,32,48V208a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V48A16,16,0,0,0,208,32ZM72,48v8a8,8,0,0,0,16,0V48h80v8a8,8,0,0,0,16,0V48h24V80H48V48ZM208,208H48V96H208V208Zm-64-56a16,16,0,1,1-16-16A16,16,0,0,1,144,152Z"/></svg>
+        <span class="sidebar-label">Hoje</span>
+        <span class="ctx-count" id="count-today">0</span>
+      </button>
+      <button class="sidebar-item" data-bucket="next7" onclick="setBucket('next7')">
+        <svg class="icon" width="17" height="17" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M208,32H184V24a8,8,0,0,0-16,0v8H88V24a8,8,0,0,0-16,0v8H48A16,16,0,0,0,32,48V208a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V48A16,16,0,0,0,208,32ZM72,48v8a8,8,0,0,0,16,0V48h80v8a8,8,0,0,0,16,0V48h24V80H48V48ZM208,208H48V96H208V208Zm-68-76a12,12,0,1,1-12-12A12,12,0,0,1,140,132Zm44,0a12,12,0,1,1-12-12A12,12,0,0,1,184,132ZM96,172a12,12,0,1,1-12-12A12,12,0,0,1,96,172Zm44,0a12,12,0,1,1-12-12A12,12,0,0,1,140,172Zm44,0a12,12,0,1,1-12-12A12,12,0,0,1,184,172Z"/></svg>
+        <span class="sidebar-label">Próximos 7 dias</span>
+        <span class="ctx-count" id="count-next7">0</span>
+      </button>
+      <button class="sidebar-item" data-bucket="inbox" onclick="setBucket('inbox')">
+        <svg class="icon" width="17" height="17" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M208,32H48A16,16,0,0,0,32,48V208a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V48A16,16,0,0,0,208,32Zm0,16V152h-28.7A15.86,15.86,0,0,0,168,156.69L148.69,176H107.31L88,156.69A15.86,15.86,0,0,0,76.69,152H48V48Zm0,160H48V168H76.69L96,187.31A15.86,15.86,0,0,0,107.31,192h41.38A15.86,15.86,0,0,0,160,187.31L179.31,168H208v40Z"/></svg>
+        <span class="sidebar-label">Caixa de entrada</span>
+        <span class="ctx-count" id="count-inbox">0</span>
+      </button>
+      <button class="sidebar-item" data-bucket="all" onclick="setBucket('all')">
+        <svg class="icon" width="17" height="17" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M230.91,172A8,8,0,0,1,228,182.91l-96,56a8,8,0,0,1-8.06,0l-96-56A8,8,0,0,1,36,169.09l92,53.65,92-53.65A8,8,0,0,1,230.91,172ZM220,121.09l-92,53.65L36,121.09A8,8,0,0,0,28,134.91l96,56a8,8,0,0,0,8.06,0l96-56A8,8,0,1,0,220,121.09ZM24,80a8,8,0,0,1,4-6.91l96-56a8,8,0,0,1,8.06,0l96,56a8,8,0,0,1,0,13.82l-96,56a8,8,0,0,1-8.06,0l-96-56A8,8,0,0,1,24,80Zm23.88,0L128,126.74,208.12,80,128,33.26Z"/></svg>
+        <span class="sidebar-label">Todas</span>
+        <span class="ctx-count" id="count-all">0</span>
+      </button>
+    </nav>
+  </aside>
+
+  <main class="content">
 
   <div class="page-header">
     <div>
@@ -1504,21 +1616,6 @@
   </div>
 
   <div id="view-today">
-
-    <div class="context-bar">
-      <button class="context-pill active" data-bucket="today" onclick="setBucket('today')">
-        Hoje <span class="ctx-count" id="count-today">0</span>
-      </button>
-      <button class="context-pill" data-bucket="next7" onclick="setBucket('next7')">
-        Próximos 7 dias <span class="ctx-count" id="count-next7">0</span>
-      </button>
-      <button class="context-pill" data-bucket="inbox" onclick="setBucket('inbox')">
-        Caixa de entrada <span class="ctx-count" id="count-inbox">0</span>
-      </button>
-      <button class="context-pill" data-bucket="all" onclick="setBucket('all')">
-        Todas <span class="ctx-count" id="count-all">0</span>
-      </button>
-    </div>
 
     <div class="summary-bar" id="summary-bar-container">
       <div class="stat-card">
@@ -1659,6 +1756,9 @@
   <div class="footer">
     <span class="footer-time" id="clock">00:00</span>
     <span class="footer-time">atualiza a cada minuto</span>
+  </div>
+
+  </main>
   </div>
 
 </div>
@@ -2877,10 +2977,33 @@
 
   function setBucket(bucket) {
     currentBucket = bucket;
-    document.querySelectorAll('.context-pill').forEach(b => {
+    document.querySelectorAll('.sidebar-item').forEach(b => {
       b.classList.toggle('active', b.dataset.bucket === bucket);
     });
+    // No mobile a gaveta cobre a lista que acabou de ser filtrada.
+    closeSidebar();
     render();
+  }
+
+  /* ---------- sidebar (gaveta no mobile) ---------- */
+
+  let sidebarOpen = false;
+
+  function openSidebar() {
+    sidebarOpen = true;
+    document.getElementById('sidebar').classList.add('open');
+    document.getElementById('sidebar-backdrop').classList.add('open');
+    document.getElementById('menu-btn').setAttribute('aria-expanded', 'true');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeSidebar() {
+    if (!sidebarOpen) return;
+    sidebarOpen = false;
+    document.getElementById('sidebar').classList.remove('open');
+    document.getElementById('sidebar-backdrop').classList.remove('open');
+    document.getElementById('menu-btn').setAttribute('aria-expanded', 'false');
+    document.body.style.overflow = '';
   }
 
   /* Os presets escrevem no campo de data; o estado ativo é derivado dele,
@@ -3036,6 +3159,9 @@
       document.getElementById('view-' + v).style.display = v === tab ? '' : 'none';
     });
     document.getElementById('btn-add').style.display = tab === 'today' ? '' : 'none';
+    // Os baldes só valem para a lista de tarefas.
+    document.body.classList.toggle('no-sidebar', tab !== 'today');
+    closeSidebar();
     updateHeader();
     window.scrollTo({ top: 0 });
     if (tab === 'report') renderReport(); else render();
@@ -3871,6 +3997,7 @@
     if (formOpen) closeForm();
     if (projectsManagerOpen) closeProjectsManager();
     if (syncManagerOpen) closeSyncManager();
+    if (sidebarOpen) closeSidebar();
   });
 
   ensureDefaultProject();
