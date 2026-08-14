@@ -105,7 +105,7 @@
     background: var(--bg);
     color: var(--text);
     min-height: 100vh;
-    padding: 2rem 1rem;
+    padding: 2rem 1rem calc(96px + env(safe-area-inset-bottom, 0px));
     transition: background .2s ease, color .2s ease;
   }
 
@@ -213,33 +213,43 @@
 
   .btn-secondary:hover { background: var(--surface2); }
 
-  /* Tabs */
-  .tabs {
+  /* Floating nav */
+  .app-nav {
+    position: fixed;
+    left: 50%;
+    bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+    transform: translateX(-50%);
     display: flex;
-    gap: 6px;
-    margin-bottom: 1.5rem;
+    gap: 4px;
+    padding: 6px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    box-shadow: var(--shadow-md);
+    z-index: 90;
   }
 
-  .tab-btn {
+  .nav-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
     font-family: var(--mono);
     font-size: 12px;
     letter-spacing: 0.03em;
-    padding: 8px 16px;
+    padding: 10px 18px;
     background: none;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
+    border: none;
+    border-radius: 999px;
     color: var(--text2);
     cursor: pointer;
-    transition: all .15s;
+    transition: background .15s, color .15s;
   }
 
-  .tab-btn:hover:not(.active) { border-color: var(--border2); color: var(--text); }
+  .nav-item:hover:not(.active) { background: var(--surface2); color: var(--text); }
 
-  .tab-btn.active {
-    background: var(--accent);
-    color: var(--on-accent);
-    border-color: var(--accent);
-  }
+  .nav-item.active { background: var(--accent); color: var(--on-accent); }
+
+  .nav-item:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
   /* Context Bar & Pills */
   .context-bar {
@@ -1445,6 +1455,11 @@
     .header-actions { width: 100%; flex-wrap: wrap; }
     .header-actions .btn-add { flex: 1 1 auto; justify-content: center; min-width: 110px; }
   }
+
+  @media (max-width: 380px) {
+    .nav-label { display: none; }
+    .nav-item { padding: 12px; }
+  }
 </style>
 </head>
 <body>
@@ -1485,11 +1500,6 @@
         nova atividade
       </button>
     </div>
-  </div>
-
-  <div class="tabs">
-    <button class="tab-btn active" data-tab="today" onclick="switchTab('today')">hoje</button>
-    <button class="tab-btn" data-tab="report" onclick="switchTab('report')">relatório</button>
   </div>
 
   <div id="view-today">
@@ -1644,6 +1654,17 @@
   </div>
 
 </div>
+
+<nav class="app-nav" aria-label="Navegação principal">
+  <button class="nav-item active" data-tab="today" onclick="switchTab('today')" aria-current="page" aria-label="Tasks" title="Tasks">
+    <svg class="icon" width="18" height="18" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M224,128a8,8,0,0,1-8,8H128a8,8,0,0,1,0-16h88A8,8,0,0,1,224,128ZM128,72h88a8,8,0,0,0,0-16H128a8,8,0,0,0,0,16Zm88,112H128a8,8,0,0,0,0,16h88a8,8,0,0,0,0-16ZM82.34,42.34,56,68.69,45.66,58.34A8,8,0,0,0,34.34,69.66l16,16a8,8,0,0,0,11.32,0l32-32A8,8,0,0,0,82.34,42.34Zm0,64L56,132.69,45.66,122.34a8,8,0,0,0-11.32,11.32l16,16a8,8,0,0,0,11.32,0l32-32a8,8,0,0,0-11.32-11.32Zm0,64L56,196.69,45.66,186.34a8,8,0,0,0-11.32,11.32l16,16a8,8,0,0,0,11.32,0l32-32a8,8,0,0,0-11.32-11.32Z"/></svg>
+    <span class="nav-label">Tasks</span>
+  </button>
+  <button class="nav-item" data-tab="report" onclick="switchTab('report')" aria-label="Relatório" title="Relatório">
+    <svg class="icon" width="18" height="18" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M224,200h-8V40a8,8,0,0,0-8-8H152a8,8,0,0,0-8,8V80H96a8,8,0,0,0-8,8v40H48a8,8,0,0,0-8,8v64H32a8,8,0,0,0,0,16H224a8,8,0,0,0,0-16ZM160,48h40V200H160ZM104,96h40V200H104ZM56,144H88v56H56Z"/></svg>
+    <span class="nav-label">Relatório</span>
+  </button>
+</nav>
 
 <div class="form-overlay" id="form-overlay" onclick="if(event.target===this) closeForm()">
   <div class="form-panel">
@@ -2979,16 +3000,23 @@
 
   function switchTab(tab) {
     currentTab = tab;
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+    document.querySelectorAll('.nav-item').forEach(b => {
+      const on = b.dataset.tab === tab;
+      b.classList.toggle('active', on);
+      if (on) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
+    });
     document.getElementById('view-today').style.display = tab === 'today' ? '' : 'none';
     document.getElementById('view-report').style.display = tab === 'report' ? '' : 'none';
     document.getElementById('btn-add').style.display = tab === 'today' ? '' : 'none';
+    updateHeader();
+    window.scrollTo({ top: 0 });
     if (tab === 'report') renderReport(); else render();
   }
 
   function setPeriod(p) {
     currentPeriod = p;
     document.querySelectorAll('#view-report .period-btn').forEach(b => b.classList.toggle('active', b.dataset.period === p));
+    updateHeader();
     renderReport();
   }
 
@@ -3088,12 +3116,19 @@
 
   /* ---------- render: today ---------- */
 
+  const PERIOD_LABELS = { today: 'hoje', week: 'esta semana', month: 'este mês', all: 'todo o período' };
+
   function updateHeader() {
     const d = new Date();
-    const dayName = days[d.getDay()];
-    const dateStr = d.getDate() + ' de ' + months[d.getMonth()] + ' de ' + d.getFullYear();
-    document.getElementById('day-label').textContent = dayName;
-    document.getElementById('date-label').textContent = dateStr;
+
+    if (currentTab === 'report') {
+      document.getElementById('day-label').textContent = 'relatório';
+      document.getElementById('date-label').textContent = PERIOD_LABELS[currentPeriod] || 'hoje';
+    } else {
+      document.getElementById('day-label').textContent = days[d.getDay()];
+      document.getElementById('date-label').textContent = d.getDate() + ' de ' + months[d.getMonth()] + ' de ' + d.getFullYear();
+    }
+
     const h = String(d.getHours()).padStart(2, '0');
     const m = String(d.getMinutes()).padStart(2, '0');
     document.getElementById('clock').textContent = h + ':' + m;
