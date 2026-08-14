@@ -254,6 +254,7 @@
   /* Context Bar & Pills */
   .context-bar {
     display: flex;
+    flex-wrap: wrap;
     gap: 8px;
     margin-bottom: 1.25rem;
   }
@@ -1505,14 +1506,17 @@
   <div id="view-today">
 
     <div class="context-bar">
-      <button class="context-pill active" data-context="today" onclick="setTaskContext('today')">
+      <button class="context-pill active" data-bucket="today" onclick="setBucket('today')">
         Hoje <span class="ctx-count" id="count-today">0</span>
       </button>
-      <button class="context-pill" data-context="tomorrow" onclick="setTaskContext('tomorrow')">
-        Amanhã <span class="ctx-count" id="count-tomorrow">0</span>
+      <button class="context-pill" data-bucket="next7" onclick="setBucket('next7')">
+        Próximos 7 dias <span class="ctx-count" id="count-next7">0</span>
       </button>
-      <button class="context-pill" data-context="later" onclick="setTaskContext('later')">
-        Fazer depois <span class="ctx-count" id="count-later">0</span>
+      <button class="context-pill" data-bucket="inbox" onclick="setBucket('inbox')">
+        Caixa de entrada <span class="ctx-count" id="count-inbox">0</span>
+      </button>
+      <button class="context-pill" data-bucket="all" onclick="setBucket('all')">
+        Todas <span class="ctx-count" id="count-all">0</span>
       </button>
     </div>
 
@@ -1688,19 +1692,20 @@
       <div class="form-field-v">
         <label class="form-label">Quando fazer?</label>
         <div class="context-selector">
-          <button type="button" class="ctx-btn active" id="btn-ctx-today" onclick="selectFormContext('today')">Hoje</button>
-          <button type="button" class="ctx-btn" id="btn-ctx-tomorrow" onclick="selectFormContext('tomorrow')">Amanhã</button>
-          <button type="button" class="ctx-btn" id="btn-ctx-later" onclick="selectFormContext('later')">Fazer depois</button>
+          <button type="button" class="ctx-btn active" id="btn-ctx-today" onclick="setFormDatePreset('today')">Hoje</button>
+          <button type="button" class="ctx-btn" id="btn-ctx-tomorrow" onclick="setFormDatePreset('tomorrow')">Amanhã</button>
+          <button type="button" class="ctx-btn" id="btn-ctx-none" onclick="setFormDatePreset('none')">Sem prazo</button>
         </div>
+        <input type="date" id="f-date" onchange="syncFormPresetButtons()">
       </div>
-      <div class="form-row-2" id="form-row-time-dur">
+      <div class="form-row-2">
         <div class="form-field-v">
-          <label class="form-label">Início</label>
-          <input type="time" id="f-time" value="09:00">
+          <label class="form-label">Início (opcional)</label>
+          <input type="time" id="f-time">
         </div>
         <div class="form-field-v">
           <label class="form-label">Duração (min)</label>
-          <input type="number" id="f-dur" min="5" max="480" value="60">
+          <input type="number" id="f-dur" min="5" max="480" placeholder="60">
         </div>
       </div>
       <div class="form-field-v">
@@ -1734,14 +1739,15 @@
       <div class="form-field-v" style="margin-top:8px;">
         <label class="form-label">Quando fazer?</label>
         <div class="context-selector">
-          <button type="button" class="ctx-btn active" id="sched-ctx-today" onclick="selectSchedContext('today')">Hoje</button>
-          <button type="button" class="ctx-btn" id="sched-ctx-tomorrow" onclick="selectSchedContext('tomorrow')">Amanhã</button>
+          <button type="button" class="ctx-btn active" id="sched-ctx-today" onclick="setSchedDatePreset('today')">Hoje</button>
+          <button type="button" class="ctx-btn" id="sched-ctx-tomorrow" onclick="setSchedDatePreset('tomorrow')">Amanhã</button>
         </div>
+        <input type="date" id="sched-date" onchange="syncSchedPresetButtons()">
       </div>
       <div class="form-row-2" style="margin-top:12px;">
         <div class="form-field-v">
-          <label class="form-label">Início</label>
-          <input type="time" id="sched-time" value="09:00">
+          <label class="form-label">Início (opcional)</label>
+          <input type="time" id="sched-time">
         </div>
         <div class="form-field-v">
           <label class="form-label">Duração (min)</label>
@@ -2581,23 +2587,38 @@
     document.body.style.overflow = '';
   }
 
-  function todayStr() {
-    const d = new Date();
+  function toDateStr(d) {
     return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+
+  function todayStr() {
+    return toDateStr(new Date());
   }
 
   function tomorrowStr() {
-    const d = new Date();
-    d.setDate(d.getDate() + 1);
-    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    return addDays(todayStr(), 1);
   }
 
-  function getTaskContext(t) {
-    if (t.context === 'later') return 'later';
-    if (!t.date || !t.time) return 'later';
-    if (t.date === tomorrowStr()) return 'tomorrow';
-    if (t.date === todayStr() || t.date < todayStr()) return 'today';
-    return 'later';
+  function addDays(ds, n) {
+    const d = new Date(ds + 'T00:00:00');
+    d.setDate(d.getDate() + n);
+    return toDateStr(d);
+  }
+
+  /* Baldes de prazo. t.date é a fonte da verdade: null = caixa de entrada. */
+  function matchesBucket(t, bucket) {
+    if (bucket === 'all') return true;
+    if (bucket === 'inbox') return !t.date;
+    if (!t.date) return false;
+    const today = todayStr();
+    if (bucket === 'today') return t.date <= today;
+    if (bucket === 'next7') return t.date > today && t.date <= addDays(today, 7);
+    return false;
+  }
+
+  /* Chave de ordenação: data, depois hora. Sem hora vem antes no dia. */
+  function taskSortKey(t) {
+    return (t.date || '9999-99-99') + (t.time || '00:00');
   }
 
   function getNowMins() {
@@ -2606,6 +2627,7 @@
   }
 
   function toMins(t) {
+    if (!t) return 0;
     const [h, m] = t.split(':').map(Number);
     return h * 60 + m;
   }
@@ -2650,8 +2672,8 @@
         t.status = t.done ? 'done' : 'pending';
         t.elapsed = t.done ? (t.dur || 0) * 60000 : 0;
         t.startedAt = null;
-        if (!t.context) t.context = (t.date || t.time) ? 'today' : 'later';
-        if (!t.date && t.context === 'today') t.date = todayStr();
+        // Horário sem dia é herança antiga: ancora em hoje.
+        if (!t.date && t.time) t.date = todayStr();
         if (t.tag && !t.projectId) {
           const names = { work: 'Trabalho', break: 'Pausa', personal: 'Pessoal' };
           const nm = names[t.tag] || 'Geral';
@@ -2666,9 +2688,6 @@
         if (!t.projectId) t.projectId = projects[0].id;
         delete t.done;
         delete t.tag;
-      } else if (!t.context) {
-        t.context = (t.date || t.time) ? 'today' : 'later';
-        changed = true;
       }
     });
     if (changed) { save(); saveProjects(); }
@@ -2851,29 +2870,39 @@
     editingId = null;
   }
 
-  let currentContext = 'today';
-  let currentFormContext = 'today';
+  let currentBucket = 'today';
   let schedulingTaskId = null;
-  let selectedSchedContext = 'today';
 
-  function setTaskContext(ctx) {
-    currentContext = ctx;
+  function setBucket(bucket) {
+    currentBucket = bucket;
     document.querySelectorAll('.context-pill').forEach(b => {
-      b.classList.toggle('active', b.dataset.context === ctx);
+      b.classList.toggle('active', b.dataset.bucket === bucket);
     });
     render();
   }
 
-  function selectFormContext(ctx) {
-    currentFormContext = ctx;
-    document.getElementById('btn-ctx-today').classList.toggle('active', ctx === 'today');
-    document.getElementById('btn-ctx-tomorrow').classList.toggle('active', ctx === 'tomorrow');
-    document.getElementById('btn-ctx-later').classList.toggle('active', ctx === 'later');
+  /* Os presets escrevem no campo de data; o estado ativo é derivado dele,
+     então uma data qualquer não acende nenhum preset. */
+  function setFormDatePreset(preset) {
+    const el = document.getElementById('f-date');
+    if (preset === 'today') el.value = todayStr();
+    else if (preset === 'tomorrow') el.value = tomorrowStr();
+    else el.value = '';
+    syncFormPresetButtons();
+  }
 
-    const timeDurRow = document.getElementById('form-row-time-dur');
-    if (timeDurRow) {
-      timeDurRow.style.display = ctx === 'later' ? 'none' : 'grid';
-    }
+  function syncFormPresetButtons() {
+    const v = document.getElementById('f-date').value;
+    document.getElementById('btn-ctx-today').classList.toggle('active', v === todayStr());
+    document.getElementById('btn-ctx-tomorrow').classList.toggle('active', v === tomorrowStr());
+    document.getElementById('btn-ctx-none').classList.toggle('active', !v);
+  }
+
+  /* O balde ativo sugere a data da nova atividade. */
+  function defaultDateForBucket() {
+    if (currentBucket === 'inbox') return '';
+    if (currentBucket === 'next7') return tomorrowStr();
+    return todayStr();
   }
 
   function openCreateForm() {
@@ -2881,11 +2910,12 @@
     document.getElementById('form-title').textContent = 'Nova atividade';
     document.getElementById('btn-save-task').textContent = 'salvar';
     document.getElementById('f-name').value = '';
-    document.getElementById('f-time').value = '09:00';
-    document.getElementById('f-dur').value = 60;
+    document.getElementById('f-date').value = defaultDateForBucket();
+    document.getElementById('f-time').value = '';
+    document.getElementById('f-dur').value = '';
     populateProjectSelect();
     document.getElementById('f-project').value = projects[0] ? projects[0].id : '';
-    selectFormContext(currentContext || 'today');
+    syncFormPresetButtons();
     openFormPanel();
   }
 
@@ -2896,12 +2926,12 @@
     document.getElementById('form-title').textContent = 'Editar atividade';
     document.getElementById('btn-save-task').textContent = 'salvar alterações';
     document.getElementById('f-name').value = t.name;
-    document.getElementById('f-time').value = t.time || '09:00';
-    document.getElementById('f-dur').value = t.dur || 60;
+    document.getElementById('f-date').value = t.date || '';
+    document.getElementById('f-time').value = t.time || '';
+    document.getElementById('f-dur').value = t.dur || '';
     populateProjectSelect();
     document.getElementById('f-project').value = t.projectId;
-    const ctx = getTaskContext(t);
-    selectFormContext(ctx);
+    syncFormPresetButtons();
     openFormPanel();
   }
 
@@ -2911,23 +2941,12 @@
     if (!projectId || projectId === '__new__') projectId = projects[0].id;
     if (!name) { document.getElementById('f-name').focus(); return; }
 
-    let time = null;
-    let dur = null;
-    let date = null;
+    let date = document.getElementById('f-date').value || null;
+    const time = document.getElementById('f-time').value || null;
+    const dur = time ? (parseInt(document.getElementById('f-dur').value) || 60) : null;
 
-    if (currentFormContext === 'today') {
-      time = document.getElementById('f-time').value || '09:00';
-      dur = parseInt(document.getElementById('f-dur').value) || 60;
-      date = todayStr();
-    } else if (currentFormContext === 'tomorrow') {
-      time = document.getElementById('f-time').value || '09:00';
-      dur = parseInt(document.getElementById('f-dur').value) || 60;
-      date = tomorrowStr();
-    } else {
-      time = null;
-      dur = null;
-      date = null;
-    }
+    // Horário sem dia não significa nada: assume hoje.
+    if (time && !date) date = todayStr();
 
     if (editingId) {
       const t = tasks.find(x => x.id === editingId);
@@ -2936,7 +2955,6 @@
         t.time = time;
         t.dur = dur;
         t.projectId = projectId;
-        t.context = currentFormContext;
         t.date = date;
       }
     } else {
@@ -2949,8 +2967,7 @@
         status: 'pending',
         elapsed: 0,
         startedAt: null,
-        date,
-        context: currentFormContext
+        date
       });
     }
     save();
@@ -2963,11 +2980,11 @@
     const t = tasks.find(x => x.id === id);
     if (!t) return;
     schedulingTaskId = id;
-    selectedSchedContext = 'today';
     document.getElementById('sched-task-name').textContent = t.name;
-    document.getElementById('sched-time').value = t.time || '09:00';
-    document.getElementById('sched-dur').value = t.dur || 60;
-    selectSchedContext('today');
+    document.getElementById('sched-date').value = t.date || todayStr();
+    document.getElementById('sched-time').value = t.time || '';
+    document.getElementById('sched-dur').value = t.dur || '';
+    syncSchedPresetButtons();
     document.getElementById('schedule-overlay').classList.add('open');
     document.body.style.overflow = 'hidden';
   }
@@ -2978,28 +2995,26 @@
     document.body.style.overflow = '';
   }
 
-  function selectSchedContext(ctx) {
-    selectedSchedContext = ctx;
-    document.getElementById('sched-ctx-today').classList.toggle('active', ctx === 'today');
-    document.getElementById('sched-ctx-tomorrow').classList.toggle('active', ctx === 'tomorrow');
+  function setSchedDatePreset(preset) {
+    document.getElementById('sched-date').value = preset === 'tomorrow' ? tomorrowStr() : todayStr();
+    syncSchedPresetButtons();
+  }
+
+  function syncSchedPresetButtons() {
+    const v = document.getElementById('sched-date').value;
+    document.getElementById('sched-ctx-today').classList.toggle('active', v === todayStr());
+    document.getElementById('sched-ctx-tomorrow').classList.toggle('active', v === tomorrowStr());
   }
 
   function saveQuickSchedule() {
     if (!schedulingTaskId) return;
     const t = tasks.find(x => x.id === schedulingTaskId);
     if (!t) return;
-    const time = document.getElementById('sched-time').value || '09:00';
-    const dur = parseInt(document.getElementById('sched-dur').value) || 60;
+    const time = document.getElementById('sched-time').value || null;
 
+    t.date = document.getElementById('sched-date').value || todayStr();
     t.time = time;
-    t.dur = dur;
-    if (selectedSchedContext === 'today') {
-      t.date = todayStr();
-      t.context = 'today';
-    } else {
-      t.date = tomorrowStr();
-      t.context = 'tomorrow';
-    }
+    t.dur = time ? (parseInt(document.getElementById('sched-dur').value) || 60) : null;
 
     save();
     closeScheduleModal();
@@ -3113,9 +3128,13 @@
       const pct = plannedMs ? Math.min(100, Math.round(spent / plannedMs * 100)) : 0;
       return { pct, label: minsToHm(Math.round(spent / 60000)) + ' pausado', cls: 'paused-fill' };
     }
-    if (getTaskContext(t) === 'tomorrow') {
-      return { pct: 0, label: 'previsto p/ amanhã', cls: 'pending' };
+    const today = todayStr();
+    if (t.date > today) {
+      const label = t.date === tomorrowStr() ? 'previsto p/ amanhã' : 'previsto p/ ' + formatDateShort(t.date);
+      return { pct: 0, label, cls: 'pending' };
     }
+    if (t.date < today) return { pct: 0, label: 'atrasada', cls: 'ended' };
+
     const now = getNowMins();
     const start = toMins(t.time);
     const end = start + t.dur;
@@ -3151,14 +3170,13 @@
   function taskRowHtml(t, opts) {
     opts = opts || {};
     const showTag = opts.showTag !== false;
-    const ctx = getTaskContext(t);
 
-    if (ctx === 'later' || !t.time) {
+    if (!t.time) {
       return `
         <div class="task-row status-${t.status}">
           <div class="status-dot ${t.status}" title="${statusTitle(t.status)}"></div>
           <div class="time-block">
-            <span class="later-badge">fazer depois</span>
+            <span class="later-badge">${t.date ? formatDateShort(t.date) : 'sem prazo'}</span>
           </div>
           <div class="task-info">
             <div class="task-top">
@@ -3166,7 +3184,7 @@
               ${showTag ? projectTagHtml(t) : ''}
             </div>
             <div class="progress-row">
-              <span class="bar-label">Sem horário definido</span>
+              <span class="bar-label">${t.date ? 'Sem horário definido' : 'Sem prazo definido'}</span>
             </div>
           </div>
           <div class="task-actions">
@@ -3207,30 +3225,70 @@
       </div>`;
   }
 
-  function renderChronological(todays) {
-    const sorted = [...todays].sort((a, b) => toMins(a.time) - toMins(b.time));
+  function formatDayHeader(ds) {
+    if (!ds) return 'sem prazo';
+    if (ds === todayStr()) return 'hoje';
+    if (ds === tomorrowStr()) return 'amanhã';
+    const d = new Date(ds + 'T00:00:00');
+    return days[d.getDay()] + ' · ' + formatDateShort(ds);
+  }
+
+  /* Agrupa por dia preservando a ordem (data, hora). Tarefas sem prazo
+     formam o último grupo; dentro do dia, as sem horário vêm primeiro. */
+  function groupByDay(list) {
+    const sorted = [...list].sort((a, b) => taskSortKey(a).localeCompare(taskSortKey(b)));
+    const groups = [];
+    sorted.forEach(t => {
+      const key = t.date || '';
+      let g = groups.find(x => x.date === key);
+      if (!g) { g = { date: key, tasks: [] }; groups.push(g); }
+      g.tasks.push(t);
+    });
+    return groups;
+  }
+
+  /* A linha do "agora" só existe dentro do dia de hoje. */
+  function renderDayTasks(group) {
+    if (group.date !== todayStr()) return group.tasks.map(t => taskRowHtml(t)).join('');
+
     const now = getNowMins();
     let html = '';
     let nowInserted = false;
-    sorted.forEach((t, i) => {
-      const start = toMins(t.time);
-      const end = start + (t.dur || 0);
-      if (t.status !== 'done' && !nowInserted && start <= now && now <= end) {
-        html += `<div class="now-line"><div class="now-dot"></div><span class="now-label">agora · ${padTime(now)}</span></div>`;
-        nowInserted = true;
-      } else if (!nowInserted && start > now && i === 0) {
-        html += `<div class="now-line"><div class="now-dot"></div><span class="now-label">agora · ${padTime(now)}</span></div>`;
-        nowInserted = true;
+    group.tasks.forEach((t, i) => {
+      if (t.time) {
+        const start = toMins(t.time);
+        const end = start + (t.dur || 0);
+        if (!nowInserted && ((t.status !== 'done' && start <= now && now <= end) || (start > now && i === 0))) {
+          html += `<div class="now-line"><div class="now-dot"></div><span class="now-label">agora · ${padTime(now)}</span></div>`;
+          nowInserted = true;
+        }
       }
       html += taskRowHtml(t);
     });
     return html;
   }
 
+  function renderChronological(list) {
+    const groups = groupByDay(list);
+    // Um único dia dispensa cabeçalho — é o caso do balde "Hoje" sem atrasadas.
+    if (groups.length <= 1) return groups.length ? renderDayTasks(groups[0]) : '';
+
+    return groups.map(g => {
+      const totalDur = g.tasks.reduce((s, t) => s + (t.dur || 0), 0);
+      return `<div class="project-group">
+        <div class="project-group-header">
+          <span class="project-group-name">${formatDayHeader(g.date)}</span>
+          <span class="project-group-meta">${g.tasks.length} · ${minsToHm(totalDur)}</span>
+        </div>
+        <div class="project-group-tasks">${renderDayTasks(g)}</div>
+      </div>`;
+    }).join('');
+  }
+
   function renderGroupedByProject(todays) {
     let html = '';
     projects.forEach(p => {
-      const group = todays.filter(t => t.projectId === p.id).sort((a, b) => toMins(a.time) - toMins(b.time));
+      const group = todays.filter(t => t.projectId === p.id).sort((a, b) => taskSortKey(a).localeCompare(taskSortKey(b)));
       if (!group.length) return;
       const c = PALETTE[p.colorIndex % PALETTE.length];
       const totalDur = group.reduce((s, t) => s + (t.dur || 0), 0);
@@ -3248,42 +3306,41 @@
     return html;
   }
 
-  function updateContextBadges() {
-    const countToday = tasks.filter(t => getTaskContext(t) === 'today').length;
-    const countTomorrow = tasks.filter(t => getTaskContext(t) === 'tomorrow').length;
-    const countLater = tasks.filter(t => getTaskContext(t) === 'later').length;
+  const BUCKETS = ['today', 'next7', 'inbox', 'all'];
 
-    const elToday = document.getElementById('count-today');
-    const elTomorrow = document.getElementById('count-tomorrow');
-    const elLater = document.getElementById('count-later');
-    if (elToday) elToday.textContent = countToday;
-    if (elTomorrow) elTomorrow.textContent = countTomorrow;
-    if (elLater) elLater.textContent = countLater;
+  const EMPTY_MSG = {
+    today: 'nenhuma atividade para hoje — adicione a primeira acima',
+    next7: 'nenhuma atividade nos próximos 7 dias',
+    inbox: 'nenhuma atividade sem prazo definido',
+    all: 'nenhuma atividade cadastrada'
+  };
+
+  function updateContextBadges() {
+    BUCKETS.forEach(b => {
+      const el = document.getElementById('count-' + b);
+      if (el) el.textContent = tasks.filter(t => matchesBucket(t, b)).length;
+    });
   }
 
   function render() {
     updateHeader();
     updateContextBadges();
 
-    const currentTasks = tasks.filter(t => getTaskContext(t) === currentContext);
+    const currentTasks = tasks.filter(t => matchesBucket(t, currentBucket));
     const list = document.getElementById('task-list');
 
     const viewOptionsBar = document.getElementById('view-options-bar');
     if (viewOptionsBar) {
-      viewOptionsBar.style.display = currentContext === 'later' ? 'none' : 'flex';
+      // Na caixa de entrada nenhuma tarefa tem horário: ordenar por ele não diz nada.
+      viewOptionsBar.style.display = currentBucket === 'inbox' ? 'none' : 'flex';
     }
 
     if (!currentTasks.length) {
-      const emptyMsg = currentContext === 'today' ? 'nenhuma atividade para hoje — adicione a primeira acima' :
-                       currentContext === 'tomorrow' ? 'nenhuma atividade agendada para amanhã' :
-                       'nenhuma atividade em "fazer depois"';
-      list.innerHTML = `<div class="empty">${emptyMsg}</div>`;
+      list.innerHTML = `<div class="empty">${EMPTY_MSG[currentBucket]}</div>`;
+    } else if (currentBucket === 'inbox') {
+      list.innerHTML = currentTasks.map(t => taskRowHtml(t)).join('');
     } else {
-      if (currentContext === 'later') {
-        list.innerHTML = currentTasks.map(t => taskRowHtml(t)).join('');
-      } else {
-        list.innerHTML = listView === 'project' ? renderGroupedByProject(currentTasks) : renderChronological(currentTasks);
-      }
+      list.innerHTML = listView === 'project' ? renderGroupedByProject(currentTasks) : renderChronological(currentTasks);
     }
 
     const done = currentTasks.filter(t => t.status === 'done').length;
@@ -3327,10 +3384,7 @@
   }
 
   function getPreviousDateStr(ds) {
-    const d = new Date(ds + 'T00:00:00');
-    d.setDate(d.getDate() - 1);
-    const fmt = x => x.getFullYear() + '-' + String(x.getMonth() + 1).padStart(2, '0') + '-' + String(x.getDate()).padStart(2, '0');
-    return fmt(d);
+    return addDays(ds, -1);
   }
 
   function getPreviousWeekRange() {
@@ -3382,7 +3436,7 @@
 
   function generateTimelineDays(period) {
     const daysArr = [];
-    const fmt = x => x.getFullYear() + '-' + String(x.getMonth() + 1).padStart(2, '0') + '-' + String(x.getDate()).padStart(2, '0');
+    const fmt = toDateStr;
 
     if (period === 'today') {
       daysArr.push(fmt(new Date()));
