@@ -2640,6 +2640,8 @@
   }
 
   function padTime(m) {
+    // Uma tarefa que atravessa a meia-noite termina em 00:30, não em 24:30.
+    m = m % 1440;
     const h = String(Math.floor(m / 60)).padStart(2, '0');
     const mm = String(m % 60).padStart(2, '0');
     return h + ':' + mm;
