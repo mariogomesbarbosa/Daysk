@@ -3254,11 +3254,14 @@
     const now = getNowMins();
     let html = '';
     let nowInserted = false;
-    group.tasks.forEach((t, i) => {
-      if (t.time) {
+    group.tasks.forEach(t => {
+      // Antes da primeira tarefa com horário que esteja em curso ou ainda por vir.
+      // Não dá para usar o índice: as tarefas sem horário abrem o grupo.
+      if (t.time && !nowInserted) {
         const start = toMins(t.time);
         const end = start + (t.dur || 0);
-        if (!nowInserted && ((t.status !== 'done' && start <= now && now <= end) || (start > now && i === 0))) {
+        const emCurso = t.status !== 'done' && start <= now && now <= end;
+        if (emCurso || start > now) {
           html += `<div class="now-line"><div class="now-dot"></div><span class="now-label">agora · ${padTime(now)}</span></div>`;
           nowInserted = true;
         }
