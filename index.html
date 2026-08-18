@@ -411,6 +411,185 @@
     z-index: 94;
   }
 
+  /* ---------- Calendário ---------- */
+
+  .cal-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 12px;
+  }
+
+  .cal-nav {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px;
+    background: none;
+    border: 1px solid var(--border2);
+    border-radius: var(--radius-sm);
+    color: var(--text2);
+    cursor: pointer;
+    transition: background .15s, color .15s, border-color .15s;
+  }
+
+  .cal-nav:hover { background: var(--surface2); color: var(--text); border-color: var(--text3); }
+  .cal-nav:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .cal-weekdays,
+  .cal-grid {
+    display: grid;
+    /* minmax(0, 1fr) e não 1fr: o mínimo automático do 1fr é o min-content do
+       conteúdo, e um chip com nome longo estouraria a grade inteira. Foi esse o
+       bug corrigido no .report-grid no PR #8. */
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 4px;
+  }
+
+  .cal-weekdays {
+    margin-bottom: 4px;
+  }
+
+  .cal-weekday {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text2);
+    text-align: center;
+    padding: 2px 0;
+  }
+
+  .cal-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+    min-height: 92px;
+    padding: 6px;
+    text-align: left;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: background .15s, border-color .15s;
+  }
+
+  .cal-cell:hover { border-color: var(--border2); background: var(--surface2); }
+  .cal-cell:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+  /* Dias do mês vizinho: presentes e clicáveis, mas recuados visualmente. O
+     recuo vem do fundo (--bg em vez de --surface) e de um tom de texto abaixo,
+     não de --text3: sobre --bg ele dá 2.46:1 no tema claro, e nesta casa
+     --text3 é token de ícone, nunca de texto. Ver pendencias.md. */
+  .cal-cell.other-month { background: none; }
+  .cal-cell.other-month .cal-daynum { color: var(--text2); }
+
+  .cal-cell.selected { border-color: var(--accent); background: var(--accent-bg); }
+
+  .cal-daynum {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text);
+    flex-shrink: 0;
+  }
+
+  .cal-cell.is-today .cal-daynum {
+    align-self: flex-start;
+    min-width: 20px;
+    padding: 1px 5px;
+    background: var(--accent);
+    color: var(--on-accent);
+    border-radius: 999px;
+    text-align: center;
+    font-weight: 600;
+  }
+
+  .cal-chip {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    min-width: 0;
+    font-size: 10.5px;
+    line-height: 1.35;
+    padding: 1px 3px;
+    border-radius: 4px;
+    color: var(--text);
+    background: var(--surface2);
+  }
+
+  .cal-cell.selected .cal-chip { background: var(--surface); }
+
+  .cal-chip-time {
+    font-family: var(--mono);
+    font-size: 9.5px;
+    color: var(--text2);
+    flex-shrink: 0;
+  }
+
+  .cal-chip-name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Concluída aparece — o Calendário é mapa do tempo, não lista de pendências. */
+  .cal-chip.done { opacity: .55; }
+  .cal-chip.done .cal-chip-name { text-decoration: line-through; }
+
+  .cal-more {
+    font-family: var(--mono);
+    font-size: 9.5px;
+    color: var(--text2);
+    padding-left: 3px;
+  }
+
+  .cal-dots {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3px;
+    padding-left: 1px;
+  }
+
+  .cal-day-panel {
+    margin-top: 1.5rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--border);
+  }
+
+  .cal-day-panel-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 0.75rem;
+  }
+
+  .cal-day-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+    min-width: 0;
+  }
+
+  /* Abaixo de 600px sete colunas dão ~50px por célula: nome de tarefa não cabe,
+     e o app já tem .task-name chegando a 0px no mobile. Então a célula mostra
+     pontos, e o painel do dia é onde se lê e se age. */
+  @media (max-width: 600px) {
+    .cal-chip, .cal-more { display: none; }
+    .cal-cell { min-height: 58px; padding: 4px; gap: 4px; }
+    .cal-weekdays, .cal-grid { gap: 3px; }
+    .cal-daynum { font-size: 11px; }
+    .cal-weekday { font-size: 9px; letter-spacing: 0.02em; }
+  }
+
+  /* Acima de 600px os pontos não aparecem — quem informa são os chips. */
+  @media (min-width: 601px) {
+    .cal-dots { display: none; }
+  }
+
   @media (max-width: 860px) {
     .app-shell { grid-template-columns: minmax(0, 1fr); }
     .menu-btn { display: inline-flex; }
@@ -1719,7 +1898,31 @@
   </div>
 
   <div id="view-calendar" style="display:none">
-    <div class="empty">o calendário chega em breve</div>
+
+    <div class="cal-toolbar">
+      <button class="cal-nav" onclick="setCalendarMonth(-1)" aria-label="Mês anterior" title="Mês anterior">
+        <svg class="icon" width="16" height="16" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M165.66,202.34a8,8,0,0,1-11.32,11.32l-80-80a8,8,0,0,1,0-11.32l80-80a8,8,0,0,1,11.32,11.32L91.31,128Z"/></svg>
+      </button>
+      <button class="period-btn cal-today" onclick="goToCalendarToday()">hoje</button>
+      <button class="cal-nav" onclick="setCalendarMonth(1)" aria-label="Mês seguinte" title="Mês seguinte">
+        <svg class="icon" width="16" height="16" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M181.66,133.66l-80,80a8,8,0,0,1-11.32-11.32L164.69,128,90.34,53.66a8,8,0,0,1,11.32-11.32l80,80A8,8,0,0,1,181.66,133.66Z"/></svg>
+      </button>
+    </div>
+
+    <div class="cal-weekdays" id="cal-weekdays" aria-hidden="true"></div>
+    <div class="cal-grid" id="cal-grid" role="group" aria-label="Dias do mês"></div>
+
+    <div class="cal-day-panel">
+      <div class="cal-day-panel-head">
+        <h2 class="cal-day-title" id="cal-day-title">—</h2>
+        <button class="btn-add" id="cal-day-add" onclick="createOnSelectedDay()">
+          <svg class="icon" width="14" height="14" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M224,128a8,8,0,0,1-8,8H136v80a8,8,0,0,1-16,0V136H40a8,8,0,0,1,0-16h80V40a8,8,0,0,1,16,0v80h80A8,8,0,0,1,224,128Z"/></svg>
+          nova atividade
+        </button>
+      </div>
+      <div class="task-list" id="cal-day-list"></div>
+    </div>
+
   </div>
 
   <div id="view-report" style="display:none">
@@ -3149,12 +3352,13 @@
     return todayStr();
   }
 
-  function openCreateForm() {
+  /* dateStr vem do Calendário, onde o dia selecionado é o contexto. */
+  function openCreateForm(dateStr) {
     editingId = null;
     document.getElementById('form-title').textContent = 'Nova atividade';
     document.getElementById('btn-save-task').textContent = 'salvar';
     document.getElementById('f-name').value = '';
-    document.getElementById('f-date').value = defaultDateForView();
+    document.getElementById('f-date').value = dateStr || defaultDateForView();
     document.getElementById('f-time').value = '';
     document.getElementById('f-dur').value = '';
     populateProjectSelect();
@@ -3405,8 +3609,11 @@
       document.getElementById('day-label').textContent = 'relatórios';
       document.getElementById('date-label').textContent = PERIOD_LABELS[currentPeriod] || 'hoje';
     } else if (currentTab === 'calendar') {
+      // O mês tem de ser escrito aqui, nunca no handler de clique: render() roda
+      // a cada 60s e sobrescreveria o título.
+      const [ay, am] = calendarAnchor.split('-').map(Number);
       document.getElementById('day-label').textContent = 'calendário';
-      document.getElementById('date-label').textContent = 'em breve';
+      document.getElementById('date-label').textContent = months[am - 1] + ' de ' + ay;
     } else if (currentProject()) {
       // Esta ramificação tem de morar aqui, nunca no handler de clique:
       // render() roda a cada 60s e sobrescreveria o título pela data de hoje.
@@ -3653,6 +3860,155 @@
     document.getElementById('s-pct').textContent = pct + '%';
 
     if (currentTab === 'report') renderReport();
+    if (currentTab === 'calendar') renderCalendar();
+  }
+
+  /* ---------- render: calendário ---------- */
+
+  /* Âncora do mês visível e dia selecionado. Strings, como manda a casa: os
+     componentes numéricos só aparecem dentro de monthFirstDay/daysInMonth. */
+  let calendarAnchor = firstOfMonth(todayStr());
+  let calendarSelected = todayStr();
+
+  /* Aritmética de mês por componentes. Isto NÃO viola a armadilha de fuso
+     documentada em docs/modelo-de-dados.md: a armadilha é o parse de string
+     (new Date('2026-08-14') é lido como UTC). Construir por componentes é
+     horário local, e é a única forma correta de virar mês e ano bissexto. */
+  function firstOfMonth(ds) {
+    const [y, m] = ds.split('-').map(Number);
+    return toDateStr(new Date(y, m - 1, 1));
+  }
+
+  function addMonths(ds, n) {
+    const [y, m] = ds.split('-').map(Number);
+    return toDateStr(new Date(y, m - 1 + n, 1));
+  }
+
+  /* Grade de 6 linhas, sempre 42 dias, começando na segunda-feira — a mesma
+     convenção de getWeekRange(), que alimenta o relatório. Seis linhas fixas
+     evitam o conteúdo abaixo pular ao trocar de mês. Função pura: é aqui que
+     erram os cálculos de data, então é aqui que o harness aponta. */
+  function buildMonthGrid(anchor) {
+    const first = firstOfMonth(anchor);
+    const [y, m] = first.split('-').map(Number);
+    const dow = new Date(y, m - 1, 1).getDay();     // 0 = domingo
+    const recuo = (dow === 0 ? 6 : dow - 1);         // segunda = 0 de recuo
+    const inicio = addDays(first, -recuo);
+    const mesAtual = first.slice(0, 7);
+    const dias = [];
+    for (let i = 0; i < 42; i++) {
+      const ds = addDays(inicio, i);
+      dias.push({ date: ds, doMes: ds.slice(0, 7) === mesAtual });
+    }
+    return dias;
+  }
+
+  /* Índice data → tarefas, montado numa passada. O caminho ingênuo filtraria
+     tasks 42 vezes por render, e o render roda a cada 60s. */
+  function tasksByDate() {
+    const mapa = new Map();
+    tasks.forEach(t => {
+      if (!t.date) return;                           // sem prazo não é de dia nenhum
+      if (!mapa.has(t.date)) mapa.set(t.date, []);
+      mapa.get(t.date).push(t);
+    });
+    mapa.forEach(lista => lista.sort((a, b) => taskSortKey(a).localeCompare(taskSortKey(b))));
+    return mapa;
+  }
+
+  const CAL_MAX_CHIPS = 3;
+
+  function renderCalendar() {
+    const grid = document.getElementById('cal-grid');
+    if (!grid) return;
+
+    // Cabeçalho da semana: days começa em domingo, então a ordem é 1..6,0.
+    const wd = document.getElementById('cal-weekdays');
+    if (!wd.childElementCount) {
+      wd.innerHTML = [1, 2, 3, 4, 5, 6, 0]
+        .map(i => `<div class="cal-weekday">${days[i].slice(0, 3)}</div>`).join('');
+    }
+
+    const porData = tasksByDate();
+    const hoje = todayStr();
+
+    grid.innerHTML = buildMonthGrid(calendarAnchor).map(d => {
+      const lista = porData.get(d.date) || [];
+      const classes = ['cal-cell'];
+      if (!d.doMes) classes.push('other-month');
+      if (d.date === hoje) classes.push('is-today');
+      if (d.date === calendarSelected) classes.push('selected');
+
+      const chips = lista.slice(0, CAL_MAX_CHIPS).map(t => {
+        const proj = projects.find(p => p.id === t.projectId);
+        const c = proj ? PALETTE[proj.colorIndex % PALETTE.length] : null;
+        const ponto = c ? `<span class="project-dot" style="background:${c.fg}"></span>` : '';
+        const hora = t.time ? `<span class="cal-chip-time">${t.time}</span>` : '';
+        return `<span class="cal-chip${t.status === 'done' ? ' done' : ''}" title="${esc(t.name)}">
+          ${ponto}${hora}<span class="cal-chip-name">${esc(t.name)}</span>
+        </span>`;
+      }).join('');
+
+      const sobra = lista.length - CAL_MAX_CHIPS;
+      const mais = sobra > 0 ? `<span class="cal-more">+${sobra}</span>` : '';
+
+      // No mobile os chips saem e entram os pontos — ver o CSS de 600px.
+      const pontos = lista.slice(0, CAL_MAX_CHIPS).map(t => {
+        const proj = projects.find(p => p.id === t.projectId);
+        const c = proj ? PALETTE[proj.colorIndex % PALETTE.length] : null;
+        return c ? `<span class="project-dot" style="background:${c.fg}${t.status === 'done' ? ';opacity:.45' : ''}"></span>` : '';
+      }).join('');
+      const dots = lista.length ? `<span class="cal-dots">${pontos}</span>` : '';
+
+      const d1 = new Date(d.date + 'T00:00:00');
+      const rotulo = d1.getDate() + ' de ' + months[d1.getMonth()] + ', ' + lista.length + ' atividade(s)';
+
+      return `<button type="button" class="${classes.join(' ')}" data-date="${d.date}"
+                onclick="selectCalendarDay('${d.date}')" aria-label="${rotulo}">
+        <span class="cal-daynum">${d1.getDate()}</span>
+        ${chips}${mais}${dots}
+      </button>`;
+    }).join('');
+
+    renderCalendarDayPanel(porData);
+  }
+
+  function renderCalendarDayPanel(porData) {
+    porData = porData || tasksByDate();
+    const lista = porData.get(calendarSelected) || [];
+    document.getElementById('cal-day-title').textContent = formatDayHeader(calendarSelected);
+    const alvo = document.getElementById('cal-day-list');
+    alvo.innerHTML = lista.length
+      ? lista.map(t => taskRowHtml(t)).join('')
+      : `<div class="empty">nenhuma atividade neste dia</div>`;
+  }
+
+  function selectCalendarDay(ds) {
+    calendarSelected = ds;
+    // Clicar num dia do mês vizinho navega para aquele mês, mantendo a seleção.
+    const mes = firstOfMonth(ds);
+    if (mes !== calendarAnchor) calendarAnchor = mes;
+    updateHeader();
+    renderCalendar();
+  }
+
+  function setCalendarMonth(delta) {
+    calendarAnchor = addMonths(calendarAnchor, delta);
+    updateHeader();
+    renderCalendar();
+  }
+
+  function goToCalendarToday() {
+    calendarAnchor = firstOfMonth(todayStr());
+    calendarSelected = todayStr();
+    updateHeader();
+    renderCalendar();
+  }
+
+  /* O botão do painel carrega o dia selecionado; um botão no cabeçalho não teria
+     dia nenhum como contexto. */
+  function createOnSelectedDay() {
+    openCreateForm(calendarSelected);
   }
 
   /* ---------- render: report ---------- */

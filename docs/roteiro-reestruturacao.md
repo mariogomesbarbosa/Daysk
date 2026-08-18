@@ -27,6 +27,7 @@ indistinguível de um bug de layout.
 | 2 | Novos baldes de prazo | ✅ PR #3 |
 | 3 | Shell de duas colunas + sidebar | ✅ PR #6 |
 | 4 | Projetos no sidebar | ✅ PR #8 — plano em [bloco-4-projetos-no-sidebar.md](bloco-4-projetos-no-sidebar.md) |
+| — | Calendário (conteúdo, adiado no Bloco 0) | ✅ plano em [calendario.md](calendario.md) |
 
 ---
 

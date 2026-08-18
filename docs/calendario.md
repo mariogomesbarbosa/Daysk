@@ -1,6 +1,8 @@
 # Calendário
 
-**Planejado, não implementado.**
+**Implementado.** As treze decisões entraram como planejadas. O que só apareceu
+ao implementar está em [O que a implementação revelou](#o-que-a-implementação-revelou),
+no fim.
 
 Última peça pendente da reestruturação. O Calendário entrou no Bloco 0 apenas
 como item de navegação e página vazia, de propósito: o conteúdo dependia de data
@@ -307,3 +309,78 @@ moram — vale extrair como `buildMonthGrid(anchor)` e testar sozinha:
 - **Filtrar o Calendário por projeto.** Traria a seleção do sidebar para uma
   página que hoje não tem sidebar, e reabriria o produto cartesiano que o Bloco 4
   fechou de propósito.
+
+---
+
+## O que a implementação revelou
+
+Três coisas que o plano não previu, nenhuma delas mudando o rumo.
+
+**O número do dia dos meses vizinhos nasceu em `--text3`, com 2.46:1 no tema
+claro.** Exatamente a armadilha que o Bloco 4 já tinha registrado: `--text3` é
+token de **ícone** nesta casa, nunca de texto. A correção manteve a hierarquia
+sem sacrificar contraste — o dia do mês visível passou a `--text` e o dia
+vizinho a `--text2`, o que dá 17.98:1 e 5.53:1 no claro, ambos acima de AA e
+visivelmente distintos entre si. O recuo dos dias vizinhos continua vindo
+principalmente do fundo (`--bg` em vez de `--surface`).
+
+**O título do mês usa a abreviação de `months`** — "ago de 2026", não "agosto de
+2026". O array da casa é abreviado e o cabeçalho da aba Tasks já escreve
+"18 de ago de 2026". Escrever o mês por extenso só no Calendário exigiria um
+segundo array e deixaria as duas telas falando línguas diferentes.
+
+**Clicar num chip seleciona o dia, não abre a edição — e isso desvia do D8.** O
+plano dizia que o chip chamaria `openEditForm(id)`. Não dá: a célula inteira é um
+`<button>` (**D11**, para ser focável por teclado), e botão dentro de botão é HTML
+inválido, além de quebrar a navegação por Tab. O chip ficou `<span>`, e o clique
+nele borbulha para a célula.
+
+O desvio não custa nada porque o painel do dia abre no mesmo clique: a tarefa
+fica a um clique de distância, com o botão de editar que já existe na linha. O
+espírito do **D7** — o painel é onde se lê e se age — acabou valendo também para
+a edição.
+
+**O painel do dia herda a compressão da `.task-row` no mobile.** A 480px os nomes
+das tarefas no painel ficam entre 39px e 168px de largura visível — legíveis, mas
+apertados. Não é regressão do Calendário: é a pendência da `.task-row`
+registrada em [pendencias.md](pendencias.md), que aparece aqui porque o painel
+reusa a mesma linha. Corrigi-la conserta as duas telas de uma vez.
+
+### Verificação executada
+
+**Harness em Node, 60 casos** sobre `buildMonthGrid`, `firstOfMonth` e
+`addMonths` — as funções puras onde os erros de data moram:
+
+- 42 dias em qualquer mês, sempre começando numa segunda-feira, varrido nos
+  **24 meses de 2026 e 2027**, o que cobre mês começando em todos os dias da
+  semana.
+- Fevereiro de 2028 com 29 dias; fevereiro de 2026 com 28.
+- Grade inteira contígua, sem data repetida e sem salto nas pontas.
+- Virada de ano nos dois sentidos, e `addMonths` sem o escorregão clássico de
+  31/01 virar 03/03.
+- Fuso: o número do dia bate com a string em todos os 42 dias, e outubro e
+  fevereiro (as duas viradas de horário de verão no Brasil) seguem contíguos —
+  é o teste que pegaria um `new Date(string)` acidental.
+
+**No navegador**, com dados semeados cobrindo dia cheio, dia vazio, nome longo,
+concluída, atrasada, tarefa sem hora e tarefa sem data:
+
+| Verificação | Resultado |
+|---|---|
+| 42 células, semana em `seg…dom` | ✅ |
+| Hoje destacado, dia selecionado marcado | ✅ |
+| Tarefa sem data fora da grade | ✅ |
+| Dia com 5 tarefas: 3 chips + "+2", altura da linha inalterada | ✅ |
+| Concluída aparece riscada e esmaecida | ✅ |
+| Concluir pelo painel risca o chip na grade sem recarregar | ✅ 1 → 2 chips `done` |
+| `‹`, `›` e "hoje" navegam; título acompanha | ✅ |
+| **Título sobrevive a um `render()` manual** (a armadilha dos 60s) | ✅ |
+| Clicar dia do mês vizinho navega e mantém a seleção | ✅ |
+| Criar pelo painel nasce com a data do dia | ✅ `2026-08-23` |
+| Sem scroll horizontal em 480, 600, 860 e 1280px | ✅ |
+| Troca chips → pontos exatamente em 600px | ✅ célula 92px → 58px |
+| Contraste em ambos os temas, transições desligadas | ✅ tudo ≥ 4.5:1 |
+
+O que **não** foi verificado: 375px de largura real, pelo mesmo motivo de sempre
+— o ambiente não desce abaixo de 425px no Chrome nem de 480px no pane. Ver
+[pendencias.md](pendencias.md).
