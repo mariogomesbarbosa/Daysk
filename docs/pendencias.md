@@ -1,5 +1,34 @@
 # Pendências e ressalvas conhecidas
 
+## O nome da tarefa fica ilegível abaixo de ~480px
+
+Medido a 425px, na aba Tasks: `.task-name` chega a **0px de largura visível** em
+algumas linhas e 14px em outras, enquanto o texto precisaria de ~126–151px. A
+linha não gera scroll horizontal — os elementos se comprimem em vez de
+transbordar — mas o nome, que é a informação principal, desaparece.
+
+Quem disputa o espaço na `.task-row` é o bloco de horário, o selo do projeto, a
+barra de progresso, o rótulo de estado e os três botões de ação. Nenhum cede.
+
+**Não foi corrigido** porque decidir como a linha deve refluir no mobile é
+decisão de design, não consequência da correção de overflow: dá para empilhar em
+duas linhas, esconder a barra de progresso, colapsar os botões num menu, ou
+esconder o selo quando estreito. Vale escolher antes de mexer.
+
+É anterior à reestruturação — a `.task-row` não foi tocada em nenhum dos cinco
+blocos.
+
+## Sem acesso ao gerenciador de projetos no Calendário e nos Relatórios
+
+O botão "projetos" saiu da `brand-bar` e o acesso passou a ser o `+` da seção
+Projetos, no sidebar. Como o sidebar não existe nessas duas páginas
+(`body.no-sidebar`), e o botão do menu também fica escondido lá, **não há
+caminho para o gerenciador fora da aba Tasks**. Verificado nas três abas.
+
+É consequência aceita de manter a gerência junto de onde os projetos vivem. Se
+incomodar, o caminho mais simples é o `+` da seção também aparecer no cabeçalho
+quando `body.no-sidebar` estiver ativo.
+
 ## Interpolação de nomes no HTML sem escape
 
 O Bloco 4 introduziu `esc()` e o usa nos dois pontos que ele mesmo escreve: o
