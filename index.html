@@ -420,6 +420,10 @@
       top: 0;
       left: 0;
       bottom: 0;
+      /* Anula o align-self: start da regra base. Numa caixa fixed com top e
+         bottom definidos, align-self: start cancela o esticamento vertical, e a
+         gaveta ficava com a altura do conteúdo em vez da tela inteira. */
+      align-self: stretch;
       width: min(280px, 82vw);
       padding: 20px 16px;
       background: var(--surface);
@@ -3494,8 +3498,8 @@
   }
 
   /* A linha do "agora" só existe dentro do dia de hoje. */
-  function renderDayTasks(group) {
-    if (group.date !== todayStr()) return group.tasks.map(t => taskRowHtml(t)).join('');
+  function renderDayTasks(group, opts) {
+    if (group.date !== todayStr()) return group.tasks.map(t => taskRowHtml(t, opts)).join('');
 
     const now = getNowMins();
     let html = '';
@@ -3512,15 +3516,15 @@
           nowInserted = true;
         }
       }
-      html += taskRowHtml(t);
+      html += taskRowHtml(t, opts);
     });
     return html;
   }
 
-  function renderChronological(list) {
+  function renderChronological(list, opts) {
     const groups = groupByDay(list);
     // Um único dia dispensa cabeçalho — é o caso do balde "Hoje" sem atrasadas.
-    if (groups.length <= 1) return groups.length ? renderDayTasks(groups[0]) : '';
+    if (groups.length <= 1) return groups.length ? renderDayTasks(groups[0], opts) : '';
 
     return groups.map(g => {
       const totalDur = g.tasks.reduce((s, t) => s + (t.dur || 0), 0);
@@ -3529,7 +3533,7 @@
           <span class="project-group-name">${formatDayHeader(g.date)}</span>
           <span class="project-group-meta">${g.tasks.length} · ${minsToHm(totalDur)}</span>
         </div>
-        <div class="project-group-tasks">${renderDayTasks(g)}</div>
+        <div class="project-group-tasks">${renderDayTasks(g, opts)}</div>
       </div>`;
     }).join('');
   }
@@ -3628,7 +3632,9 @@
       // A barra está escondida, mas listView pode ter ficado em 'project' — daria
       // um grupo único repetindo o nome do cabeçalho. Sem gravar em listView:
       // a preferência tem de sobreviver à volta para um balde.
-      list.innerHTML = renderChronological(currentTasks);
+      // showTag: false pelo mesmo motivo de renderGroupedByProject — o cabeçalho
+      // já diz o projeto, e repetir o selo em cada linha é só ruído.
+      list.innerHTML = renderChronological(currentTasks, { showTag: false });
     } else {
       list.innerHTML = listView === 'project' ? renderGroupedByProject(currentTasks) : renderChronological(currentTasks);
     }
