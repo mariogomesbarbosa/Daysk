@@ -17,13 +17,14 @@ o *porquê* delas.
 | [roteiro-reestruturacao.md](roteiro-reestruturacao.md) | Os 5 blocos, o que entrou em cada um e as decisões com o raciocínio |
 | [modelo-de-dados.md](modelo-de-dados.md) | Como uma tarefa é representada e as regras dos baldes — a parte menos óbvia do código |
 | [bloco-4-projetos-no-sidebar.md](bloco-4-projetos-no-sidebar.md) | O plano do Bloco 4, com as decisões e o que ficou fora |
-| [ajuste-balde-hoje-concluidas.md](ajuste-balde-hoje-concluidas.md) | Ajuste planejado: concluídas de dias anteriores somem do balde "Hoje" |
+| [ajuste-balde-hoje-concluidas.md](ajuste-balde-hoje-concluidas.md) | Por que "Hoje" exclui toda tarefa concluída — e as duas rodadas que levaram a essa regra |
+| [calendario.md](calendario.md) | O plano do Calendário, a última peça pendente |
 | [pendencias.md](pendencias.md) | Ressalvas conhecidas, incluindo o que foi para `main` sem verificação visual |
 
 ## Estado atual
 
 Os cinco blocos estão em `main`. Falta o Calendário, que hoje é só um
-placeholder e terá planejamento próprio.
+placeholder — já planejado em [calendario.md](calendario.md), não implementado.
 
 | PR | O quê |
 |---|---|
@@ -34,6 +35,7 @@ placeholder e terá planejamento próprio.
 | #5 | Correção: horário de término virando "24:30" |
 | #6 | Sidebar de duas colunas + gaveta no mobile |
 | #8 | Projetos no sidebar, com seleção única |
+| #9 | "Hoje" deixa de contar tarefas concluídas |
 
 ## Arquitetura, em uma frase
 
