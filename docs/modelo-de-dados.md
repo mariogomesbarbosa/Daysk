@@ -19,14 +19,19 @@ Persistida em `localStorage` sob a chave `daily-tasks`, como um array JSON.
 | `status` | `pending` \| `active` \| `paused` \| `done` | — |
 | `elapsed` | ms | Tempo acumulado |
 | `startedAt` | timestamp ou `null` | Preenchido só enquanto `active` |
+| `completedAt` | timestamp ou ausente | Gravado ao concluir e **nunca lido**. Ausente em registros antigos e não limpo ao reabrir — ver abaixo |
 
 Projetos ficam em `daily-projects`: `{ id, name, colorIndex }`, onde
 `colorIndex` indexa a constante `PALETTE`.
 
-### `t.date` é a fonte única da verdade
+### `t.date` é a fonte única da verdade do prazo
 
-Não existe mais nenhum campo de "contexto" ou "categoria". O balde de uma tarefa
+Não existe mais nenhum campo de "contexto" ou "categoria". O prazo de uma tarefa
 é **derivado** de `t.date`, sempre, por `matchesBucket()`.
+
+Uma ressalva, e só uma: **o balde `today` lê `t.status` também.** "Hoje" é
+trabalho em aberto, não um extrato de datas — ver
+[Regras dos baldes](#regras-dos-baldes). Os outros três derivam puramente da data.
 
 ### O campo legado `t.context`
 
@@ -46,7 +51,7 @@ Em `matchesBucket(t, bucket)`:
 
 | Balde | Regra | Observação |
 |---|---|---|
-| `today` | `t.date <= hoje` | **Inclui atrasadas** — de propósito, para não sumirem |
+| `today` | `t.date <= hoje && t.status !== 'done'` | Hoje ou atrasado, mas só o que está em aberto |
 | `next7` | `hoje < t.date <= hoje+7` | Limite superior inclusivo |
 | `inbox` | `!t.date` | Estritamente sem prazo |
 | `all` | tudo | Rede de segurança: garante que nada fique invisível |
@@ -54,6 +59,51 @@ Em `matchesBucket(t, bucket)`:
 O motivo de `all` existir: sem ele, uma tarefa datada para daqui a 15 dias não
 pertenceria a balde nenhum e desapareceria da interface até entrar na janela dos
 7 dias.
+
+### Por que `today` não é simplesmente `t.date <= hoje`
+
+Era — e antes disso, ainda era menos: `t.date <= hoje` puxava o passado inteiro,
+inclusive tarefas **já concluídas** dias atrás. Elas inflavam o contador e, pior,
+envenenavam as estatísticas do dia: dois itens concluídos em julho viravam "50%
+de progresso" num dia em que nada tinha sido feito.
+
+O primeiro ajuste excluiu só as concluídas *antigas*, mantendo as concluídas
+*de hoje* — o raciocínio era que "ver o que você fez hoje" dava sentido ao
+`progresso`. Um teste real no navegador mostrou que não é assim que se espera
+usar o app: **"Hoje" é a lista do que falta fazer.** Uma tarefa concluída, seja
+de hoje ou de antes, some da lista e do contador **no instante em que é
+concluída** — sem ficar invisível, porque `all` continua com ela.
+
+Consequência que essa segunda volta trouxe, e vale saber: com o balde `today`
+nunca incluindo uma tarefa `done`, **as estatísticas `concluídas` e `progresso`
+mostradas na tela de "Hoje" são sempre `0` e `0%`.** Não é bug — é o preço de
+"Hoje" ser só o que está em aberto. Quem quiser ver quanto foi concluído no dia
+usa "Todas" ou o Relatório, que não filtram por status.
+
+Consequências que continuam valendo:
+
+- **`active` e `paused` de dias anteriores continuam aparecendo.** A regra olha
+  só `done`. Tarefa antiga em andamento é a definição de pendência.
+- **`status` ausente conta como pendente.** Registros antigos sem o campo não
+  desaparecem.
+- **Reabrir uma tarefa a traz de volta** para "Hoje" — hoje como pendente comum,
+  atrasada como "atrasada" — porque `matchesBucket()` é recalculado a cada
+  `render()`, nunca guardado.
+
+### O que ainda mistura data planejada com data de conclusão
+
+`t.completedAt` é gravado por `completeTask()` e **nunca é lido**. Isso já não é
+mais pré-requisito para "Hoje" excluir concluídas — essa parte não depende mais
+da data de conclusão, só do `status`. Mas o campo segue relevante para outra
+coisa que continua errada:
+
+**O gráfico de conclusão do relatório agrupa por `t.date`.** Uma tarefa marcada
+para a semana passada e concluída hoje aparece como concluída na **data
+planejada**, não na data em que foi concluída de fato.
+
+Antes de usar o campo para corrigir isso: ele não existe em registros antigos, e
+`reopenTask()` não o limpa — reabrir deixa um `completedAt` mentindo. Ver
+[pendencias.md](pendencias.md).
 
 ## Ordenação
 

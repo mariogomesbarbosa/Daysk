@@ -2792,7 +2792,10 @@
     if (bucket === 'inbox') return !t.date;
     if (!t.date) return false;
     const today = todayStr();
-    if (bucket === 'today') return t.date <= today;
+    // "Hoje" é o que está em aberto: hoje ou atrasado, mas nunca concluído — de
+    // hoje ou de antes. Concluída não é trabalho a fazer, e não fica invisível:
+    // o balde "Todas" continua com ela.
+    if (bucket === 'today') return t.date <= today && t.status !== 'done';
     if (bucket === 'next7') return t.date > today && t.date <= addDays(today, 7);
     return false;
   }

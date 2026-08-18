@@ -17,6 +17,7 @@ o *porquê* delas.
 | [roteiro-reestruturacao.md](roteiro-reestruturacao.md) | Os 5 blocos, o que entrou em cada um e as decisões com o raciocínio |
 | [modelo-de-dados.md](modelo-de-dados.md) | Como uma tarefa é representada e as regras dos baldes — a parte menos óbvia do código |
 | [bloco-4-projetos-no-sidebar.md](bloco-4-projetos-no-sidebar.md) | O plano do Bloco 4, com as decisões e o que ficou fora |
+| [ajuste-balde-hoje-concluidas.md](ajuste-balde-hoje-concluidas.md) | Ajuste planejado: concluídas de dias anteriores somem do balde "Hoje" |
 | [pendencias.md](pendencias.md) | Ressalvas conhecidas, incluindo o que foi para `main` sem verificação visual |
 
 ## Estado atual
