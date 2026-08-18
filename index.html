@@ -353,14 +353,17 @@
     padding: 0 12px 6px;
   }
 
+  /* --text2 e 11px seguem .stat-lbl: na casa, --text3 é token de ícone
+     (.btn-del, .btn-mini-del) e texto pequeno usa --text2. A 10px sobre --text3
+     o contraste no tema claro era 2.46:1. */
   .sidebar-section-title {
     flex: 1;
     min-width: 0;
     font-family: var(--mono);
-    font-size: 10px;
+    font-size: 11px;
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: var(--text3);
+    color: var(--text2);
   }
 
   .sidebar-add {

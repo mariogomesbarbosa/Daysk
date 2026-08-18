@@ -22,6 +22,27 @@ uma vez em vez de deixar metade do arquivo escapando e metade não. O risco real
 aqui é quebra de layout, não execução de terceiros — os dados são locais e do
 próprio usuário.
 
+## Contraste dos botões de ícone, no app inteiro
+
+Medido durante o Bloco 4, com as transições desligadas. `--text3` sobre `--bg`
+dá **2.46:1 no tema claro** e 3.85:1 no escuro. A WCAG pede 3:1 para
+componentes de interface, então o tema claro não passa.
+
+Isso vale para `.btn-del`, `.btn-mini-del`, os ícones dos itens do sidebar e o
+`+` da seção de projetos — que ficou nesse token justamente para acompanhar os
+outros. Todos ganham `--text` no hover, então o problema é só o estado de
+repouso.
+
+**Não foi alterado** porque `--text3` é o token de ícone da casa: mudar apenas o
+botão novo o deixaria fora do padrão, e mudar todos é uma decisão de design
+system, não consequência deste bloco. Se for mexer, `--text2` dá 5.53:1 no claro
+e 7.2:1 no escuro.
+
+Como referência do que é o padrão: **`--text3` nunca é usado para texto** no
+arquivo — texto pequeno usa `--text2` (ver `.stat-lbl`, 11px). O título da seção
+de projetos nasceu em `--text3` a 10px, com 2.46:1, e foi corrigido para
+`--text2` a 11px antes do merge.
+
 ## Layout abaixo de 860px: verificado a 480px, não a 375px
 
 Substitui parcialmente a ressalva registrada no PR #6, que dizia que a faixa
