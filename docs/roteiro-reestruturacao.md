@@ -27,6 +27,7 @@ indistinguível de um bug de layout.
 | 2 | Novos baldes de prazo | ✅ PR #3 |
 | 3 | Shell de duas colunas + sidebar | ✅ PR #6 |
 | 4 | Projetos no sidebar | ✅ PR #8 — plano em [bloco-4-projetos-no-sidebar.md](bloco-4-projetos-no-sidebar.md) |
+| — | Calendário (conteúdo, adiado no Bloco 0) | ✅ plano em [calendario.md](calendario.md) |
 
 ---
 
@@ -118,6 +119,12 @@ que não têm sidebar — esticariam até os 1180px do container, redesenhando n
 marra uma tela que ninguém pediu para mexer. O `minmax(0, 880px)` também é o que
 mantém o `.report-table-wrap` rolando dentro do próprio contêiner em vez de
 esticar o grid.
+
+> **O Calendário deixou de respeitar esse teto** quando foi de fato desenhado, e
+> usa os 1180px inteiros (`body.wide-content`). O teto era proteção contra
+> esticar telas que ninguém havia desenhado; uma vez desenhada, a grade de 7
+> colunas ganha com a largura. Os Relatórios seguem em 880px, onde a razão
+> original continua valendo. Ver [calendario.md](calendario.md).
 
 **O estado `no-sidebar` mora no `<body>`, não no `.app-shell`.** O botão do menu
 vive na `.brand-bar`, **fora** do shell; um seletor descendente não o alcançaria,

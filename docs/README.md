@@ -17,13 +17,16 @@ o *porquê* delas.
 | [roteiro-reestruturacao.md](roteiro-reestruturacao.md) | Os 5 blocos, o que entrou em cada um e as decisões com o raciocínio |
 | [modelo-de-dados.md](modelo-de-dados.md) | Como uma tarefa é representada e as regras dos baldes — a parte menos óbvia do código |
 | [bloco-4-projetos-no-sidebar.md](bloco-4-projetos-no-sidebar.md) | O plano do Bloco 4, com as decisões e o que ficou fora |
-| [ajuste-balde-hoje-concluidas.md](ajuste-balde-hoje-concluidas.md) | Ajuste planejado: concluídas de dias anteriores somem do balde "Hoje" |
+| [ajuste-balde-hoje-concluidas.md](ajuste-balde-hoje-concluidas.md) | Por que "Hoje" exclui toda tarefa concluída — e as duas rodadas que levaram a essa regra |
+| [calendario.md](calendario.md) | O Calendário: as 13 decisões, o desvio do D8 e a verificação |
+| [calendario-alternador-de-visao.md](calendario-alternador-de-visao.md) | Plano do alternador mensal/semanal/dia/multi-dia — reabre o D1 |
 | [pendencias.md](pendencias.md) | Ressalvas conhecidas, incluindo o que foi para `main` sem verificação visual |
 
 ## Estado atual
 
-Os cinco blocos estão em `main`. Falta o Calendário, que hoje é só um
-placeholder e terá planejamento próprio.
+Os cinco blocos estão em `main`, e o Calendário — a peça adiada no Bloco 0 —
+está implementado. A reestruturação está fechada; o que resta são as
+ressalvas de [pendencias.md](pendencias.md).
 
 | PR | O quê |
 |---|---|
@@ -34,6 +37,7 @@ placeholder e terá planejamento próprio.
 | #5 | Correção: horário de término virando "24:30" |
 | #6 | Sidebar de duas colunas + gaveta no mobile |
 | #8 | Projetos no sidebar, com seleção única |
+| #9 | "Hoje" deixa de contar tarefas concluídas |
 
 ## Arquitetura, em uma frase
 
