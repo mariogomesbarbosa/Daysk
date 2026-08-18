@@ -29,8 +29,8 @@ Projetos ficam em `daily-projects`: `{ id, name, colorIndex }`, onde
 Não existe mais nenhum campo de "contexto" ou "categoria". O prazo de uma tarefa
 é **derivado** de `t.date`, sempre, por `matchesBucket()`.
 
-Uma ressalva, e só uma: **o balde `today` lê `t.status` também.** Não é exceção
-gratuita — é o que a regra sempre quis dizer. Ver
+Uma ressalva, e só uma: **o balde `today` lê `t.status` também.** "Hoje" é
+trabalho em aberto, não um extrato de datas — ver
 [Regras dos baldes](#regras-dos-baldes). Os outros três derivam puramente da data.
 
 ### O campo legado `t.context`
@@ -51,7 +51,7 @@ Em `matchesBucket(t, bucket)`:
 
 | Balde | Regra | Observação |
 |---|---|---|
-| `today` | `t.date === hoje`, **ou** `t.date < hoje && t.status !== 'done'` | O dia de hoje, mais a pendência que sobrou |
+| `today` | `t.date <= hoje && t.status !== 'done'` | Hoje ou atrasado, mas só o que está em aberto |
 | `next7` | `hoje < t.date <= hoje+7` | Limite superior inclusivo |
 | `inbox` | `!t.date` | Estritamente sem prazo |
 | `all` | tudo | Rede de segurança: garante que nada fique invisível |
@@ -62,37 +62,47 @@ pertenceria a balde nenhum e desapareceria da interface até entrar na janela do
 
 ### Por que `today` não é simplesmente `t.date <= hoje`
 
-Era, até o [ajuste das concluídas](ajuste-balde-hoje-concluidas.md). O `<=`
-puxava o passado inteiro, inclusive tarefas **já concluídas** dias atrás: elas
-inflavam o contador e, pior, envenenavam as estatísticas do dia — dois itens
-concluídos em julho viravam "50% de progresso" num dia em que nada tinha sido
-feito.
+Era — e antes disso, ainda era menos: `t.date <= hoje` puxava o passado inteiro,
+inclusive tarefas **já concluídas** dias atrás. Elas inflavam o contador e, pior,
+envenenavam as estatísticas do dia: dois itens concluídos em julho viravam "50%
+de progresso" num dia em que nada tinha sido feito.
 
-A leitura certa é que **puxar o passado nunca foi uma regra de data.** Era a rede
-para não perder trabalho a fazer. Uma tarefa concluída não é trabalho a fazer,
-então sai — e não fica invisível, porque `all` continua com ela.
+O primeiro ajuste excluiu só as concluídas *antigas*, mantendo as concluídas
+*de hoje* — o raciocínio era que "ver o que você fez hoje" dava sentido ao
+`progresso`. Um teste real no navegador mostrou que não é assim que se espera
+usar o app: **"Hoje" é a lista do que falta fazer.** Uma tarefa concluída, seja
+de hoje ou de antes, some da lista e do contador **no instante em que é
+concluída** — sem ficar invisível, porque `all` continua com ela.
 
-Consequências que valem lembrar antes de mexer:
+Consequência que essa segunda volta trouxe, e vale saber: com o balde `today`
+nunca incluindo uma tarefa `done`, **as estatísticas `concluídas` e `progresso`
+mostradas na tela de "Hoje" são sempre `0` e `0%`.** Não é bug — é o preço de
+"Hoje" ser só o que está em aberto. Quem quiser ver quanto foi concluído no dia
+usa "Todas" ou o Relatório, que não filtram por status.
 
-- **Concluída hoje continua em `today`.** O corte é por data anterior, não por
-  estar concluída; ver o que você fez hoje é o que dá sentido ao `progresso`.
+Consequências que continuam valendo:
+
 - **`active` e `paused` de dias anteriores continuam aparecendo.** A regra olha
   só `done`. Tarefa antiga em andamento é a definição de pendência.
 - **`status` ausente conta como pendente.** Registros antigos sem o campo não
   desaparecem.
+- **Reabrir uma tarefa a traz de volta** para "Hoje" — hoje como pendente comum,
+  atrasada como "atrasada" — porque `matchesBucket()` é recalculado a cada
+  `render()`, nunca guardado.
 
 ### O que ainda mistura data planejada com data de conclusão
 
-`t.completedAt` é gravado por `completeTask()` e **nunca é lido**. Duas coisas
-dependem dele para ficarem certas, e nenhuma foi feita:
+`t.completedAt` é gravado por `completeTask()` e **nunca é lido**. Isso já não é
+mais pré-requisito para "Hoje" excluir concluídas — essa parte não depende mais
+da data de conclusão, só do `status`. Mas o campo segue relevante para outra
+coisa que continua errada:
 
-1. **Concluir hoje uma tarefa marcada para semana passada** a tira de `today` no
-   mesmo instante, e ela não entra no progresso do dia.
-2. **O gráfico de conclusão do relatório** agrupa por `t.date`, então essa tarefa
-   aparece como concluída na data planejada, não na data em que foi concluída.
+**O gráfico de conclusão do relatório agrupa por `t.date`.** Uma tarefa marcada
+para a semana passada e concluída hoje aparece como concluída na **data
+planejada**, não na data em que foi concluída de fato.
 
-Antes de usar o campo: ele não existe em registros antigos, e `reopenTask()` não
-o limpa — reabrir deixa um `completedAt` mentindo. Ver
+Antes de usar o campo para corrigir isso: ele não existe em registros antigos, e
+`reopenTask()` não o limpa — reabrir deixa um `completedAt` mentindo. Ver
 [pendencias.md](pendencias.md).
 
 ## Ordenação

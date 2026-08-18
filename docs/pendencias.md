@@ -7,12 +7,12 @@
 afirmando que foi concluída num instante preciso.
 
 Hoje é inócuo, porque o campo não é lido em lugar nenhum — é a única ocorrência
-no arquivo. Mas é pré-requisito de qualquer coisa que passe a ler `completedAt`,
-e são duas as candidatas: "Hoje" incluir o que foi concluído hoje
-independentemente da data planejada, e o gráfico do relatório agrupar por data de
-conclusão em vez de data planejada. Ver
-[modelo-de-dados.md](modelo-de-dados.md) e
-[ajuste-balde-hoje-concluidas.md](ajuste-balde-hoje-concluidas.md).
+no arquivo. Mas é pré-requisito de qualquer coisa que passe a ler `completedAt`.
+A regra do balde "Hoje" acabou não precisando dele (ver
+[ajuste-balde-hoje-concluidas.md](ajuste-balde-hoje-concluidas.md) — "Hoje" hoje
+exclui toda concluída, de qualquer data, só com `t.status`); a candidata que
+sobrou é o gráfico do relatório agrupar por data de conclusão em vez de data
+planejada. Ver [modelo-de-dados.md](modelo-de-dados.md).
 
 A correção é uma linha (`delete t.completedAt`), mas ela só faz sentido junto da
 decisão de para que o campo serve — por isso não foi feita solta.

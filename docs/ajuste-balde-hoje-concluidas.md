@@ -1,9 +1,12 @@
 # Ajuste — tarefas concluídas de dias anteriores no balde "Hoje"
 
-**Implementado.** A decisão central entrou como planejada, numa linha de
-`matchesBucket()`; a alternativa rica com `completedAt` segue em aberto, com os
-pré-requisitos registrados em [pendencias.md](pendencias.md). A regra final está
-documentada em [modelo-de-dados.md](modelo-de-dados.md).
+**Implementado, em duas rodadas.** A primeira excluía só as concluídas
+*antigas*; um teste real no Chrome mostrou que concluídas *de hoje* também
+precisavam sair. A regra final é mais simples que a primeira versão — ver
+[Revisão](#revisão-concluída-de-hoje-também-sai). A alternativa rica com
+`completedAt` segue em aberto, com os pré-requisitos em
+[pendencias.md](pendencias.md). A regra final está documentada em
+[modelo-de-dados.md](modelo-de-dados.md).
 
 ## O problema
 
@@ -74,11 +77,11 @@ Os outros três baldes seguem puramente derivados de `t.date`.
 | `t.date` | `status` | Hoje | Por quê |
 |---|---|---|---|
 | hoje | `pending` | entra | o dia de hoje |
-| hoje | `done` | **entra** | o progresso do dia precisa dela |
+| hoje | `done` | **sai** | ver [Revisão](#revisão-concluída-de-hoje-também-sai) |
 | hoje | `active` / `paused` | entra | idem |
 | passado | `pending` | entra | atrasada — a rede original |
 | passado | `active` / `paused` | entra | pendência em andamento |
-| passado | `done` | **sai** | **é o ajuste** |
+| passado | `done` | **sai** | é o ajuste original |
 | futuro | qualquer | não | é de `next7` ou de `all` |
 | sem data | qualquer | não | é da caixa de entrada |
 
@@ -86,45 +89,54 @@ Os outros três baldes seguem puramente derivados de `t.date`.
 existe exatamente para isso. Vale reler o motivo em
 [modelo-de-dados.md](modelo-de-dados.md) antes de mexer.
 
+## Revisão: concluída de hoje também sai
+
+A decisão central, como planejada, mantinha uma tarefa concluída **hoje** dentro
+de "Hoje" — o raciocínio era que o progresso do dia precisava dela. Um teste real
+no Chrome, feito pelo próprio usuário depois da implementação, mostrou que essa
+premissa estava errada: **"Hoje" deve ser só o que está em aberto.** Uma tarefa
+concluída, de hoje ou de antes, deve sumir da lista e do contador **no instante
+em que é concluída**.
+
+A regra final é mais simples que a original — colapsa para uma linha só:
+
+```js
+if (bucket === 'today') return t.date <= today && t.status !== 'done';
+```
+
+A ramificação `t.date === today ⇒ sempre entra` deixou de existir. Não há mais
+tratamento especial para hoje: é hoje-ou-atrasado, e não concluído.
+
+**Consequência que vale saber antes de mexer de novo:** como o balde `today`
+nunca inclui uma tarefa `done`, as estatísticas de "Hoje" (`s-done`, `s-pct`)
+são **sempre `0` e `0%`**. Não é um bug a corrigir — é o preço de "Hoje" ser
+puramente uma lista de pendências. Quem quiser ver o que foi concluído no dia
+usa "Todas" ou o Relatório.
+
 ## O que não muda
 
 - **`getProgress()`** já trata `status === 'done'` antes de qualquer lógica de
-  data, então nenhuma concluída antiga jamais foi rotulada "atrasada". Não encoste.
+  data, então nenhuma concluída jamais foi rotulada "atrasada". Não encoste.
 - **Os contadores do sidebar** se corrigem sozinhos: `updateContextBadges()`
   chama `matchesBucket()`. Um ponto de mudança, dois efeitos.
 - **As estatísticas** derivam da lista filtrada, então também se corrigem
-  sozinhas. No exemplo passariam a `2 total · 0 concluídas · 0min · 0%`.
-- **Os cabeçalhos de dia** desaparecem no caso do exemplo, porque sobra um grupo
-  só e `renderChronological()` omite cabeçalho quando há apenas um.
+  sozinhas — sempre `0 concluídas · 0%` em "Hoje", pela razão acima.
+- **Os cabeçalhos de dia** desaparecem sempre que sobra um único grupo, porque
+  `renderChronological()` omite cabeçalho nesse caso.
 - **`next7`, `inbox` e `all`** ficam intocados.
 
-## A alternativa mais rica, e por que não agora
+## `completedAt`: por que não precisou entrar aqui, e onde ainda importa
 
-Existe uma leitura melhor de "Hoje": **o dia de hoje mais o que eu terminei
-hoje**, independentemente da data planejada. Ela resolve um caso que a decisão
-acima deixa de fora — concluir hoje uma tarefa que estava marcada para 29/07,
-que sob a regra proposta sai de "Hoje" no mesmo instante em que você a conclui, e
-não entra no progresso do dia.
+Antes da revisão, eu havia considerado usar `t.completedAt` para uma leitura
+mais rica de "Hoje" (dia de hoje + o que foi terminado hoje, independente da
+data planejada). O teste do usuário resolveu a questão na direção oposta: "Hoje"
+não deveria mostrar concluídas de jeito nenhum, nem as de hoje. Isso torna
+`completedAt` desnecessário para a regra do balde — `t.status` sozinho basta.
 
-**E o campo para isso já existe.** `completeTask()` grava `t.completedAt =
-Date.now()`. Mesmo assim não recomendo agora, por três motivos que precisam ser
-resolvidos primeiro:
+O campo continua relevante para outra coisa, que não mudou:
 
-1. **O campo nunca é lido.** É a única ocorrência no arquivo, e não está
-   documentado em [modelo-de-dados.md](modelo-de-dados.md).
-2. **Registros antigos não têm o campo.** As duas tarefas do exemplo podem ou não
-   tê-lo, dependendo de quando a linha entrou. Qualquer regra que dependa dele
-   precisa de um caminho para `undefined` — e o comportamento nesse caminho é
-   justamente o da decisão acima.
-3. **`reopenTask()` não limpa o campo.** Reabrir deixa um `completedAt` mentindo
-   sobre uma tarefa que voltou a pendente. Isso é bug, e é pré-requisito.
-
-Ou seja: a decisão central é o degrau certo agora, e também é o alicerce da
-versão rica — que fica como bloco próprio, junto de resolver os três itens acima.
-
-### Uma inconsistência vizinha, para registro
-
-O gráfico de conclusão do relatório agrupa por `t.date`, não por `completedAt`:
+**O gráfico de conclusão do relatório agrupa por `t.date`, não por
+`completedAt`:**
 
 ```js
 filtered.filter(t => t.date === ds && t.status === 'done').length
@@ -139,25 +151,28 @@ responder duas coisas diferentes para a mesma pergunta.
 
 | O quê | Onde |
 |---|---|
-| A regra | `matchesBucket()`, o ramo `today` — uma linha vira três |
+| A regra | `matchesBucket()`, o ramo `today` — uma linha, na versão final |
 | A documentação da regra | tabela de baldes em [modelo-de-dados.md](modelo-de-dados.md), e a frase "o balde é derivado de `t.date`, sempre" |
 
 Nada de CSS, nada de markup, nenhum outro ponto de JS.
 
 ## Verificação
 
-**Harness em Node**, estendendo o que já existe: as oito linhas da tabela de
-casos de borda, mais a confirmação de que `next7`, `inbox` e `all` devolvem
-exatamente o mesmo conjunto de antes — é a regressão que importa, porque a
-mudança mora numa função compartilhada pelos quatro.
+**Harness em Node**, cobrindo a tabela de casos de borda (agora com "hoje +
+`done`" invertido para "sai") mais a confirmação de que `next7`, `inbox` e `all`
+devolvem exatamente o mesmo conjunto de antes — é a regressão que importa,
+porque a mudança mora numa função compartilhada pelos quatro.
 
-**No navegador**, com dados semeados reproduzindo o relato: duas tarefas de hoje
-sem horário e duas concluídas de datas anteriores.
+**No navegador**, em duas rodadas — a segunda depois da revisão:
 
-1. "Hoje" conta 2, não 4.
-2. O painel mostra `0 concluídas` e `0%`, não `2` e `50%`.
-3. Os cabeçalhos de dia somem, porque sobrou um grupo só.
-4. "Todas" continua contando 4 — nada ficou invisível.
-5. Concluir uma tarefa de hoje: ela **permanece** na lista e o progresso sobe.
-6. Reabrir uma concluída antiga: ela **volta** para "Hoje" como atrasada.
+1. "Hoje" conta só o que está em aberto — no exemplo original, 2 de 4.
+2. O painel mostra `0 concluídas` e `0%` sempre em "Hoje", nunca refletindo uma
+   concluída — nem as de hoje.
+3. Os cabeçalhos de dia somem quando sobra um grupo só.
+4. "Todas" continua contando tudo — nada ficou invisível.
+5. **Concluir a única tarefa aberta de hoje faz "Hoje" cair a zero na hora** —
+   ela não permanece nem contribui para o progresso. Este é o ponto que a
+   primeira rodada tinha errado.
+6. Reabrir uma concluída, de hoje ou antiga: ela **volta** para "Hoje" — hoje
+   como pendente comum, antiga como "atrasada".
 7. Uma tarefa antiga em `active` ou `paused` continua em "Hoje".
