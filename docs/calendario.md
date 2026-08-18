@@ -334,7 +334,13 @@ principalmente do fundo (`--bg` em vez de `--surface`).
 "18 de ago de 2026". Escrever o mês por extenso só no Calendário exigiria um
 segundo array e deixaria as duas telas falando línguas diferentes.
 
-**Clicar num chip seleciona o dia, não abre a edição — e isso desvia do D8.** O
+**Clicar num chip seleciona o dia, não abre a edição — e isso desvia do D8.**
+
+> ⚠️ **Desfeito.** O trabalho de arraste em
+> [calendario-alternador-de-visao.md](calendario-alternador-de-visao.md) resolveu o
+> problema de raiz (engolindo o clique do pai na fase de captura), e o toque curto
+> num chip passou a abrir a edição — o que o D8 queria desde o começo.
+ O
 plano dizia que o chip chamaria `openEditForm(id)`. Não dá: a célula inteira é um
 `<button>` (**D11**, para ser focável por teclado), e botão dentro de botão é HTML
 inválido, além de quebrar a navegação por Tab. O chip ficou `<span>`, e o clique

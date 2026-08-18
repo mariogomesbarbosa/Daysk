@@ -1,6 +1,9 @@
 # Calendário — alternador de visão e planejamento por arraste
 
-**Planejado, não implementado.**
+**Implementado.** As 15 decisões de visão e as 9 de arraste entraram como
+planejadas. O que só apareceu ao codar está em
+[O que a implementação revelou](#o-que-a-implementação-revelou), no fim —
+incluindo um desvio anterior que este trabalho **desfez**.
 
 Duas coisas que chegaram juntas e mudam a mesma tela:
 
@@ -589,3 +592,111 @@ E o arraste, que é a parte que não se verifica por medição sozinha:
 > "uma camada de interação inteira, com toque". O argumento continua verdadeiro —
 > e por isso o **A5** trata o toque explicitamente, em vez de o arraste entrar
 > pela metade e quebrar no celular.
+
+---
+
+## O que a implementação revelou
+
+Cinco coisas. Nenhuma mudou o rumo, e uma delas desfez um desvio antigo.
+
+### A cadeia A/B/C resolveu em 2 colunas
+
+O **V9** deixou a pergunta aberta: em A(9–10), B(9:30–10:30), C(10:15–11), a
+largura sai de 3 ou de 2? **De 2.** A e C não se tocam, então dividem a coluna 0
+e B fica sozinha na coluna 1 — o cluster é um só, mas ele não precisa de uma
+coluna por tarefa. O harness agora fixa essa resposta.
+
+### O bloco precisou de dois estados que o plano não previu
+
+O **V8** previu o piso de altura. Faltavam dois casos, e os dois são a mesma
+lição do `.task-name` a 0px:
+
+- **`.compact`, abaixo de 34px de altura.** Hora e nome empilhados não caibam, e
+  o nome era cortado a nada. Nessa faixa os dois vão na mesma linha.
+- **`.narrow`, quando o cluster tem 3 colunas ou mais.** Aí nem os dois na mesma
+  linha caibam, e é a **hora** que sai — não o nome. A posição vertical do bloco
+  já diz a hora; o nome é o que identifica. Foi a decisão de design que a
+  implementação exigiu e o plano não tinha.
+
+O efeito prático é a divisão de trabalho entre as visões ficar nítida: a semanal
+dá o panorama com nomes truncados, a visão dia mostra tudo por extenso.
+
+### O A8 desfez o desvio do D8
+
+Para arrastar um bloco ou um chip foi preciso resolver o problema que o **D8**
+tinha contornado: um chip vive dentro da célula-botão do mês, e um `pointerdown`
+nele acaba virando clique no pai.
+
+A solução é engolir o próximo `click` na fase de captura, depois de tratar o
+gesto no chip. E isso **devolveu ao D8 o que ele queria e não conseguiu**: o
+toque curto num chip ou num bloco agora abre a edição da tarefa, em vez de
+apenas selecionar o dia. O desvio registrado em [calendario.md](calendario.md)
+está desfeito.
+
+### `resolveTarget` devolve `null` fora da área visível, e está certo
+
+Um ponto na coluna de horas que esteja fora da parte rolada não resolve para
+alvo nenhum, porque `elementFromPoint` só vê o que está na tela. Parece falha e
+não é: ninguém solta onde não vê. A verificação foi refeita com pontos visíveis,
+e aí o mapeamento pixel → minuto bate com erro sempre ≤ 7,5min, metade do passo
+de 15.
+
+### A conta de largura do A2 bateu ao pixel
+
+A tabela do **A2** era estimativa; a medição deu exatamente os mesmos números:
+892px de calendário e célula de 124px com a coluna aberta, 1180px e 165px com
+ela recolhida.
+
+## Verificação executada
+
+**Harness em Node, 72 casos** sobre as três funções puras, somados aos 60 do
+Calendário e aos 43 dos baldes — todos passando, sem regressão:
+
+- `calendarRange`: tamanho por visão, clamp de 1→2 e 9→6 no multi-dia, a semanal
+  começando na segunda para **as 14 âncoras** de duas semanas seguidas, viradas
+  de mês e de ano nas quatro visões, e fevereiro de 2028.
+- `packOverlaps`: os sete casos do plano, mais a cadeia A/B/C, mais o piso de
+  altura entrando na conta (duas tarefas de 5min a 10min de distância **se**
+  sobrepõem no desenho, e o empacotamento tem de saber), mais `dur` nulo e lista
+  nula sem estourar.
+- `aplicarSoltura`: as gravações por tipo de alvo, os **seis no-ops** (alvo nulo,
+  tarefa nula, mesmo dia, mesma hora, já sem plano, tipo desconhecido), e a
+  preservação da hora ao mover de dia versus a limpeza na faixa de dia inteiro.
+
+**No navegador**, com Pointer Events sintetizados:
+
+| Verificação | Resultado |
+|---|---|
+| As quatro visões, com 42/7/1/N colunas | ✅ |
+| `‹`/`›` andam na unidade de cada visão | ✅ mês, 7 dias, 1 dia, N dias |
+| Rótulo do cabeçalho por visão | ✅ `ago de 2026`, `17 – 23 de ago`, `terça-feira, 18 de ago` |
+| Faixa de dia inteiro recebe as sem hora | ✅ |
+| Sobreposição lado a lado | ✅ |
+| Rolagem posicionada na primeira hora relevante | ✅ 07:30 para tarefas às 08:00 |
+| Mapeamento pixel → minuto, arredondado a 15 | ✅ erro ≤ 7,5min |
+| Arrastar da coluna para célula do mês | ✅ grava só a data |
+| Arrastar para a grade de horas | ✅ hora arredondada e `dur: 60` |
+| Arrastar um bloco de volta para a coluna | ✅ desagenda |
+| Soltar fora de alvo válido | ✅ não grava |
+| `Escape` no meio do arraste | ✅ cancela, fantasma limpo |
+| Toque curto não arrasta (limiar de 4px) | ✅ seleciona, no modo de dois toques |
+| Segundo toque num dia coloca a tarefa | ✅ |
+| **`render()` no meio do arraste** | ✅ o gesto sobrevive e a soltura grava |
+| Preferências sobrevivem ao recarregamento | ✅ visão, contagem e coluna |
+| Zero scroll **de página** em 480, 600, 861 e 1280px, nas 4 visões | ✅ |
+| No mobile a grade rola dentro de si, coluna mínima de 110px | ✅ |
+| Contraste nos dois temas, transições desligadas | ✅ nada abaixo de 4.5:1 |
+
+A última linha merece nota: o plano avisava que **a régua de horas era candidata
+a nascer em `--text3`**, o erro que eu já cometi duas vezes. Não foi cometido uma
+terceira — a régua está em `--text2`, com 5.98:1 no claro e 6.47:1 no escuro.
+
+### O que continua sem verificação
+
+**Arrastar com o dedo num aparelho real.** Os Pointer Events foram exercitados
+sintetizados e com mouse, o que cobre a lógica mas não o comportamento de toque
+de verdade — rolagem competindo com o arraste, área do dedo, latência. É
+justamente o motivo de ter escolhido Pointer Events em vez da API do HTML5, e é
+o teste que fica devendo.
+
+**375px de largura real**, pelo mesmo limite de ambiente de sempre.
