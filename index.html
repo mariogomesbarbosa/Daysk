@@ -128,6 +128,15 @@
     grid-template-columns: minmax(0, 880px);
   }
 
+  /* O Calendário usa a largura inteira do container. O teto de 880px foi criado
+     no Bloco 3 para proteger telas que ninguém havia desenhado; o Calendário
+     agora é desenhado, e uma grade de 7 colunas ganha com cada coluna mais
+     larga. Seletor com duas classes no body para vencer a regra acima por
+     especificidade, não por ordem no arquivo. */
+  body.no-sidebar.wide-content .app-shell {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
   body.no-sidebar .sidebar,
   body.no-sidebar .menu-btn { display: none; }
 
@@ -3487,6 +3496,8 @@
     document.getElementById('btn-add').style.display = tab === 'today' ? '' : 'none';
     // Os baldes só valem para a lista de tarefas.
     document.body.classList.toggle('no-sidebar', tab !== 'today');
+    // Só o Calendário abre mão do teto de 880px: a grade de 7 colunas usa tudo.
+    document.body.classList.toggle('wide-content', tab === 'calendar');
     closeSidebar();
     updateHeader();
     window.scrollTo({ top: 0 });

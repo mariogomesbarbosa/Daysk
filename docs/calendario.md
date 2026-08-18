@@ -229,9 +229,10 @@ O mês e o ano vão no `date-label`, dentro de `updateHeader()` — **nunca** no
 handler de clique. `render()` roda a cada 60s e sobrescreveria o título; é o erro
 descrito no Bloco 0 do [roteiro](roteiro-reestruturacao.md) e repetido no Bloco 4.
 
-A coluna de conteúdo tem teto de 880px e é alinhada à esquerda quando não há
-sidebar (decisões do Bloco 3). Sete colunas em 880px dão ~125px por célula, o que
-acomoda chip com hora e nome curto.
+**O Calendário abre mão do teto de 880px da coluna de conteúdo** e usa os 1180px
+inteiros do container — ver
+[a largura, revista depois de ver na tela](#a-largura-revista-depois-de-ver-na-tela).
+As demais telas mantêm o teto do Bloco 3.
 
 ## Casos de borda
 
@@ -384,3 +385,55 @@ concluída, atrasada, tarefa sem hora e tarefa sem data:
 O que **não** foi verificado: 375px de largura real, pelo mesmo motivo de sempre
 — o ambiente não desce abaixo de 425px no Chrome nem de 480px no pane. Ver
 [pendencias.md](pendencias.md).
+
+### A largura, revista depois de ver na tela
+
+O plano herdou sem questionar o teto de **880px** da coluna de conteúdo, que vem
+do Bloco 3. Ao ver o Calendário renderizado ficou evidente que estava errado: a
+grade parava em 880px enquanto o container tem 1180px, deixando **300px de
+espaço vazio à direita**, desalinhada do cabeçalho e da marca.
+
+Vale reler por que o teto existe, porque a razão original **não se aplica aqui**:
+
+> Sem ele, Calendário e Relatórios — que não têm sidebar — esticariam até os
+> 1180px do container, redesenhando na marra uma tela que ninguém pediu para
+> mexer.
+
+O teto era uma **proteção contra efeito colateral**: em 2026 ninguém havia
+desenhado essas duas telas, e esticá-las sem querer seria pior que mantê-las
+estreitas. O Calendário agora é uma tela desenhada de propósito, e uma grade de 7
+colunas é justamente o tipo de conteúdo que ganha com cada coluna mais larga.
+
+A mudança é uma classe no `<body>`, ligada só na aba Calendário:
+
+```css
+body.no-sidebar.wide-content .app-shell { grid-template-columns: minmax(0, 1fr); }
+```
+
+Duas classes no seletor de propósito: assim ele vence
+`body.no-sidebar .app-shell` por **especificidade**, não por ordem no arquivo —
+que é frágil a qualquer reorganização do CSS.
+
+**Os Relatórios continuam em 880px**, porque ali a razão original segue válida:
+ninguém desenhou aquela tela para 1180px, e o `minmax(0, 880px)` é o que mantém
+o `.report-table-wrap` rolando no próprio contêiner em vez de esticar o grid.
+
+Medido em seis larguras, nas três abas:
+
+| Viewport | Tasks | Calendário | Relatórios | Célula |
+|---|---|---|---|---|
+| 480px | 448 | 448 | 448 | 61px (pontos) |
+| 600px | 568 | 568 | 568 | 79px (pontos) |
+| 768px | 260 + 461 | **721** | 721 | 100px |
+| 861px | 260 + 526 | **814** | 814 | 113px |
+| 1024px | 260 + 689 | **977** | 880 | 136px |
+| 1280px | 260 + 880 | **1180** | 880 | 165px |
+| 1600px | 260 + 880 | **1180** | 880 | 165px |
+
+Zero scroll horizontal em todas, nas três abas. A célula passou de 122px para
+**165px** no desktop — 35% mais largura para o nome no chip.
+
+E a verificação que importava mais que a largura: a 1600px a grade alinha
+**exatamente** com a `brand-bar`, delta de 0px nas duas bordas. É o princípio do
+Bloco 3 — conteúdo e marca no mesmo eixo vertical — que teria sido quebrado se
+eu tivesse deixado o Calendário passar dos 1180px do container.
