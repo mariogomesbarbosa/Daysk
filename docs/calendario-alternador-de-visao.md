@@ -1,9 +1,17 @@
-# Calendário — alternador de visão
+# Calendário — alternador de visão e planejamento por arraste
 
 **Planejado, não implementado.**
 
-Quatro visões: **mensal**, **semanal**, **dia** e **multi-dia** com contagem
-escolhida pelo usuário, de 2 a 6 dias.
+Duas coisas que chegaram juntas e mudam a mesma tela:
+
+1. **Alternador de visão** — mensal, semanal, dia e multi-dia com contagem de 2 a
+   6 dias escolhida pelo usuário (**V1** a **V15**).
+2. **Coluna de atividades não planejadas**, à direita, de onde o usuário
+   **arrasta para o calendário** (**A1** a **A9**).
+
+Estão no mesmo documento porque disputam a mesma largura e o mesmo comportamento
+no mobile — separá-los duplicaria a discussão de layout e deixaria as duas
+metades desatualizadas uma em relação à outra.
 
 ## Isto reabre o D1, e vale dizer por quê
 
@@ -241,6 +249,176 @@ voltar para a mensal a cada vez que abre o app.
 
 ---
 
+---
+
+## Decisões — a coluna de não planejadas e o arraste
+
+### A1 — "Não planejada" é `!t.date`, e nada mais
+
+A coluna lista exatamente o balde **Caixa de entrada**: tarefa sem data. É o único
+conjunto que o app já chama de "sem prazo", e é o único que não aparece em
+nenhuma parte do calendário — portanto o único que precisa de um lugar.
+
+**A tentação é incluir também as tarefas com data e sem hora**, sob o argumento de
+que "não estão marcadas numa hora". Não: elas já aparecem duas vezes se eu fizer
+isso — na faixa de dia inteiro (**V6**) ou na célula do mês, *e* na coluna. Uma
+tarefa em dois lugares na mesma tela é convite para o usuário mover uma e
+estranhar que a outra não mudou.
+
+Consequência agradável: a coluna se **esvazia** conforme o dia é planejado, e uma
+coluna vazia com "nada sem prazo" é um estado de sucesso, não um vazio triste.
+
+### A2 — A coluna custa largura, e o número é este
+
+O rascunho põe a coluna à direita. Isso desfaz parte do ganho do commit
+[`af1f156`](calendario.md), que deu ao Calendário os 1180px inteiros. Vale ver a
+conta antes de decidir, não depois:
+
+| Situação | Calendário | Célula |
+|---|---|---|
+| Antes do `af1f156` (teto de 880px) | 880px | 122px |
+| Hoje, largura inteira | 1180px | **165px** |
+| Com a coluna de 260px aberta | 892px | 124px |
+| Com a coluna recolhida | 1180px | **165px** |
+
+Ou seja: **com a coluna aberta a célula volta praticamente ao que era antes do
+ajuste de largura.** O ganho não se perde — ele passa a ser gasto na coluna, que é
+uma troca legítima enquanto se está planejando, e ruim quando não se está.
+
+Por isso duas decisões juntas:
+
+- **A coluna tem 260px**, a mesma medida do sidebar da aba Tasks. Não é número
+  novo: é o número que a casa já usa para "coluna lateral de navegação".
+- **A coluna é recolhível**, com um botão na `.cal-toolbar`. Recolhida, o
+  Calendário volta aos 1180px e à célula de 165px.
+
+O estado de recolhida persiste, junto de `daysk-cal-view` (**V15**).
+
+E o Calendário **não** passa dos 1180px do container para compensar: isso
+quebraria o alinhamento com a `brand-bar` que hoje é exato (delta de 0px), que é
+o princípio do Bloco 3.
+
+### A3 — A coluna e o painel do dia são coisas diferentes, e ficam separados
+
+O rascunho mostra uma coisa só à direita. Mas a tela tem duas necessidades
+distintas:
+
+- **A coluna à direita** responde *o que ainda não tem dia* — é origem de arraste.
+- **O painel do dia** (**V13**) responde *o que tem neste dia*, e é o único lugar
+  com os botões de iniciar, concluir, editar e excluir.
+
+Empilhar os dois numa coluna de 260px aperta ambos e faz o painel perder a largura
+que as linhas de `taskRowHtml()` precisam. Então: **coluna à direita para as não
+planejadas; painel do dia embaixo da grade**, ocupando só a largura da coluna do
+calendário.
+
+Se ao ver na tela isso parecer redundante, o corte é tirar o painel na visão
+mensal e manter só nas de horas — mas isso é decisão de quem olha, não minha
+agora.
+
+### A4 — O alvo do arraste depende da visão, e o que ele grava também
+
+| Onde se solta | `t.date` | `t.time` | `t.dur` |
+|---|---|---|---|
+| Célula do mês | o dia | fica `null` | fica `null` |
+| Faixa de dia inteiro | o dia da coluna | fica `null` | fica `null` |
+| Grade de horas, às 14h | o dia da coluna | `14:00` | **60** |
+
+O `dur = 60` não é invenção: é o que `saveTask()` e `saveQuickSchedule()` já fazem
+quando há hora e o campo de duração está vazio. Soltar na grade de horas passa a
+ser um terceiro caminho para a mesma regra, não uma regra nova.
+
+A hora é **arredondada para o passo de 15 minutos** mais próximo, pelo mesmo
+motivo do **V12**: soltar não é medir.
+
+### A5 — Pointer Events, não a API de arraste do HTML5
+
+Esta é a decisão de engenharia que mais importa aqui.
+
+A API nativa (`draggable="true"`, `dragstart`, `dragover`, `drop`) é a mais curta
+de escrever e **não funciona em toque**. Nenhum evento de arraste do HTML5 dispara
+num celular. Adotá-la significaria entregar o planejamento por arraste só no
+desktop — num app em que cada bloco até aqui cuidou do mobile, e cuja restrição de
+arquitetura ("sem build, sem dependências") impede resolver com biblioteca.
+
+Então: `pointerdown` / `pointermove` / `pointerup`, que unificam mouse, toque e
+caneta numa só implementação. Custa mais código que o `drop` nativo, e é o preço
+de a funcionalidade existir no celular.
+
+Três detalhes que essa escolha obriga a tratar, e que a API nativa daria de graça:
+
+- **`setPointerCapture()`** no elemento arrastado, para o arraste não se perder ao
+  passar por cima de outro elemento.
+- **`touch-action: none`** no item arrastável, senão o navegador rola a página em
+  vez de arrastar.
+- **Limiar de movimento** (~4px) antes de considerar arraste, senão todo toque
+  vira um arraste de zero pixel e o clique simples nunca acontece.
+
+### A6 — O alvo é resolvido por `elementFromPoint`, não por listeners em cada célula
+
+Com Pointer Events não existe `dragover`, então o alvo tem de ser descoberto. Duas
+formas:
+
+1. Um listener em cada célula, faixa e vão de hora — dezenas de alvos, recriados
+   a cada `render()`.
+2. `document.elementFromPoint(x, y)` no `pointermove`, subindo com `closest()`
+   até achar um alvo válido.
+
+A segunda, e não é só economia de código: os alvos são **recriados a cada
+render**, e o render roda a cada 60 segundos. Listeners presos a nós que somem são
+exatamente a receita de arraste que para de funcionar depois de um minuto.
+
+`elementFromPoint` já é a ferramenta que este projeto usou para verificar
+sobreposição de camadas antes — está em [pendencias.md](pendencias.md).
+
+### A7 — O que se vê durante o arraste
+
+Três realimentações, e nenhuma delas é enfeite:
+
+- **O item segue o dedo**, num clone posicionado em `position: fixed`. Sem isso
+  não há como saber que o arraste começou.
+- **O alvo sob o cursor se destaca**, reusando a aparência de `.cal-cell:hover`.
+  Sem isso não há como saber *onde* vai cair.
+- **Na grade de horas, uma linha fantasma na hora de destino**, com o horário
+  escrito. Sem isso o usuário erra a hora e só descobre depois de soltar.
+
+Soltar fora de qualquer alvo válido **cancela** — a tarefa volta para a coluna e
+nada é gravado. `Escape` durante o arraste também cancela.
+
+### A8 — Arrastar de volta desagenda, e mover entre dias reagenda
+
+Uma vez que a maquinaria de arraste existe, dois gestos saem quase de graça e a
+ausência deles é que ficaria estranha:
+
+- **Da grade para a coluna** → `t.date = null`. Desagendar por arraste é o inverso
+  exato do gesto que o usuário acabou de aprender.
+- **De um dia para outro, dentro do calendário** → muda `t.date`, preservando
+  `t.time` se o alvo for do mesmo tipo.
+
+Sem o primeiro, a coluna é uma porta de mão única: dá para planejar e não dá para
+desplanejar, e o caminho de desfazer seria abrir o formulário e limpar a data.
+
+**Se for preciso cortar escopo, é aqui.** Os dois são separáveis do **A4**, que é
+o pedido do rascunho.
+
+### A9 — No mobile a coluna vai para baixo, e o gesto é tocar, não arrastar
+
+Abaixo de ~860px — o mesmo ponto em que o sidebar da aba Tasks vira gaveta — a
+coluna deixa de ser coluna e passa a ser uma seção **abaixo** do calendário.
+
+E o gesto muda: arrastar de uma lista que está abaixo da tela até uma célula que
+está acima exige rolar durante o arraste, que é frustrante mesmo em apps que
+fazem isso bem. Então no mobile o caminho é **tocar na tarefa para selecioná-la, e
+tocar no dia para colocá-la** — dois toques, sem arraste, com a tarefa selecionada
+destacada no meio.
+
+Isso não é uma segunda implementação: o **A6** já resolve o alvo por coordenada, e
+o modo de dois toques usa o mesmo `aplicarSoltura(tarefa, alvo)`. O que muda é
+só quem chama.
+
+O modal `openQuickScheduleModal()` continua existindo como terceiro caminho, e é
+o que já funciona hoje.
+
 ## Casos de borda
 
 | Caso | Comportamento |
@@ -258,6 +436,15 @@ voltar para a mensal a cada vez que abre o app.
 | Multi-dia atravessando o fim do mês | sem tratamento especial; são só datas |
 | Semana atravessando a virada do ano | idem; `addDays()` já atravessa |
 | Trocar de visão | a âncora é normalizada para a nova unidade (**V4**) |
+| Coluna de não planejadas vazia | mensagem de sucesso, não vazio triste (**A1**) |
+| Tarefa com data e sem hora | **não** entra na coluna; já está na faixa/célula (**A1**) |
+| Soltar fora de alvo válido | cancela, nada é gravado (**A7**) |
+| `Escape` durante o arraste | cancela (**A7**) |
+| Soltar na grade de horas às 14:07 | grava 14:00, arredondado a 15min (**A4**) |
+| Soltar na faixa de dia inteiro | grava a data, `time` fica nulo (**A4**) |
+| Arrastar da grade para a coluna | `t.date = null`, desagenda (**A8**) |
+| Toque simples num item da coluna | seleciona; não inicia arraste (limiar de 4px, **A5**) |
+| Render de 60s no meio de um arraste | o alvo é resolvido por coordenada, não por listener (**A6**) |
 
 ## Pontos de edição
 
@@ -273,8 +460,14 @@ voltar para a mensal a cada vez que abre o app.
 | Cabeçalho | ramo `calendar` do `updateHeader()`: o rótulo muda por visão |
 | Criar com hora | `openCreateForm(dateStr, timeStr)` |
 | CSS | grade de horas, régua, faixa de dia inteiro, bloco, alternador |
+| Coluna de não planejadas | markup novo na página do Calendário + `renderUnplannedList()` |
+| Layout de duas colunas | `body.wide-content` conviverá com a coluna de 260px (**A2**) |
+| Arraste | `startDrag(tarefa, evento)`, `resolveTarget(x, y)`, `aplicarSoltura(tarefa, alvo)` |
+| Recolher a coluna | botão na `.cal-toolbar` + `daysk-cal-aside` no `localStorage` |
 
-Nada muda em `matchesBucket()`, `taskRowHtml()` nem no modelo de dados.
+Nada muda em `matchesBucket()`, `taskRowHtml()` nem no **formato** do modelo. O
+arraste, porém, **escreve** em `t.date`, `t.time` e `t.dur` — os mesmos campos e as
+mesmas regras de `saveQuickSchedule()`, por onde já se reagenda hoje.
 
 ## Ordem de implementação
 
@@ -293,11 +486,26 @@ funcionando com mensal e dia, que já entrega valor e exercita toda a fundação
    inteiro, linha do "agora".
 5. **N colunas**: semanal e multi-dia caem quase de graça, mais o `<select>`.
 6. **Mobile**: larguras mínimas e rolagem contida.
-7. **Persistência** e as bordas da tabela acima.
+7. **A coluna de não planejadas**, sem arraste ainda — só a lista, o layout de
+   duas colunas e o botão de recolher (**A1**, **A2**, **A3**). Já é útil por si:
+   mostra o que ainda não tem dia.
+8. **O arraste, em três camadas separadas:** `resolveTarget(x, y)` (**A6**),
+   `aplicarSoltura(tarefa, alvo)` (**A4**) e só então os Pointer Events (**A5**).
+   As duas primeiras são testáveis sem gesto nenhum — e é isso que as torna
+   verificáveis no harness.
+9. **O modo de dois toques** no mobile (**A9**), que reusa as duas primeiras
+   camadas do passo 8.
+10. **Arrastar de volta e mover entre dias** (**A8**) — separável, e é aqui que
+    se corta se o escopo apertar.
+11. **Persistência** e as bordas da tabela acima.
+
+Há um **segundo corte natural, depois do passo 7**: a coluna listando as não
+planejadas, ainda sem arraste, já responde a pergunta do rascunho e valida o
+layout de duas colunas antes de investir na camada de gesto, que é a mais cara.
 
 ## Verificação
 
-**Harness em Node**, sobre as duas funções puras:
+**Harness em Node**, sobre as três funções puras:
 
 `calendarRange()` — 7 dias na semanal sempre começando na segunda; 1 na dia; N na
 multi; 42 na mensal; virada de mês e de ano nos quatro modos; e a normalização da
@@ -313,6 +521,20 @@ multi; 42 na mensal; virada de mês e de ano nos quatro modos; e a normalizaçã
 5. Cinco simultâneas → 5 colunas, nenhuma com largura zero.
 6. Uma tarefa só → largura cheia, sem deslocamento.
 7. Tarefa sem hora → **não** entra no empacotamento; é da faixa.
+
+`aplicarSoltura(tarefa, alvo)` — a gravação, separada do gesto de propósito
+(**A4**), o que a torna testável sem mover um pixel:
+
+1. Soltar numa célula do mês → grava só `date`; `time` e `dur` seguem nulos.
+2. Soltar na faixa de dia inteiro → idem.
+3. Soltar na grade às 14:07 → `time = 14:00`, `dur = 60`.
+4. Soltar na grade às 14:08 → `time = 14:15`, se o passo for de 15min.
+5. Soltar na coluna de não planejadas → `date = null`, e `time`/`dur` também,
+   senão sobra uma hora órfã sem dia (**A8**).
+6. Mover de um dia para outro na grade → muda `date`, **preserva** `time`.
+7. Alvo nulo → não grava nada e devolve o estado intacto (**A7**).
+8. Uma tarefa já com hora, solta numa célula do mês → decide-se aqui se `time`
+   é preservado ou zerado. **O teste fixa a resposta**; eu preservaria.
 
 **No navegador**, além do roteiro do [Calendário](calendario.md):
 
@@ -332,12 +554,38 @@ multi; 42 na mensal; virada de mês e de ano nos quatro modos; e a normalizaçã
     A régua de horas é o candidato a nascer em `--text3`; **texto pequeno usa
     `--text2`** nesta casa, e eu já errei isso duas vezes.
 
+E o arraste, que é a parte que não se verifica por medição sozinha:
+
+12. A coluna lista só as sem data, e **não** duplica as que têm data e não têm
+    hora (**A1**).
+13. Recolher a coluna devolve o Calendário aos 1180px e a célula aos 165px; a
+    escolha sobrevive a um recarregamento (**A2**).
+14. Arrastar da coluna para uma célula do mês grava a data e **remove o item da
+    coluna** no mesmo render.
+15. Arrastar para a grade de horas grava data e hora arredondadas.
+16. Soltar fora de alvo válido não muda nada; `Escape` no meio do arraste também
+    não (**A7**).
+17. **Arrastar com o mouse e com o dedo**, o mesmo gesto pelos dois caminhos —
+    é o teste que justifica ter escolhido Pointer Events em vez da API do HTML5
+    (**A5**). No Chrome dá para emular toque; vale conferir num celular real.
+18. Iniciar um arraste e **esperar passar de um minuto** antes de soltar: o
+    render de 60s recria os alvos, e o arraste tem de continuar funcionando
+    (**A6**). É a variante desta armadilha que ainda não me morderam.
+19. Um toque curto num item da coluna **não** inicia arraste (limiar de 4px), e
+    no mobile o modo de dois toques coloca a tarefa no dia (**A9**).
+
 ## Fora de escopo
 
 - **Visão de ano e visão de agenda**, que a referência mostra. Não foram pedidas,
   e "agenda" é quase o que a aba Tasks já faz.
-- **Arrastar para mover ou redimensionar** na grade de horas. Numa grade de horas
-  a tentação é grande, mas é uma camada de interação inteira, com toque. O
-  caminho de dois cliques (`openQuickScheduleModal`) continua valendo.
 - **Multi-semana**, também na referência.
+- **Redimensionar um bloco arrastando a borda** para mudar a duração. O arraste
+  que entra é o de *planejar* (**A4**) e o de *mover* (**A8**); mudar duração
+  continua pelo formulário.
 - **Fuso horário e eventos recorrentes.** O modelo não tem nem um nem outro.
+
+> **Arrastar saiu do "fora de escopo".** A versão anterior deste documento
+> listava "arrastar para mover ou redimensionar" aqui, com o argumento de que é
+> "uma camada de interação inteira, com toque". O argumento continua verdadeiro —
+> e por isso o **A5** trata o toque explicitamente, em vez de o arraste entrar
+> pela metade e quebrar no celular.

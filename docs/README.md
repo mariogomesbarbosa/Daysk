@@ -19,7 +19,7 @@ o *porquê* delas.
 | [bloco-4-projetos-no-sidebar.md](bloco-4-projetos-no-sidebar.md) | O plano do Bloco 4, com as decisões e o que ficou fora |
 | [ajuste-balde-hoje-concluidas.md](ajuste-balde-hoje-concluidas.md) | Por que "Hoje" exclui toda tarefa concluída — e as duas rodadas que levaram a essa regra |
 | [calendario.md](calendario.md) | O Calendário: as 13 decisões, o desvio do D8 e a verificação |
-| [calendario-alternador-de-visao.md](calendario-alternador-de-visao.md) | Plano do alternador mensal/semanal/dia/multi-dia — reabre o D1 |
+| [calendario-alternador-de-visao.md](calendario-alternador-de-visao.md) | Plano do alternador de visão e do planejar por arraste — reabre o D1 e o "fora de escopo" do arraste |
 | [pendencias.md](pendencias.md) | Ressalvas conhecidas, incluindo o que foi para `main` sem verificação visual |
 
 ## Estado atual
