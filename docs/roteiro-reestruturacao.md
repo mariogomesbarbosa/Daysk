@@ -26,7 +26,7 @@ indistinguível de um bug de layout.
 | 1 | Fundação de dados: data arbitrária | ✅ PR #3 (fundido com o 2) |
 | 2 | Novos baldes de prazo | ✅ PR #3 |
 | 3 | Shell de duas colunas + sidebar | ✅ PR #6 |
-| 4 | Projetos no sidebar | ⬜ pendente — ver [bloco-4-projetos-no-sidebar.md](bloco-4-projetos-no-sidebar.md) |
+| 4 | Projetos no sidebar | ✅ PR #8 — plano em [bloco-4-projetos-no-sidebar.md](bloco-4-projetos-no-sidebar.md) |
 
 ---
 
@@ -141,6 +141,52 @@ agnóstica de layout: `setBucket()` alterna a classe por `data-bucket` e
 quase só mover markup — o único ajuste foi um seletor CSS no `setBucket`.
 
 ---
+
+## Bloco 4 — Projetos no sidebar
+
+O plano, com as decisões e o raciocínio de cada uma, está em
+[bloco-4-projetos-no-sidebar.md](bloco-4-projetos-no-sidebar.md) e foi seguido
+sem desvio de rumo. O que vale registrar aqui é o que só apareceu ao implementar.
+
+**A seleção única saiu mais barata que o previsto porque o estado virou um objeto
+só.** `currentBucket` deu lugar a `currentView = { type, value }`, e o filtro do
+`render()` passou a chamar `matchesCurrentView()`. Foram seis pontos de leitura,
+todos mecânicos. A tentação era acrescentar um `currentProjectId` ao lado do
+balde — o mesmo erro de `currentFormContext`, removido no Bloco 1.
+
+**Uma varredura só decide o `active` dos dois grupos.** `syncSidebarActive()` é
+chamada de dentro do `render()`, depois de `renderSidebarProjects()`. Isso importa
+porque os botões de projeto são recriados a cada render: marcá-los no template
+funcionaria, mas manteria duas mecânicas de seleção — uma para cada grupo — que
+divergem no primeiro caso de borda. Por isso o template dos projetos **não**
+escreve `active`.
+
+**Desenhar o sidebar dentro do `render()` resolveu a sincronização de graça.**
+Todo caminho que mexe em dados já chamava `render()`, inclusive o da
+sincronização. As duas exceções eram reais e estavam previstas:
+`createProject()` e `addProjectFromManager()` não chamavam, então criar um projeto
+não o faria aparecer.
+
+### Três coisas que só a implementação mostrou
+
+1. **Os grupos de dia e os grupos de projeto compartilham as classes CSS.**
+   `renderChronological()` emite `.project-group` / `.project-group-name` com
+   `formatDayHeader()`. Ao medir "a lista de um projeto tem cabeçalhos de dia?",
+   contar `.project-group` não responde nada — é preciso ler o **texto** do
+   cabeçalho para saber se é uma data ou um nome de projeto.
+2. **Truncar `.sidebar-label` deixou de ser cosmético.** Os rótulos dos baldes são
+   curtos e fixos; nome de projeto é texto arbitrário. Sem `text-overflow`, um
+   nome longo transformava o item de 35px em 103px, com três linhas. O nome
+   inteiro ficou no `title`.
+3. **O ponto de cor precisou de margem para alinhar.** Ele tem 9px e os ícones
+   dos baldes 17px: sem `margin: 0 4px` os nomes dos projetos ficam 8px à esquerda
+   dos rótulos dos baldes. Medido, não estimado — depois da margem o delta é 0.
+4. **A recaída para "Hoje" foi para dentro do `render()`, não do
+   `deleteProject()`.** O plano a colocava no caminho da exclusão, mas há um
+   segundo caminho pelo qual o projeto selecionado desaparece: a sincronização
+   trazendo outro conjunto de projetos. No `render()` uma checagem cobre os dois,
+   e o modo de falha era feio — `EMPTY_MSG[<id do projeto>]` é `undefined`, então
+   a tela exibia literalmente "undefined".
 
 ## As duas correções (PRs #4 e #5)
 

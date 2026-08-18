@@ -1,6 +1,65 @@
 # Pendências e ressalvas conhecidas
 
-## Não verificado visualmente: layout abaixo de 860px
+## Interpolação de nomes no HTML sem escape
+
+O Bloco 4 introduziu `esc()` e o usa nos dois pontos que ele mesmo escreve: o
+item de projeto no sidebar e a mensagem de lista vazia. **Os outros pontos
+seguem sem escape** — são cerca de nove, entre nomes de projeto e de tarefa:
+
+| Onde | O quê |
+|---|---|
+| `populateProjectSelect()` | nome do projeto no `<option>` |
+| `projectTagHtml()` | nome do projeto no selo |
+| `projectRowHtml()` | nome e contador no modal |
+| `projectEditRowHtml()` | nome no `value=""` do input — **o mais frágil**, uma aspa dupla no nome quebra a marcação |
+| `renderGroupedByProject()` | nome no cabeçalho do grupo |
+| `taskRowHtml()` (dois pontos) | nome da tarefa |
+| tabela do relatório | nome da tarefa e do projeto |
+
+Não foi corrigido junto porque a superfície é maior do que o Bloco 4 e a
+correção é transversal: vale como um PR próprio, que passe `esc()` nos nove de
+uma vez em vez de deixar metade do arquivo escapando e metade não. O risco real
+aqui é quebra de layout, não execução de terceiros — os dados são locais e do
+próprio usuário.
+
+## Layout abaixo de 860px: verificado a 480px, não a 375px
+
+Substitui parcialmente a ressalva registrada no PR #6, que dizia que a faixa
+mobile nunca havia sido vista. **Durante o Bloco 4 o viewport passou a
+redimensionar de verdade** — `window.innerWidth` respondeu, a media query de
+860px casou e a gaveta foi exercitada com dados reais a **480px**:
+
+- Botão de menu aparece; `.sidebar` fica `position: fixed`, 280px de largura.
+- Fechada em `translateX(-280px)`, aberta em `translateX(0)`, medido pela
+  cascata com a transição desligada.
+- Escolher um projeto fecha a gaveta: `aria-expanded` volta a `false`, o backdrop
+  sai e a trava de `overflow` do `body` é liberada.
+- `elementFromPoint` no centro do item de projeto devolve o próprio item — nada
+  o cobre.
+- Nenhum scroll horizontal; com 16 itens o conteúdo continua caber, e o
+  `overflow-y: auto` está no lugar para telas mais curtas.
+
+**O que ainda falta:** 375px de largura real. O pane do navegador não desce
+abaixo de 480px — pedir 375 devolve sucesso mas entrega 480. Como 480px é
+justamente um dos breakpoints do arquivo (o de "só ícone" da navbar), a faixa
+375–479px segue sem olhos em cima.
+
+### Uma armadilha de medição que custou tempo
+
+Com o pane do navegador oculto a página **não produz frames**, e sem frames
+**transições CSS não avançam**. Medir `getComputedStyle(...).transform` logo
+depois de abrir a gaveta devolve o valor inicial para sempre, o que parece
+exatamente um bug de CSS: a classe `open` está lá, o backdrop aparece, e o
+`transform` não muda.
+
+O jeito de medir a cascata sem depender de frames é desligar a transição antes
+(`el.style.transition = 'none'`) e só então alternar a classe. `requestAnimationFrame`
+também não dispara nessa condição — esperar por ele trava a chamada.
+
+## Não verificado visualmente: layout abaixo de 860px (PR #6)
+
+> Mantido como registro histórico do que foi possível na época. A seção acima
+> substitui a conclusão: a gaveta **foi** verificada a 480px durante o Bloco 4.
 
 **O que está em risco:** a gaveta do sidebar e o comportamento do grid no
 mobile, entregues no PR #6.

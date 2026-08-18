@@ -316,7 +316,16 @@
 
   .sidebar-item:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 
-  .sidebar-label { flex: 1; min-width: 0; }
+  /* Truncar importa por causa dos projetos: nome de projeto é texto arbitrário e
+     sem isto um nome longo faz o item virar três linhas. Os rótulos dos baldes
+     são curtos e fixos, então não mudam. O nome inteiro fica no title. */
+  .sidebar-label {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 
   .ctx-count {
     font-size: 10px;
@@ -328,6 +337,51 @@
   }
 
   .sidebar-item.active .ctx-count { background: var(--bg); color: var(--text); }
+
+  /* Seção de projetos. O item reusa .sidebar-item — um projeto e um balde se
+     distinguem pelo conteúdo, nunca pela forma. */
+  .sidebar-section {
+    margin-top: 18px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+  }
+
+  .sidebar-section-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 12px 6px;
+  }
+
+  .sidebar-section-title {
+    flex: 1;
+    min-width: 0;
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text3);
+  }
+
+  .sidebar-add {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 3px;
+    background: none;
+    border: none;
+    border-radius: var(--radius-sm);
+    color: var(--text3);
+    cursor: pointer;
+    transition: background .15s, color .15s;
+  }
+
+  .sidebar-add:hover { background: var(--surface2); color: var(--text); }
+  .sidebar-add:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+  /* O ponto tem 9px e os ícones dos baldes 17px: sem esta margem os nomes dos
+     projetos não alinham com os rótulos dos baldes. 4 + 9 + 4 = 17. */
+  #sidebar-projects .project-dot { margin: 0 4px; }
 
   /* Botão do menu — só no mobile, onde o sidebar vira gaveta */
   .menu-btn {
@@ -1575,7 +1629,7 @@
 
   <div class="app-shell">
 
-  <aside class="sidebar" id="sidebar" aria-label="Filtros por prazo">
+  <aside class="sidebar" id="sidebar" aria-label="Prazos e projetos">
     <nav class="sidebar-nav">
       <button class="sidebar-item active" data-bucket="today" onclick="setBucket('today')">
         <svg class="icon" width="17" height="17" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M208,32H184V24a8,8,0,0,0-16,0v8H88V24a8,8,0,0,0-16,0v8H48A16,16,0,0,0,32,48V208a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V48A16,16,0,0,0,208,32ZM72,48v8a8,8,0,0,0,16,0V48h80v8a8,8,0,0,0,16,0V48h24V80H48V48ZM208,208H48V96H208V208Zm-64-56a16,16,0,1,1-16-16A16,16,0,0,1,144,152Z"/></svg>
@@ -1598,6 +1652,16 @@
         <span class="ctx-count" id="count-all">0</span>
       </button>
     </nav>
+
+    <div class="sidebar-section">
+      <div class="sidebar-section-header">
+        <span class="sidebar-section-title">Projetos</span>
+        <button class="sidebar-add" onclick="openProjectsManager()" aria-label="Gerenciar projetos" title="Gerenciar projetos">
+          <svg class="icon" width="14" height="14" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M224,128a8,8,0,0,1-8,8H136v80a8,8,0,0,1-16,0V136H40a8,8,0,0,1,0-16h80V40a8,8,0,0,1,16,0v80h80A8,8,0,0,1,224,128Z"/></svg>
+        </button>
+      </div>
+      <nav class="sidebar-nav" id="sidebar-projects" aria-label="Projetos"></nav>
+    </div>
   </aside>
 
   <main class="content">
@@ -1993,6 +2057,14 @@
   function icon(name, size) {
     size = size || 14;
     return `<svg class="icon" width="${size}" height="${size}" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="${ICON_PATHS[name]}"/></svg>`;
+  }
+
+  /* Serve para texto e para atributo entre aspas duplas. O resto do arquivo
+     interpola nomes sem escapar — ver pendencias.md. */
+  function esc(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   }
 
   /* ---------- theme ---------- */
@@ -2822,6 +2894,7 @@
     document.getElementById('f-project').value = p.id;
     document.getElementById('np-name').value = '';
     toggleNewProject(false);
+    render();  // o projeto novo precisa aparecer no sidebar
   }
 
   function deleteProject(pid) {
@@ -2837,6 +2910,8 @@
       save();
     }
     projects = projects.filter(p => p.id !== pid);
+    // Excluir o projeto selecionado recai para "Hoje" — quem faz isso é o
+    // render(), que cobre também o caso da sincronização.
     saveProjects();
     populateProjectSelect();
     renderProjectsManager();
@@ -2936,6 +3011,7 @@
     nameInput.value = '';
     draftColorIndex = nextAvailableColorIndex();
     renderProjectsManager();
+    render();  // o projeto novo precisa aparecer no sidebar
   }
 
   function openProjectsManager() {
@@ -2972,15 +3048,44 @@
     editingId = null;
   }
 
-  let currentBucket = 'today';
+  /* A seleção do sidebar é única: um balde OU um projeto, nunca os dois. Um
+     objeto só, em vez de duas variáveis, porque estado paralelo diverge da tela
+     — foi o que aconteceu com currentFormContext antes de ser removido. */
+  let currentView = { type: 'bucket', value: 'today' };
   let schedulingTaskId = null;
 
-  function setBucket(bucket) {
-    currentBucket = bucket;
+  function matchesCurrentView(t) {
+    return currentView.type === 'project'
+      ? t.projectId === currentView.value
+      : matchesBucket(t, currentView.value);
+  }
+
+  function currentProject() {
+    return currentView.type === 'project'
+      ? projects.find(p => p.id === currentView.value)
+      : null;
+  }
+
+  /* Uma varredura só, sobre os dois grupos de itens. Duas varreduras
+     independentes divergem no primeiro caso de borda. */
+  function syncSidebarActive() {
     document.querySelectorAll('.sidebar-item').forEach(b => {
-      b.classList.toggle('active', b.dataset.bucket === bucket);
+      const active = b.dataset.bucket
+        ? currentView.type === 'bucket' && b.dataset.bucket === currentView.value
+        : currentView.type === 'project' && b.dataset.project === currentView.value;
+      b.classList.toggle('active', active);
     });
+  }
+
+  function setBucket(bucket) {
+    currentView = { type: 'bucket', value: bucket };
     // No mobile a gaveta cobre a lista que acabou de ser filtrada.
+    closeSidebar();
+    render();
+  }
+
+  function setProject(id) {
+    currentView = { type: 'project', value: id };
     closeSidebar();
     render();
   }
@@ -3023,10 +3128,12 @@
     document.getElementById('btn-ctx-none').classList.toggle('active', !v);
   }
 
-  /* O balde ativo sugere a data da nova atividade. */
-  function defaultDateForBucket() {
-    if (currentBucket === 'inbox') return '';
-    if (currentBucket === 'next7') return tomorrowStr();
+  /* A seleção ativa sugere a data da nova atividade. Um projeto não carrega
+     prazo, então sugere hoje. */
+  function defaultDateForView() {
+    if (currentView.type === 'project') return todayStr();
+    if (currentView.value === 'inbox') return '';
+    if (currentView.value === 'next7') return tomorrowStr();
     return todayStr();
   }
 
@@ -3035,11 +3142,14 @@
     document.getElementById('form-title').textContent = 'Nova atividade';
     document.getElementById('btn-save-task').textContent = 'salvar';
     document.getElementById('f-name').value = '';
-    document.getElementById('f-date').value = defaultDateForBucket();
+    document.getElementById('f-date').value = defaultDateForView();
     document.getElementById('f-time').value = '';
     document.getElementById('f-dur').value = '';
     populateProjectSelect();
-    document.getElementById('f-project').value = projects[0] ? projects[0].id : '';
+    // Criar uma tarefa vendo um projeto põe a tarefa naquele projeto.
+    const viewProj = currentProject();
+    document.getElementById('f-project').value = viewProj ? viewProj.id
+      : (projects[0] ? projects[0].id : '');
     syncFormPresetButtons();
     openFormPanel();
   }
@@ -3285,6 +3395,11 @@
     } else if (currentTab === 'calendar') {
       document.getElementById('day-label').textContent = 'calendário';
       document.getElementById('date-label').textContent = 'em breve';
+    } else if (currentProject()) {
+      // Esta ramificação tem de morar aqui, nunca no handler de clique:
+      // render() roda a cada 60s e sobrescreveria o título pela data de hoje.
+      document.getElementById('day-label').textContent = 'projeto';
+      document.getElementById('date-label').textContent = currentProject().name;
     } else {
       document.getElementById('day-label').textContent = days[d.getDay()];
       document.getElementById('date-label').textContent = d.getDate() + ' de ' + months[d.getMonth()] + ' de ' + d.getFullYear();
@@ -3453,23 +3568,64 @@
     });
   }
 
+  /* Desenhado de dentro do render(), não em cada mutação: todo caminho que mexe
+     em dados já chama render(), inclusive o da sincronização. O preço é
+     redesenhar a cada 60s — aceitável enquanto o item não tiver campo de
+     entrada, senão o redesenho engoliria o que estivesse sendo digitado. É por
+     isso que editar e remover continuam no modal.
+     O contador conta todas as tarefas do projeto, como os baldes contam tudo:
+     dois grupos de badges idênticos com semânticas diferentes mentiriam. */
+  function renderSidebarProjects() {
+    const nav = document.getElementById('sidebar-projects');
+    if (!nav) return;
+    nav.innerHTML = projects.map(p => {
+      const c = PALETTE[p.colorIndex % PALETTE.length];
+      const count = tasks.filter(t => t.projectId === p.id).length;
+      // O 'active' não vem daqui: syncSidebarActive() cuida dos dois grupos.
+      return `<button class="sidebar-item" data-project="${p.id}" onclick="setProject('${p.id}')" title="${esc(p.name)}">
+        <span class="project-dot" style="background:${c.fg}"></span>
+        <span class="sidebar-label">${esc(p.name)}</span>
+        <span class="ctx-count">${count}</span>
+      </button>`;
+    }).join('');
+  }
+
   function render() {
+    // Recai para "Hoje" quando o projeto selecionado deixa de existir — por ter
+    // sido excluído ou por a sincronização ter trazido outro conjunto. Sem isto o
+    // filtro aponta para um id inexistente e a mensagem de vazio sai "undefined".
+    if (currentView.type === 'project' && !projects.some(p => p.id === currentView.value)) {
+      currentView = { type: 'bucket', value: 'today' };
+    }
+
     updateHeader();
     updateContextBadges();
+    renderSidebarProjects();
+    // Depois de redesenhar os projetos, senão os botões novos nascem sem marca.
+    syncSidebarActive();
 
-    const currentTasks = tasks.filter(t => matchesBucket(t, currentBucket));
+    const proj = currentProject();
+    const isInbox = currentView.type === 'bucket' && currentView.value === 'inbox';
+    const currentTasks = tasks.filter(matchesCurrentView);
     const list = document.getElementById('task-list');
 
     const viewOptionsBar = document.getElementById('view-options-bar');
     if (viewOptionsBar) {
-      // Na caixa de entrada nenhuma tarefa tem horário: ordenar por ele não diz nada.
-      viewOptionsBar.style.display = currentBucket === 'inbox' ? 'none' : 'flex';
+      // Na caixa de entrada nenhuma tarefa tem horário: ordenar por ele não diz
+      // nada. Com um projeto selecionado, agrupar por projeto é redundante.
+      viewOptionsBar.style.display = (isInbox || proj) ? 'none' : 'flex';
     }
 
     if (!currentTasks.length) {
-      list.innerHTML = `<div class="empty">${EMPTY_MSG[currentBucket]}</div>`;
-    } else if (currentBucket === 'inbox') {
+      const msg = proj ? `nenhuma atividade em "${esc(proj.name)}"` : EMPTY_MSG[currentView.value];
+      list.innerHTML = `<div class="empty">${msg}</div>`;
+    } else if (isInbox) {
       list.innerHTML = currentTasks.map(t => taskRowHtml(t)).join('');
+    } else if (proj) {
+      // A barra está escondida, mas listView pode ter ficado em 'project' — daria
+      // um grupo único repetindo o nome do cabeçalho. Sem gravar em listView:
+      // a preferência tem de sobreviver à volta para um balde.
+      list.innerHTML = renderChronological(currentTasks);
     } else {
       list.innerHTML = listView === 'project' ? renderGroupedByProject(currentTasks) : renderChronological(currentTasks);
     }
