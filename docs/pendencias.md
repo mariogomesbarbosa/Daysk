@@ -43,6 +43,31 @@ arquivo — texto pequeno usa `--text2` (ver `.stat-lbl`, 11px). O título da se
 de projetos nasceu em `--text3` a 10px, com 2.46:1, e foi corrigido para
 `--text2` a 11px antes do merge.
 
+## A gaveta abaixo de 860px foi finalmente vista — e tinha um bug
+
+Registro do que a verificação visual no Chrome real achou, e que duas rodadas de
+medição não tinham achado.
+
+**A gaveta ocupava só a altura do conteúdo, não a tela inteira.** A 816px, o
+painel terminava em ~430px de 909, com o conteúdo da página aparecendo embaixo.
+
+A causa é sutil e vale saber: a regra base de `.sidebar` tem `align-self: start`,
+necessária para o sticky da coluna no desktop. Numa caixa `position: fixed` com
+`top` **e** `bottom` definidos, `align-self: start` **cancela o esticamento
+vertical** — a caixa passa a ter a altura do conteúdo, mesmo com `bottom: 0`
+computando como `0px`. A correção foi `align-self: stretch` dentro da media
+query.
+
+Isto é anterior ao Bloco 4 — vem do PR #6 — e é exatamente o tipo de coisa que a
+ressalva "não verificado visualmente" estava escondendo. Nenhuma das medições
+pegou porque eu media *se a media query aplicava* e *se o transform deslizava*,
+nunca se a altura resultante fazia sentido.
+
+**Como reproduzir sem viewport estreito**, útil porque redimensionar o viewport é
+pouco confiável: aplique no elemento as mesmas declarações da media query
+(`position: fixed; top: 0; bottom: 0; align-self: …`) na largura que estiver e
+compare `getBoundingClientRect().height` com `window.innerHeight`.
+
 ## Layout abaixo de 860px: verificado a 480px, não a 375px
 
 Substitui parcialmente a ressalva registrada no PR #6, que dizia que a faixa
