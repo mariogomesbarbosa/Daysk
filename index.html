@@ -2792,7 +2792,14 @@
     if (bucket === 'inbox') return !t.date;
     if (!t.date) return false;
     const today = todayStr();
-    if (bucket === 'today') return t.date <= today;
+    if (bucket === 'today') {
+      // O dia de hoje, mais a pendência que sobrou. Puxar o passado para cá nunca
+      // foi regra de data: é a rede para não perder trabalho a fazer. Uma tarefa
+      // concluída não é trabalho a fazer, então sai — sem ficar invisível, porque
+      // o balde "Todas" continua com ela.
+      if (t.date === today) return true;
+      return t.date < today && t.status !== 'done';
+    }
     if (bucket === 'next7') return t.date > today && t.date <= addDays(today, 7);
     return false;
   }
