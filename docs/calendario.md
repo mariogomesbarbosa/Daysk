@@ -299,7 +299,11 @@ moram — vale extrair como `buildMonthGrid(anchor)` e testar sozinha:
 
 ## Fora de escopo
 
-- **Visão semanal com grade de horas.** Pede faixa de "dia inteiro" para as
+- **Visão semanal com grade de horas.** ⚠️ **Revertido** — planejada em
+  [calendario-alternador-de-visao.md](calendario-alternador-de-visao.md), junto das
+  visões dia e multi-dia. A objeção abaixo continua válida como observação; o que
+  mudou é que a faixa de "dia inteiro" passou a ser desenhada em vez de evitada.
+  Pede faixa de "dia inteiro" para as
   tarefas sem hora, blocos proporcionais a `dur` e tratamento de sobreposição. É
   um bloco próprio, e só se paga se o hábito de marcar horário se firmar.
 - **Arrastar para reagendar.** É uma camada de interação inteira — alvos de
