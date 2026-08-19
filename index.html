@@ -3776,6 +3776,26 @@
     return e;
   }
 
+  /* Fecha o trecho de tempo em aberto e soma em t.elapsed. Único lugar do
+     arquivo que faz isso — antes desta extração a mesma dupla de linhas estava
+     copiada em startTask(), pauseTask() e completeTask().
+
+     Não é arrumação: o registro de sessões (ver docs/refinamento-relatorios.md,
+     grupo S) grava uma entrada por trecho fechado, e uma sessão gravada em dois
+     dos três lugares seria um bug invisível — o total continuaria certo,
+     porque vem de elapsed, e só o recorte por dia sairia errado.
+
+     O guard é t.startedAt e não t.status: sem cronômetro aberto não há o que
+     fechar. Isso também elimina um NaN que o código antigo permitia — status
+     'active' com startedAt nulo fazia (Date.now() - null) contaminar elapsed
+     para sempre. Não era alcançável pela interface, mas dado sincronizado de
+     fora não passa por ela. */
+  function fecharSessao(t, agora) {
+    if (!t || !t.startedAt) return;
+    t.elapsed = (t.elapsed || 0) + (agora - t.startedAt);
+    t.startedAt = null;
+  }
+
   function statusTitle(s) {
     return { pending: 'pendente', active: 'em andamento', paused: 'pausada', done: 'concluída' }[s] || s;
   }
@@ -4254,11 +4274,12 @@
 
   function startTask(id) {
     const now = Date.now();
+    // Só uma tarefa corre por vez: a que estava ativa é pausada no MESMO
+    // instante em que a nova começa, para não haver buraco nem sobreposição.
     tasks.forEach(t => {
       if (t.status === 'active' && t.id !== id) {
-        t.elapsed = (t.elapsed || 0) + (now - t.startedAt);
+        fecharSessao(t, now);
         t.status = 'paused';
-        t.startedAt = null;
       }
     });
     const t = tasks.find(x => x.id === id);
@@ -4270,9 +4291,8 @@
   function pauseTask(id) {
     const t = tasks.find(x => x.id === id);
     if (t && t.status === 'active') {
-      t.elapsed = (t.elapsed || 0) + (Date.now() - t.startedAt);
+      fecharSessao(t, Date.now());
       t.status = 'paused';
-      t.startedAt = null;
       save();
       render();
     }
@@ -4281,10 +4301,7 @@
   function completeTask(id) {
     const t = tasks.find(x => x.id === id);
     if (!t) return;
-    if (t.status === 'active') {
-      t.elapsed = (t.elapsed || 0) + (Date.now() - t.startedAt);
-      t.startedAt = null;
-    }
+    if (t.status === 'active') fecharSessao(t, Date.now());
     t.status = 'done';
     t.completedAt = Date.now();
     save();
