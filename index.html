@@ -960,6 +960,29 @@
     white-space: nowrap;
   }
 
+  /* --text2 e nao --text3: --text3 nunca e usado para texto neste arquivo, e
+     o titulo da secao de projetos ja teve de ser corrigido por isso. */
+  .cal-unplanned-group {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text2);
+    margin-top: 8px;
+  }
+
+  .cal-unplanned-group:first-child { margin-top: 0; }
+
+  .cal-unplanned-date {
+    flex-shrink: 0;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text2);
+  }
+
+  /* Atrasada e o sinal mais forte que a coluna pode dar, e e barato. */
+  .cal-unplanned-date.atrasada { color: var(--red); }
+
   /* ---- arraste ---- */
 
   body.cal-dragging { cursor: grabbing; }
@@ -4541,12 +4564,46 @@
     return mapa;
   }
 
-  /* "Não planejada" é !t.date, e nada mais. É o único conjunto que não aparece
-     em nenhuma parte do calendário, e portanto o único que precisa de lugar.
-     Incluir as com data e sem hora faria a mesma tarefa aparecer duas vezes na
-     tela — na faixa de dia inteiro e aqui. */
-  function unplannedTasks() {
-    return tasks.filter(t => !t.date);
+  /* A A1 dizia que "não planejada" é !t.date e nada mais, e recusava incluir as
+     com data e sem hora porque a mesma tarefa apareceria duas vezes na tela —
+     na faixa de dia inteiro (V6) ou na célula do mês, *e* aqui.
+
+     O argumento continua verdadeiro; o que mudou é a leitura dele. No uso real,
+     a tarefa com data e sem hora é exatamente a que ainda precisa de
+     planejamento: ela tem dia, não tem lugar no dia. Escondê-la da coluna de
+     planejamento é esconder o trabalho de quem está planejando.
+
+     A duplicação se resolve ROTULANDO, não escondendo: dois grupos com
+     subtítulo, e a data no item do segundo. E o medo específico da A1 — mover
+     uma cópia e a outra não acompanhar — não se concretiza no código que
+     existe: as duas superfícies derivam de `tasks` a cada render() e nunca são
+     guardadas. Isso não era garantido quando a A1 foi escrita; hoje é, e é o
+     que torna a revisão segura.
+
+     Os dois grupos excluem concluídas, o que MUDA comportamento existente —
+     antes uma tarefa sem prazo e concluída aparecia aqui. A coluna é fila de
+     trabalho, não extrato: arrastar uma concluída para as 14h não significa
+     nada, e o contador ao lado do título só quer dizer alguma coisa se for
+     "quanto falta planejar". É o mesmo raciocínio do balde "Hoje". */
+  function asideGroups() {
+    const abertas = tasks.filter(t => t.status !== 'done');
+    return {
+      // Sem data não há critério de ordem melhor que o do array, e reordenar
+      // sem motivo confunde quem já se acostumou com a posição.
+      semPrazo: abertas.filter(t => !t.date),
+      // Fila de "planeje isto", e fila se lê de cima: mais próximo primeiro.
+      semHora: abertas.filter(t => t.date && !t.time)
+                      .sort((a, b) => taskSortKey(a).localeCompare(taskSortKey(b))),
+    };
+  }
+
+  /* Reusa formatDateShort() e o vocabulário dos presets do formulário. */
+  function seloDataHtml(ds) {
+    const hoje = todayStr();
+    const rotulo = ds === hoje ? 'hoje'
+      : ds === tomorrowStr() ? 'amanhã'
+      : formatDateShort(ds);
+    return `<span class="cal-unplanned-date${ds < hoje ? ' atrasada' : ''}">${rotulo}</span>`;
   }
 
   /* Empacotamento de sobreposições: coloração de intervalos. Tarefas que se
@@ -4769,19 +4826,33 @@
   function renderUnplannedList() {
     const alvo = document.getElementById('cal-unplanned');
     if (!alvo) return;
-    const lista = unplannedTasks();
-    document.getElementById('cal-unplanned-count').textContent = lista.length;
-    alvo.innerHTML = lista.length
-      ? lista.map(t => {
-          const c = projColor(t);
-          const ponto = c ? `<span class="project-dot" style="background:${c.fg}"></span>` : '';
-          const sel = tapSelected === t.id ? ' tap-selected' : '';
-          return `<div class="cal-unplanned-item${sel}" data-id="${t.id}"
-                       onpointerdown="startDrag('${t.id}', event, 'unplan')" title="${esc(t.name)}">
-            ${ponto}<span class="cal-unplanned-name">${esc(t.name)}</span>
-          </div>`;
-        }).join('')
-      : `<div class="empty">nada sem prazo</div>`;
+    const g = asideGroups();
+    const total = g.semPrazo.length + g.semHora.length;
+    document.getElementById('cal-unplanned-count').textContent = total;
+
+    // O ponto do projeto FICA aqui, ao contrário do chip: o item da coluna não
+    // é tingido, então o ponto é o único marcador de projeto que ele tem.
+    const item = t => {
+      const c = projColor(t);
+      const ponto = c ? `<span class="project-dot" style="background:${c.fg}"></span>` : '';
+      const sel = tapSelected === t.id ? ' tap-selected' : '';
+      return `<div class="cal-unplanned-item${sel}" data-id="${t.id}"
+                   onpointerdown="startDrag('${t.id}', event, 'unplan')" title="${esc(t.name)}">
+        ${ponto}<span class="cal-unplanned-name">${esc(t.name)}</span>${t.date ? seloDataHtml(t.date) : ''}
+      </div>`;
+    };
+
+    // Grupo vazio some inteiro, subtítulo incluído: uma coluna com dois
+    // cabeçalhos e nada embaixo é pior que uma coluna com um.
+    const grupo = (titulo, lista) => lista.length
+      ? `<div class="cal-unplanned-group">${titulo}</div>` + lista.map(item).join('')
+      : '';
+
+    // "nada sem prazo" estava certo para um conjunto e é falso para dois — e
+    // este é o estado de sucesso que a A1 queria celebrar.
+    alvo.innerHTML = total
+      ? grupo('sem prazo', g.semPrazo) + grupo('sem hora', g.semHora)
+      : `<div class="empty">tudo planejado</div>`;
   }
 
   function renderCalendarDayPanel(porData) {
