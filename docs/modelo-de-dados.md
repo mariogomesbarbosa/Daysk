@@ -17,8 +17,9 @@ Persistida em `localStorage` sob a chave `daily-tasks`, como um array JSON.
 | `dur` | minutos ou `null` | Só faz sentido acompanhado de `time` |
 | `projectId` | string | Referência a `daily-projects` |
 | `status` | `pending` \| `active` \| `paused` \| `done` | — |
-| `elapsed` | ms | Tempo acumulado |
+| `elapsed` | ms | Tempo acumulado. **Fonte da verdade dos totais** |
 | `startedAt` | timestamp ou `null` | Preenchido só enquanto `active` |
+| `sessions` | array ou ausente | Trechos de tempo fechados: `{ ini, fim }` em timestamp. Detalhamento aditivo — ver abaixo |
 | `completedAt` | timestamp ou ausente | Gravado ao concluir e **nunca lido**. Ausente em registros antigos e não limpo ao reabrir — ver abaixo |
 
 Projetos ficam em `daily-projects`: `{ id, name, colorIndex }`, onde
@@ -32,6 +33,46 @@ Não existe mais nenhum campo de "contexto" ou "categoria". O prazo de uma taref
 Uma ressalva, e só uma: **o balde `today` lê `t.status` também.** "Hoje" é
 trabalho em aberto, não um extrato de datas — ver
 [Regras dos baldes](#regras-dos-baldes). Os outros três derivam puramente da data.
+
+### `t.sessions` — o recorte por dia, e por que não substitui `elapsed`
+
+Cada play/pause/concluir fecha um trecho e empurra `{ ini, fim }` aqui.
+`fecharSessao(t, agora)` é **o único lugar do arquivo** que soma em `elapsed` e
+grava sessão; havia três cópias da mesma conta antes disso.
+
+**A regra que não pode ser invertida: total sai de `elapsed`, recorte por dia sai
+de `sessions`.** `elapsed` é lido por `getProgress()`, `taskRowHtml()`, a Visão
+Geral, a tabela e as barras por projeto — e os três modos de sincronização
+serializam sem validar schema, então dado vindo de uma versão anterior do app
+tem `elapsed` e não tem `sessions`. Nesse caso os totais precisam continuar
+certos, e continuam.
+
+`msPorDia(sessoes)` reparte os trechos pelos dias que cobrem. Uma sessão das
+23:00 às 01:00 são duas horas em **dois dias** — atribuir ao dia de início
+repetiria, em escala menor, o erro que o campo existe para corrigir. A
+meia-noite seguinte é construída por componentes (`new Date(y, m, d + 1)`), que
+é horário local; a armadilha de fuso é *parsear* string de data, não construir.
+
+`sessoesDe(t, agora)` acrescenta a sessão ainda aberta quando a tarefa está
+`active` — mesma regra de `effectiveElapsed()`.
+
+**Sessões sintéticas.** `migrate()` cria uma sessão para toda tarefa com
+`elapsed > 0`, com data e sem `sessions`, ancorada ao **meio-dia** da data
+planejada e marcada com `sintetica: true`. Sem isso o histórico inteiro sumiria
+do gráfico diário: o total diria 3h e o recorte por dia diria zero. Meio-dia e
+não meia-noite porque uma sessão sintética longa em 00:00 vazaria para o dia
+anterior. **A flag é lida** — a Curva de Desempenho mostra uma nota quando o
+período contém tempo estimado.
+
+Tarefas com `elapsed` e **sem data** ficam de fora: não há dia onde ancorar.
+Continuam no total e ausentes do recorte diário. É a única inconsistência que
+sobra.
+
+**Na fusão de sincronização, sessões locais são preservadas** quando o remoto
+não as traz. O remoto vence em todo o resto, como sempre; mas um dispositivo com
+versão anterior do app apagaria o histórico sem nada denunciar, porque os totais
+vêm de `elapsed`. Sessões são append-only — não há interface que apague uma —
+então preservar é seguro por construção.
 
 ### O campo legado `t.context`
 

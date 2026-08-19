@@ -218,6 +218,103 @@ eq('e nao altera o valor', t6.elapsed, 1234);
 
 eq('tarefa inexistente nao explode', (() => { fecharSessao(undefined, T0); return 'ok'; })(), 'ok');
 
+/* ---------- msPorDia / sessoesDe: o recorte diario das sessoes ---------- */
+/* msPorDia usa toDateStr, entao as duas saem juntas no mesmo escopo. */
+const sess = new Function(`
+  ${['toDateStr', 'msPorDia', 'sessoesDe'].map(extrair).join('\n')}
+  return { toDateStr, msPorDia, sessoesDe };
+`)();
+
+const H = 3600000, M = 60000;
+/* Datas construidas por componentes = horario local, igual ao app. */
+const em = (y, mes, d, h, mi = 0) => new Date(y, mes - 1, d, h, mi).getTime();
+const mapa = o => Object.fromEntries([...o.entries()].sort());
+
+eq('sessao dentro de um dia cai num balde so',
+   JSON.stringify(mapa(sess.msPorDia([{ ini: em(2026,8,19,9), fim: em(2026,8,19,11,30) }]))),
+   JSON.stringify({ '2026-08-19': 2.5 * H }));
+
+eq('sessao que atravessa a meia-noite parte em dois',
+   JSON.stringify(mapa(sess.msPorDia([{ ini: em(2026,8,19,23), fim: em(2026,8,20,1) }]))),
+   JSON.stringify({ '2026-08-19': 1 * H, '2026-08-20': 1 * H }));
+
+eq('sessao de mais de 24h cobre tres dias',
+   JSON.stringify(mapa(sess.msPorDia([{ ini: em(2026,8,19,22), fim: em(2026,8,21,2) }]))),
+   JSON.stringify({ '2026-08-19': 2 * H, '2026-08-20': 24 * H, '2026-08-21': 2 * H }));
+
+eq('virada de mes',
+   JSON.stringify(mapa(sess.msPorDia([{ ini: em(2026,8,31,23), fim: em(2026,9,1,1) }]))),
+   JSON.stringify({ '2026-08-31': 1 * H, '2026-09-01': 1 * H }));
+
+eq('virada de ano',
+   JSON.stringify(mapa(sess.msPorDia([{ ini: em(2026,12,31,23), fim: em(2027,1,1,1) }]))),
+   JSON.stringify({ '2026-12-31': 1 * H, '2027-01-01': 1 * H }));
+
+eq('ano bissexto: 28/02 para 29/02',
+   JSON.stringify(mapa(sess.msPorDia([{ ini: em(2028,2,28,23), fim: em(2028,2,29,1) }]))),
+   JSON.stringify({ '2028-02-28': 1 * H, '2028-02-29': 1 * H }));
+
+eq('sessao terminando exatamente na meia-noite nao cria dia vazio',
+   JSON.stringify(mapa(sess.msPorDia([{ ini: em(2026,8,19,23), fim: em(2026,8,20,0) }]))),
+   JSON.stringify({ '2026-08-19': 1 * H }));
+
+eq('duracao zero e ignorada',
+   sess.msPorDia([{ ini: em(2026,8,19,9), fim: em(2026,8,19,9) }]).size, 0);
+eq('duracao negativa e ignorada',
+   sess.msPorDia([{ ini: em(2026,8,19,11), fim: em(2026,8,19,9) }]).size, 0);
+eq('lista vazia', sess.msPorDia([]).size, 0);
+eq('lista ausente', sess.msPorDia(undefined).size, 0);
+
+eq('varias sessoes no mesmo dia somam',
+   sess.msPorDia([{ ini: em(2026,8,19,9), fim: em(2026,8,19,10) },
+                  { ini: em(2026,8,19,14), fim: em(2026,8,19,15,30) }]).get('2026-08-19'),
+   2.5 * H);
+
+/* A invariante que importa: nada se perde e nada se inventa na reparticao. */
+const amostra = [
+  { ini: em(2026,8,19,23,15), fim: em(2026,8,20,2,45) },
+  { ini: em(2026,8,20,9), fim: em(2026,8,20,9,30) },
+  { ini: em(2026,8,31,22), fim: em(2026,9,2,3) },
+];
+const somaBaldes = [...sess.msPorDia(amostra).values()].reduce((a, b) => a + b, 0);
+const somaReal = amostra.reduce((a, s) => a + (s.fim - s.ini), 0);
+eq('a soma dos baldes bate com a soma das duracoes', somaBaldes, somaReal);
+
+/* sessoesDe: a sessao aberta entra, e so quando ha uma. */
+const AGORA = em(2026,8,19,15);
+eq('tarefa parada devolve so as fechadas',
+   sess.sessoesDe({ sessions: [{ ini: 1, fim: 2 }], status: 'paused', startedAt: null }, AGORA).length, 1);
+eq('tarefa ativa ganha a sessao aberta',
+   sess.sessoesDe({ sessions: [{ ini: 1, fim: 2 }], status: 'active', startedAt: em(2026,8,19,14) }, AGORA).length, 2);
+eq('a sessao aberta termina em agora',
+   sess.sessoesDe({ status: 'active', startedAt: em(2026,8,19,14) }, AGORA)[0].fim, AGORA);
+eq('active sem startedAt nao inventa sessao',
+   sess.sessoesDe({ status: 'active', startedAt: null }, AGORA).length, 0);
+eq('tarefa sem o campo sessions devolve lista vazia',
+   sess.sessoesDe({ status: 'pending', startedAt: null }, AGORA).length, 0);
+eq('sessoesDe nao muta a tarefa', (() => {
+  const t = { sessions: [{ ini: 1, fim: 2 }], status: 'active', startedAt: 5 };
+  sess.sessoesDe(t, AGORA);
+  return t.sessions.length;
+})(), 1);
+
+/* fecharSessao agora grava a sessao — reusa a extracao ja feita acima. */
+const { fecharSessao: fs2 } = new Function(`
+  ${extrair('fecharSessao')}
+  return { fecharSessao };
+`)();
+const tg = { elapsed: 0, startedAt: 1000 };
+fs2(tg, 4000);
+eq('grava a sessao com os limites certos', JSON.stringify(tg.sessions), JSON.stringify([{ ini: 1000, fim: 4000 }]));
+eq('e soma o mesmo valor em elapsed', tg.elapsed, 3000);
+fs2(tg, 9000);
+eq('segunda chamada sem cronometro nao grava sessao', tg.sessions.length, 1);
+const tneg = { elapsed: 500, startedAt: 9000, sessions: [] };
+fs2(tneg, 1000);
+eq('duracao negativa nao grava sessao', tneg.sessions.length, 0);
+eq('duracao negativa nao mexe em elapsed', tneg.elapsed, 500);
+eq('mas fecha o cronometro mesmo assim', tneg.startedAt, null);
+
 console.log(`\n${ok} passaram, ${falhas.length} falharam\n`);
 if (falhas.length) {
   falhas.forEach(f => console.log('  ✗ ' + f + '\n'));
