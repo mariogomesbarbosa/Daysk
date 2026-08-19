@@ -1801,8 +1801,9 @@
   /* Overview Card */
   .overview-stats {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: space-around;
+    gap: 6px;
     padding: 0.75rem 0;
     margin-bottom: 0.75rem;
     border-bottom: 1px solid var(--border);
@@ -1817,38 +1818,63 @@
     gap: 4px;
   }
 
+  /* 26px e nao 32: com a chegada do KPI de horas sao tres colunas onde havia
+     duas, e o cartao continua com a mesma largura. */
   .overview-num {
-    font-size: 32px;
+    font-size: 26px;
     font-weight: 700;
     color: var(--text);
     line-height: 1;
+    white-space: nowrap;
   }
 
+  /* Altura de duas linhas reservada mesmo quando o rotulo cabe em uma: sem
+     isso, "Tarefas Concluidas" quebra, "Horas Trabalhadas" nao, e os selos de
+     tendencia das tres colunas param em alturas diferentes. */
   .overview-lbl {
-    font-size: 12px;
+    font-size: 11px;
+    line-height: 1.25;
+    min-height: 28px;
+    display: flex;
+    align-items: center;
+    text-align: center;
     color: var(--text2);
     font-weight: 500;
   }
 
+  /* nowrap: o selo quebrando em duas linhas desalinhava as tres colunas entre
+     si, porque cada texto tem um comprimento. */
   .overview-trend {
     display: inline-flex;
     align-items: center;
     gap: 4px;
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 600;
-    padding: 3px 8px;
+    padding: 3px 7px;
     border-radius: 12px;
     margin-top: 4px;
+    white-space: nowrap;
   }
 
+  /* Cores de TEMA, e não fixas. As anteriores (#16a34a sobre rgba verde, e
+     #dc2626 sobre rgba vermelha) eram valores de tema claro que não mudavam no
+     escuro — medido, o selo de queda ficava em 2.95:1 lá, e o de alta em 2.97:1
+     no claro. Fundo neutro como o selo .neutral já usa; a cor do texto é que
+     carrega o significado.
+
+     Medido depois: 4.39 e 4.23 no claro, 7.96 e 5.02 no escuro. Os dois que
+     reprovavam o 3:1 de componente passam agora com folga; o tema claro ainda
+     fica ~0.2 abaixo do 4.5:1 de texto, e fechar essa fresta exige mexer nos
+     tokens --green e --red do app inteiro — decisão de design system, não
+     consequência deste cartão. Registrado em docs/pendencias.md. */
   .overview-trend.up {
-    background: rgba(34, 197, 94, 0.12);
-    color: #16a34a;
+    background: var(--surface2);
+    color: var(--green);
   }
 
   .overview-trend.down {
-    background: rgba(239, 68, 68, 0.12);
-    color: #dc2626;
+    background: var(--surface2);
+    color: var(--red);
   }
 
   .overview-trend.neutral {
@@ -2033,6 +2059,16 @@
   }
 
   .project-bars { display: flex; flex-direction: column; gap: 10px; }
+
+  /* O cartão de atividades rola por dentro: com o período "tudo" a lista cresce
+     e não pode empurrar a altura da linha inteira do grid. */
+  .activity-bars {
+    flex: 1;
+    min-height: 190px;
+    max-height: 260px;
+    overflow-y: auto;
+    padding-right: 2px;
+  }
 
   .project-bar-row {
     background: var(--surface);
@@ -2627,6 +2663,12 @@
         </div>
         <div class="overview-stats">
           <div class="overview-col">
+            <div class="overview-num" id="r-hours">0min</div>
+            <div class="overview-lbl">Horas Trabalhadas</div>
+            <div class="overview-trend neutral" id="r-hours-trend">— vs anterior</div>
+          </div>
+          <div class="overview-divider"></div>
+          <div class="overview-col">
             <div class="overview-num" id="r-done">0</div>
             <div class="overview-lbl">Tarefas Concluídas</div>
             <div class="overview-trend neutral" id="r-done-trend">— vs anterior</div>
@@ -2640,12 +2682,12 @@
         </div>
         <div class="overview-substats">
           <div class="substat-item">
-            <span class="substat-lbl">Tempo Registrado</span>
-            <span class="substat-val" id="r-time">0min</span>
+            <span class="substat-lbl">Média por Dia Trabalhado</span>
+            <span class="substat-val" id="r-avg">0min</span>
           </div>
           <div class="substat-item">
-            <span class="substat-lbl">Média Diária</span>
-            <span class="substat-val" id="r-avg">0min</span>
+            <span class="substat-lbl">Média por Atividade</span>
+            <span class="substat-val" id="r-per-task">0min</span>
           </div>
         </div>
       </div>
@@ -2678,18 +2720,41 @@
       <!-- CARD 4: Classified Completion Statistics (Donut Chart) -->
       <div class="report-card">
         <div class="card-header">
-          <h3 class="card-title">Estatísticas por Projeto</h3>
+          <h3 class="card-title">Por Projeto</h3>
+          <div class="card-pills" id="donut-metric-pills">
+            <button class="pill-btn active" data-metric="tasks" onclick="setDonutMetric('tasks')">Tarefas</button>
+            <button class="pill-btn" data-metric="time" onclick="setDonutMetric('time')">Horas</button>
+          </div>
         </div>
         <div class="donut-wrapper">
           <div class="donut-chart-box">
             <canvas id="chart-donut"></canvas>
             <div class="donut-center-overlay">
               <span class="donut-center-num" id="r-donut-total">0</span>
-              <span class="donut-center-lbl">Concluídas</span>
+              <span class="donut-center-lbl" id="r-donut-lbl">Concluídas</span>
             </div>
           </div>
           <div class="donut-legend" id="r-donut-legend"></div>
         </div>
+      </div>
+
+      <!-- CARD 5: Horas por atividade (H2) -->
+      <div class="report-card">
+        <div class="card-header">
+          <h3 class="card-title">Horas por Atividade</h3>
+        </div>
+        <div id="r-activity-bars" class="project-bars activity-bars"></div>
+      </div>
+
+      <!-- CARD 6: Previsto vs registrado (H4) -->
+      <div class="report-card">
+        <div class="card-header">
+          <h3 class="card-title">Previsto vs Registrado</h3>
+        </div>
+        <div class="chart-box">
+          <canvas id="chart-estimativa"></canvas>
+        </div>
+        <p class="card-nota" id="estimativa-nota" style="display:none"></p>
       </div>
 
     </div>
@@ -5613,6 +5678,17 @@
   let chartDistribution = null;
   let chartCurve = null;
   let chartDonut = null;
+  let chartEstimativa = null;
+  /* Não persiste entre sessões, igual ao alternador da curva: é leitura, não
+     configuração. Coerência com o que já existe antes de opinião. */
+  let currentDonutMetric = 'tasks';
+
+  function setDonutMetric(metric) {
+    currentDonutMetric = metric;
+    document.querySelectorAll('#donut-metric-pills .pill-btn')
+      .forEach(b => b.classList.toggle('active', b.dataset.metric === metric));
+    renderReport();
+  }
   let currentCurveMetric = 'tasks';
 
   function setCurveMetric(metric) {
@@ -5731,6 +5807,31 @@
       }
     }
     return daysArr;
+  }
+
+  /* Horas de UMA tarefa dentro do período, somando só as sessões que caem nele.
+
+     É esta função que faz o total, a curva, o donut e as barras contarem a mesma
+     coisa. Antes, os cartões de horas somavam effectiveElapsed filtrando por
+     data PLANEJADA — o mesmo erro que o registro de sessões veio corrigir no
+     gráfico diário, e que sobrevivia nos outros cartões.
+
+     Consequência declarada: tarefa com elapsed e SEM data não tem sessão
+     sintética (não há dia onde ancorar) e portanto não entra em período nenhum.
+     Só afeta histórico anterior ao registro — ver modelo-de-dados.md. */
+  function msNoPeriodo(t, agora) {
+    let total = 0;
+    msPorDia(sessoesDe(t, agora)).forEach((ms, ds) => { if (inPeriod(ds)) total += ms; });
+    return total;
+  }
+
+  /* Horas por tarefa no período, já ordenadas e sem as zeradas. Base do cartão
+     de atividades, do donut em modo Horas e das barras por projeto. */
+  function horasPorTarefa(agora) {
+    return tasks
+      .map(t => ({ t, ms: msNoPeriodo(t, agora) }))
+      .filter(x => x.ms > 0)
+      .sort((a, b) => b.ms - a.ms);
   }
 
   function getThemeColors() {
@@ -5894,9 +5995,17 @@
     const doneFiltered = filtered.filter(t => t.status === 'done');
     const projectStats = {};
 
-    doneFiltered.forEach(t => {
+    /* Duas perguntas, a mesma forma: "onde saíram entregas" e "onde foi meu
+       tempo". Dois donuts lado a lado seriam dois gráficos idênticos que o olho
+       confunde — por isso alternador, e não um cartão novo.
+       No modo Horas conta TODO tempo registrado, concluída ou não: hora
+       trabalhada é hora trabalhada, e é o que a Visão Geral já faz. */
+    const porHoras = currentDonutMetric === 'time';
+    const agoraDonut = Date.now();
+    (porHoras ? tasks : doneFiltered).forEach(t => {
       const pid = t.projectId || 'none';
-      projectStats[pid] = (projectStats[pid] || 0) + 1;
+      const v = porHoras ? msNoPeriodo(t, agoraDonut) : 1;
+      if (v > 0) projectStats[pid] = (projectStats[pid] || 0) + v;
     });
 
     const activeProjects = projects.filter(p => projectStats[p.id] > 0);
@@ -5912,8 +6021,10 @@
       donutColors.push('#94A3B8');
     }
 
-    const totalDone = doneFiltered.length;
-    document.getElementById('r-donut-total').textContent = totalDone;
+    const totalDonut = donutData.reduce((a, b) => a + b, 0);
+    document.getElementById('r-donut-total').textContent =
+      porHoras ? minsToHm(Math.round(totalDonut / 60000)) : totalDonut;
+    document.getElementById('r-donut-lbl').textContent = porHoras ? 'Registradas' : 'Concluídas';
 
     const ctxDonut = document.getElementById('chart-donut');
     if (ctxDonut) {
@@ -5963,11 +6074,12 @@
     const legendEl = document.getElementById('r-donut-legend');
     if (legendEl) {
       if (donutData.length === 0) {
-        legendEl.innerHTML = '<div class="empty-report">Nenhuma tarefa concluída</div>';
+        legendEl.innerHTML = `<div class="empty-report">${porHoras ? 'Nenhum tempo registrado' : 'Nenhuma tarefa concluída'}</div>`;
       } else {
         legendEl.innerHTML = donutLabels.map((name, i) => {
-          const cnt = donutData[i];
-          const pct = Math.round((cnt / (totalDone || 1)) * 100);
+          const bruto = donutData[i];
+          const cnt = porHoras ? minsToHm(Math.round(bruto / 60000)) : bruto;
+          const pct = Math.round((bruto / (totalDonut || 1)) * 100);
           const color = donutColors[i];
           return `<div class="legend-item">
             <div class="legend-info">
@@ -5979,13 +6091,134 @@
         }).join('');
       }
     }
+
+    renderHorasPorAtividade();
+    renderEstimativa(theme);
+  }
+
+  /* H2 — as atividades que mais consumiram tempo no período.
+     Top 8 mais uma linha agregando o resto: sem o agregado, o período "tudo"
+     viraria uma lista de cem barras de 1px. E o corte se DECLARA — nenhum
+     limite silencioso, que é regra do projeto. */
+  const ATIVIDADES_NO_TOPO = 8;
+
+  function renderHorasPorAtividade() {
+    const alvo = document.getElementById('r-activity-bars');
+    if (!alvo) return;
+    const linhas = horasPorTarefa(Date.now());
+    if (!linhas.length) {
+      alvo.innerHTML = '<div class="empty-report">sem tempo registrado neste período</div>';
+      return;
+    }
+    const total = linhas.reduce((s, x) => s + x.ms, 0);
+    const topo = linhas.slice(0, ATIVIDADES_NO_TOPO);
+    const resto = linhas.slice(ATIVIDADES_NO_TOPO);
+    const maior = topo[0].ms;
+
+    const barra = (nome, ms, cor, titulo) => {
+      const pctBarra = Math.round(ms / maior * 100);
+      const pctTotal = Math.round(ms / total * 100);
+      return `<div class="project-bar-row">
+        <div class="project-bar-head">
+          <span class="project-dot" style="background:${cor}"></span>
+          <span class="project-name" title="${esc(titulo || nome)}">${esc(nome)}</span>
+          <span class="project-time">${minsToHm(Math.round(ms / 60000))} · ${pctTotal}%</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill" style="width:${pctBarra}%;background:${cor}"></div></div>
+      </div>`;
+    };
+
+    // A cor é a do PROJETO da atividade: amarra este cartão ao donut e às
+    // barras por projeto sem inventar uma paleta nova.
+    let html = topo.map(x => {
+      const c = projColor(x.t);
+      return barra(x.t.name, x.ms, c ? c.fg : 'var(--text2)');
+    }).join('');
+
+    if (resto.length) {
+      const msResto = resto.reduce((s, x) => s + x.ms, 0);
+      html += barra(`outras (${resto.length})`, msResto, 'var(--text2)',
+        resto.map(x => x.t.name).join(', '));
+    }
+    alvo.innerHTML = html;
+  }
+
+  /* H4 — o único cartão que responde uma pergunta nova: "eu estimo bem?"
+     Só entram tarefas com t.dur preenchido. Sem previsão não há comparação, e
+     contá-las como zero previsto faria toda estimativa parecer estourada. */
+  function renderEstimativa(theme) {
+    const ctx = document.getElementById('chart-estimativa');
+    if (!ctx) return;
+    const agora = Date.now();
+    const porProj = new Map();
+    let semPrevisao = 0;
+
+    tasks.forEach(t => {
+      const ms = msNoPeriodo(t, agora);
+      if (ms <= 0) return;
+      if (!t.dur) { semPrevisao++; return; }
+      const pid = t.projectId || 'none';
+      const acc = porProj.get(pid) || { previsto: 0, real: 0 };
+      acc.previsto += t.dur * 60000;
+      acc.real += ms;
+      porProj.set(pid, acc);
+    });
+
+    const linhas = [...porProj.entries()].map(([pid, v]) => {
+      const proj = projects.find(p => p.id === pid);
+      return { nome: proj ? proj.name : 'Sem projeto', ...v };
+    }).sort((a, b) => b.real - a.real).slice(0, 6);
+
+    const nota = document.getElementById('estimativa-nota');
+    if (nota) {
+      nota.textContent = semPrevisao
+        ? `${semPrevisao} atividade(s) com tempo registrado ficaram de fora por não ter previsão`
+        : '';
+      nota.style.display = semPrevisao ? '' : 'none';
+    }
+
+    const h = m => Math.round(m / 360000) / 10;      // ms -> horas, uma casa
+    const dados = {
+      labels: linhas.map(l => l.nome),
+      datasets: [
+        { label: 'Previsto', data: linhas.map(l => h(l.previsto)),
+          backgroundColor: 'rgba(148, 163, 184, 0.55)', borderRadius: 3 },
+        { label: 'Registrado', data: linhas.map(l => h(l.real)),
+          backgroundColor: theme.accent, borderRadius: 3 },
+      ],
+    };
+    const opcoes = {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: true, position: 'bottom',
+        labels: { color: theme.text, boxWidth: 10, boxHeight: 10, font: { size: 10 } } } },
+      scales: {
+        x: { ticks: { color: theme.text, font: { size: 9 } }, grid: { display: false } },
+        y: { beginAtZero: true, ticks: { color: theme.text, font: { size: 9 } },
+             grid: { color: theme.grid } },
+      },
+    };
+
+    if (chartEstimativa) chartEstimativa.destroy();
+    chartEstimativa = new Chart(ctx, { type: 'bar', data: dados, options: opcoes });
   }
 
   function renderReport() {
     const filtered = tasks.filter(t => inPeriod(t.date));
     const prevFiltered = tasks.filter(t => inPreviousPeriod(t.date));
 
-    const totalMs = filtered.reduce((s, t) => s + effectiveElapsed(t), 0);
+    /* Horas do período por SESSÃO, não por data planejada. Sem isto o total da
+       Visão Geral e a Curva de Desempenho discordariam na mesma tela — a curva
+       passou a ler sessões no PR anterior. */
+    const agoraR = Date.now();
+    const porDiaR = msPorDia(tasks.flatMap(t => sessoesDe(t, agoraR)));
+    let totalMs = 0, diasComTrabalho = 0;
+    porDiaR.forEach((ms, ds) => { if (inPeriod(ds) && ms > 0) { totalMs += ms; diasComTrabalho++; } });
+
+    // A comparação de horas usa o MESMO recorte, só que no período anterior.
+    let prevMs = 0;
+    porDiaR.forEach((ms, ds) => { if (inPreviousPeriod(ds)) prevMs += ms; });
+
+    const comTempo = tasks.filter(t => msNoPeriodo(t, agoraR) > 0).length;
     const doneCount = filtered.filter(t => t.status === 'done').length;
     const prevDoneCount = prevFiltered.filter(t => t.status === 'done').length;
     const totalCount = filtered.length;
@@ -5994,24 +6227,43 @@
     const rate = totalCount ? Math.round((doneCount / totalCount) * 100) : 0;
     const prevRate = prevTotalCount ? Math.round((prevDoneCount / prevTotalCount) * 100) : 0;
 
-    const distinctDays = new Set(filtered.map(t => t.date)).size;
-
     // Overview KPIs
-    document.getElementById('r-time').textContent = minsToHm(Math.round(totalMs / 60000));
+    const minTotal = Math.round(totalMs / 60000);
+    document.getElementById('r-hours').textContent = minsToHm(minTotal);
     document.getElementById('r-done').textContent = doneCount;
     document.getElementById('r-rate').textContent = rate + '%';
-    document.getElementById('r-avg').textContent = distinctDays ? minsToHm(Math.round(totalMs / 60000 / distinctDays)) : '0min';
+    // Média por dia TRABALHADO, e não por dia do calendário: dividir por dias
+    // sem trabalho nenhum diria menos sobre o ritmo do que sobre o intervalo.
+    document.getElementById('r-avg').textContent =
+      diasComTrabalho ? minsToHm(Math.round(minTotal / diasComTrabalho)) : '0min';
+    document.getElementById('r-per-task').textContent =
+      comTempo ? minsToHm(Math.round(minTotal / comTempo)) : '0min';
 
     // Trend indicators vs previous period
+    const hoursTrendEl = document.getElementById('r-hours-trend');
     const doneTrendEl = document.getElementById('r-done-trend');
     const rateTrendEl = document.getElementById('r-rate-trend');
 
     if (currentPeriod === 'all') {
+      hoursTrendEl.textContent = 'total acumulado';
+      hoursTrendEl.className = 'overview-trend neutral';
       doneTrendEl.textContent = 'total acumulado';
       doneTrendEl.className = 'overview-trend neutral';
       rateTrendEl.textContent = 'taxa acumulada';
       rateTrendEl.className = 'overview-trend neutral';
     } else {
+      const difMin = Math.round((totalMs - prevMs) / 60000);
+      if (difMin > 0) {
+        hoursTrendEl.textContent = `↑ +${minsToHm(difMin)} vs anterior`;
+        hoursTrendEl.className = 'overview-trend up';
+      } else if (difMin < 0) {
+        hoursTrendEl.textContent = `↓ -${minsToHm(-difMin)} vs anterior`;
+        hoursTrendEl.className = 'overview-trend down';
+      } else {
+        hoursTrendEl.textContent = `= igual ao anterior`;
+        hoursTrendEl.className = 'overview-trend neutral';
+      }
+
       const doneDiff = doneCount - prevDoneCount;
       if (doneDiff > 0) {
         doneTrendEl.textContent = `↑ +${doneDiff} vs anterior`;
@@ -6042,11 +6294,15 @@
     updateCharts(filtered, timelineDays);
 
     // Project Bars Section
+    // Mesmo recorte por sessão da Visão Geral e da curva: um critério de horas
+    // só na página inteira, que é o que o H5 pede.
     const byProject = {};
-    filtered.forEach(t => {
+    tasks.forEach(t => {
+      const ms = msNoPeriodo(t, agoraR);
+      if (ms <= 0) return;
       const pid = t.projectId || 'none';
       if (!byProject[pid]) byProject[pid] = { total: 0, count: 0 };
-      byProject[pid].total += effectiveElapsed(t);
+      byProject[pid].total += ms;
       byProject[pid].count += 1;
     });
 
@@ -6107,23 +6363,30 @@
       if (bar) bar.style.width = pct + '%';
       if (lbl) lbl.textContent = minsToHm(Math.round(effectiveElapsed(active) / 60000)) + ' em andamento';
 
+      /* Com o cronômetro correndo, as horas do dia mudam a cada segundo. Aqui
+         só os números vivos são atualizados — chamar renderReport() destruiria e
+         recriaria cinco gráficos por segundo.
+
+         Precisa usar o MESMO recorte por sessão do renderReport(). Este trecho
+         era uma cópia da conta antiga por data planejada e, depois do registro
+         de sessões, sobrescrevia os valores certos uma vez por segundo. */
       if (currentTab === 'report') {
-        const filtered = tasks.filter(t => inPeriod(t.date));
-        const totalMs = filtered.reduce((s, t) => s + effectiveElapsed(t), 0);
-        const distinctDays = new Set(filtered.map(t => t.date)).size;
-        const rTimeEl = document.getElementById('r-time');
-        const rAvgEl = document.getElementById('r-avg');
-        if (rTimeEl) rTimeEl.textContent = minsToHm(Math.round(totalMs / 60000));
-        if (rAvgEl) rAvgEl.textContent = distinctDays ? minsToHm(Math.round(totalMs / 60000 / distinctDays)) : '0min';
+        const agoraT = Date.now();
+        const porDiaT = msPorDia(tasks.flatMap(t => sessoesDe(t, agoraT)));
+        let msT = 0, diasT = 0;
+        porDiaT.forEach((ms, ds) => { if (inPeriod(ds) && ms > 0) { msT += ms; diasT++; } });
+        const minT = Math.round(msT / 60000);
+        const comTempoT = tasks.filter(t => msNoPeriodo(t, agoraT) > 0).length;
+
+        const põe = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+        põe('r-hours', minsToHm(minT));
+        põe('r-avg', diasT ? minsToHm(Math.round(minT / diasT)) : '0min');
+        põe('r-per-task', comTempoT ? minsToHm(Math.round(minT / comTempoT)) : '0min');
 
         if (currentCurveMetric === 'time' && chartCurve) {
-          const timelineDays = generateTimelineDays(currentPeriod);
-          const curveData = timelineDays.map(ds => {
-            const dayTasks = filtered.filter(t => t.date === ds);
-            const ms = dayTasks.reduce((s, t) => s + effectiveElapsed(t), 0);
-            return Math.round((ms / 3600000) * 10) / 10;
-          });
-          chartCurve.data.datasets[0].data = curveData;
+          const dias = generateTimelineDays(currentPeriod);
+          chartCurve.data.datasets[0].data = dias.map(ds =>
+            Math.round(((porDiaT.get(ds) || 0) / 3600000) * 10) / 10);
           chartCurve.update('none');
         }
       }
