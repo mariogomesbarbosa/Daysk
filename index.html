@@ -5,6 +5,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Daysk</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTAiIGhlaWdodD0iNTAiIHZpZXdCb3g9IjAgMCA1MCA1MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjUwIiBoZWlnaHQ9IjUwIiByeD0iMTAiIGZpbGw9IiMzOTQxNDkiLz4KPHBhdGggZD0iTTM5IDI1TDIxIDM5TDExIDM5TDExIDMxLjcySDE4LjMzMzNMMzEgMjEuNjcwNFYxOC4yOEwxMSAxOC4yOEwxMSAxMUwzOSAxMVYyNVoiIGZpbGw9IndoaXRlIi8+CjxwYXRoIGQ9Ik0zOSAzMS4xNkwzOSAzOUwzMS4xNiAzOUwzMS4xNiAzMS4xNkwzOSAzMS4xNloiIGZpbGw9IndoaXRlIi8+Cjwvc3ZnPgo=">
+<link rel="manifest" href="manifest.webmanifest">
+<!-- Pinta a barra de status do Android. O valor inicial acompanha o sistema; se
+     o usuario tiver escolhido um tema no app, applyTheme() sobrescreve. -->
+<meta name="theme-color" content="#F5F6F8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#15181B" media="(prefers-color-scheme: dark)">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Daysk">
+<link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script src="https://apis.google.com/js/api.js" async defer></script>
@@ -2912,6 +2922,22 @@
     document.documentElement.style.colorScheme = theme;
     localStorage.setItem('daysk-theme', theme);
     renderThemeToggleIcon();
+    sincronizarCorDaBarra(theme);
+  }
+
+  /* Instalado no Android, o app pinta a barra de status com o theme-color. As
+     duas <meta> do <head> seguem o SISTEMA; o toggle do app pode discordar
+     dele, e ai a barra ficaria de uma cor e a tela de outra. Uma terceira meta,
+     sem media, vence as duas e e atualizada aqui. */
+  function sincronizarCorDaBarra(theme) {
+    let meta = document.getElementById('meta-theme-color');
+    if (!meta) {
+      meta = document.createElement('meta');
+      meta.id = 'meta-theme-color';
+      meta.name = 'theme-color';
+      document.head.appendChild(meta);
+    }
+    meta.content = theme === 'dark' ? '#15181B' : '#F5F6F8';
   }
 
   function toggleTheme() {
@@ -5894,9 +5920,27 @@
   setInterval(tick, 1000);
   initSync();
   renderThemeToggleIcon();
+  // Se ha tema escolhido, a barra de status segue ele; se nao, as duas <meta>
+  // com media do <head> ja fazem o trabalho e nao ha o que sobrescrever.
+  if (localStorage.getItem('daysk-theme')) sincronizarCorDaBarra(getEffectiveTheme());
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
     if (!localStorage.getItem('daysk-theme')) renderThemeToggleIcon();
   });
+
+  /* O service worker e o que faz o Chrome no Android instalar um app de verdade
+     (WebAPK) em vez de um atalho de favorito — que era o que aparecia na tela
+     inicial e nao abria nada.
+
+     Nao registra em file://: la nao ha origem segura, register() rejeitaria, e o
+     duplo clique no index.html precisa continuar funcionando sem erro. Essa e a
+     unica concessao que a instalacao exigiu do "abre com um duplo clique". */
+  if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js').catch(err => {
+        console.warn('Service worker nao registrou:', err);
+      });
+    });
+  }
 </script>
 </body>
 </html>

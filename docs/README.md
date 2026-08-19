@@ -21,6 +21,7 @@ o *porquê* delas.
 | [calendario.md](calendario.md) | O Calendário: as 13 decisões, o desvio do D8 e a verificação |
 | [calendario-alternador-de-visao.md](calendario-alternador-de-visao.md) | As quatro visões e o planejar por arraste: 24 decisões, e os dois desvios que desfizeram |
 | [refinamento-calendario.md](refinamento-calendario.md) | Os quatro ajustes de refino: coluna, campo Final, redimensionar e contraste |
+| [instalacao-android.md](instalacao-android.md) | Por que o atalho não abria, e o que instalar como app custou à arquitetura |
 | [pendencias.md](pendencias.md) | Ressalvas conhecidas, incluindo o que foi para `main` sem verificação visual |
 
 ## Estado atual
@@ -42,12 +43,19 @@ ressalvas de [pendencias.md](pendencias.md).
 
 ## Arquitetura, em uma frase
 
-Tudo — HTML, CSS e JS — vive em `index.html`. Sem build, sem dependências
+Quase tudo — HTML, CSS e JS — vive em `index.html`. Sem build, sem dependências
 instaladas. As externas são carregadas por CDN: JetBrains Mono, Chart.js e as
 bibliotecas do Google (para o modo de sincronização com o Drive).
 
 Isso é deliberado e vale preservar: o app abre com um duplo clique e é publicado
 por GitHub Pages sem nenhuma etapa intermediária.
+
+**O "quase" tem uma causa só, e está documentada:** instalar como app no Android
+exigiu `manifest.webmanifest`, `sw.js` e ícones PNG como arquivos separados — um
+service worker não pode ser embutido, e o Chrome não monta WebAPK a partir de
+manifest em `data:` URI nem de ícone SVG. O que a decisão protegia continua de
+pé: nenhuma etapa de build, nenhuma dependência instalada, e o duplo clique
+segue funcionando. Ver [instalacao-android.md](instalacao-android.md).
 
 ## Rodando localmente
 
