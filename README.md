@@ -79,15 +79,54 @@ Como o Daysk foi construído de forma leve e direta com tecnologias web nativas,
 
 ---
 
+## 📱 Instalar como App
+
+O Daysk é um **PWA**: dá para instalar no celular ou no desktop e usar como um
+app de verdade — ícone próprio, tela cheia sem a barra do navegador, e
+**funcionando sem internet**.
+
+### Android (Chrome)
+
+1. Abra [Daysk](https://mariogomesbarbosa.github.io/Daysk/) no Chrome.
+2. Menu **⋮** → **Instalar app**.
+3. O ícone aparece na tela inicial e abre como aplicativo.
+
+> Se você já tinha um atalho antigo na tela inicial e ele não abria, **apague-o
+> antes**. Aquele era um atalho de favorito, não um app, e não se converte
+> sozinho.
+
+### iOS (Safari)
+
+Compartilhar → **Adicionar à Tela de Início**.
+
+### Desktop (Chrome/Edge)
+
+Ícone de instalar na barra de endereço, ou menu → **Instalar Daysk**.
+
+### Offline
+
+Depois da primeira visita, o app abre sem conexão. Os dados já eram locais; o
+que faltava era o app carregar. Abrindo **com** internet você sempre recebe a
+versão mais recente — o service worker tenta a rede primeiro e só usa o cache
+como rede de segurança.
+
+---
+
 ## 📁 Estrutura de Arquivos
 
 ```text
 Daysk/
 ├── assets/
+│   ├── icons/               # Ícones PNG do app instalável (192, 512, maskable, iOS)
 │   ├── preview.png          # Captura de tela da aplicação
 │   └── trademark.svg        # Logotipo oficial
+├── docs/                    # Documentação de trabalho: decisões e pendências
+├── tests/
+│   └── funcoes-puras.mjs    # Harness das funções puras (node tests/funcoes-puras.mjs)
 ├── .gitignore               # Configuração de arquivos ignorados no Git
 ├── index.html               # Aplicação web completa (UI + Lógica + Estilos)
+├── manifest.webmanifest     # Web App Manifest — é o que torna o app instalável
+├── sw.js                    # Service worker: instalação e funcionamento offline
 └── README.md                # Documentação do projeto
 ```
 
