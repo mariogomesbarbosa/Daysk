@@ -71,10 +71,18 @@ esperar ver suas tarefas ao trocar de origem.
 O projeto não tem suíte de testes. A verificação usada durante a reestruturação
 foi de dois tipos, e vale repetir os dois:
 
-**Lógica pura, no Node.** Como não há módulos, o caminho foi extrair as funções
-do `index.html` por casamento de chaves e avaliá-las num harness descartável.
-Cobriu baldes, ordenação, agrupamento por dia, `getProgress` e `padTime`.
-Esses harnesses **não foram commitados** — veja [pendencias.md](pendencias.md).
+**Lógica pura, no Node.** Como não há módulos, o caminho é extrair as funções
+do `index.html` por casamento de chaves e avaliá-las num escopo isolado. Isso
+agora vive em `tests/funcoes-puras.mjs`, commitado:
+
+```bash
+node tests/funcoes-puras.mjs
+```
+
+Cobre hoje `endFromDur`/`durFromEnd` (incluindo o ida-e-volta que atravessa a
+meia-noite), `padTime` e `minsToHm`. Os harnesses **anteriores** — baldes,
+ordenação, agrupamento por dia e `getProgress` — foram perdidos por morar em
+diretório temporário; ver [pendencias.md](pendencias.md).
 
 **Interface, no navegador.** Semear `localStorage` com tarefas cobrindo os
 casos de borda (hoje com e sem hora, atrasada, d+3, d+15, sem prazo) e

@@ -1268,6 +1268,26 @@
   .form-field-v input:focus,
   .form-field-v select:focus { border-color: var(--accent); }
 
+  .form-field-v input:disabled {
+    opacity: .5;
+    cursor: not-allowed;
+  }
+
+  /* A guarda do campo "Final" e esta linha: visivel, nao bloqueante. O campo
+     antigo mostrava os minutos; o novo mostra um relogio, e sem a dica a
+     duracao ficaria escondida. Acima de 12h ela vira --red — e o que pega o
+     08:00 digitado no lugar de 18:00 antes de virar um bloco de 22h15.
+     Modal nao: o app nao tem validacao bloqueante em lugar nenhum, e a
+     primeira nao vai nascer num caso de borda. */
+  .form-hint {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: var(--text2);
+    margin-top: -4px;
+  }
+
+  .form-hint.alerta { color: var(--red); }
+
   .project-select-row { display: flex; gap: 4px; }
   .project-select-row select { flex: 1; min-width: 0; }
 
@@ -2582,13 +2602,14 @@
       <div class="form-row-2">
         <div class="form-field-v">
           <label class="form-label">Início (opcional)</label>
-          <input type="time" id="f-time">
+          <input type="time" id="f-time" onchange="syncDurHint('f-time','f-end','f-hint')">
         </div>
         <div class="form-field-v">
-          <label class="form-label">Duração (min)</label>
-          <input type="number" id="f-dur" min="5" max="480" placeholder="60">
+          <label class="form-label">Final (opcional)</label>
+          <input type="time" id="f-end" onchange="syncDurHint('f-time','f-end','f-hint')" disabled>
         </div>
       </div>
+      <p class="form-hint" id="f-hint"></p>
       <div class="form-field-v">
         <label class="form-label">Projeto/Demanda</label>
         <div class="project-select-row">
@@ -2628,13 +2649,14 @@
       <div class="form-row-2" style="margin-top:12px;">
         <div class="form-field-v">
           <label class="form-label">Início (opcional)</label>
-          <input type="time" id="sched-time">
+          <input type="time" id="sched-time" onchange="syncDurHint('sched-time','sched-end','sched-hint')">
         </div>
         <div class="form-field-v">
-          <label class="form-label">Duração (min)</label>
-          <input type="number" id="sched-dur" min="5" max="480" value="60">
+          <label class="form-label">Final (opcional)</label>
+          <input type="time" id="sched-end" onchange="syncDurHint('sched-time','sched-end','sched-hint')" disabled>
         </div>
       </div>
+      <p class="form-hint" id="sched-hint" style="margin-top:6px;"></p>
     </div>
     <div class="form-footer">
       <button class="btn-cancel-form" onclick="closeScheduleModal()">cancelar</button>
@@ -3539,6 +3561,50 @@
     return h + ':' + mm;
   }
 
+  /* "Final" e superficie de ENTRADA; t.dur continua sendo o campo persistido.
+     t.dur e lido em nove pontos (getProgress, packOverlaps, taskRowHtml, a
+     tabela do relatorio, aplicarSoltura, migrate) e os tres modos de
+     sincronizacao serializam o array sem validar schema — um t.end criaria
+     duas fontes de verdade num transporte que nao detectaria a divergencia.
+     Entao a conversao acontece nas bordas do formulario, e nao ha migracao. */
+
+  function endFromDur(time, dur) {
+    return (time && dur) ? padTime(toMins(time) + dur) : '';
+  }
+
+  /* O +1440 nao e conveniencia: padTime() ja vira a meia-noite, entao a tarefa
+     das 23:00 com 2h e exibida com final 01:00. Sem o +1440, reabrir e salvar
+     sem mexer daria duracao negativa — o ida-e-volta nao fecharia.
+     O || 60 no fim cobre final igual ao inicio: zero minuto nao e duracao. */
+  function durFromEnd(time, end) {
+    if (!time) return null;                          // final sem inicio nao significa nada
+    if (!end) return 60;                             // a mesma regra de sempre
+    return ((toMins(end) - toMins(time) + 1440) % 1440) || 60;
+  }
+
+  /* Mantem os dois campos coerentes e mostra a duracao resultante. Sem inicio,
+     "Final" nao significa nada e fica desabilitado — a mesma regra que ja
+     existia em saveTask() (dur = time ? ... : null), so que agora visivel antes
+     de salvar em vez de silenciosa depois. */
+  function syncDurHint(idTime, idEnd, idHint) {
+    const time = document.getElementById(idTime).value || null;
+    const end = document.getElementById(idEnd);
+    const hint = document.getElementById(idHint);
+    end.disabled = !time;
+    if (!time) {
+      end.value = '';
+      hint.textContent = '';
+      hint.classList.remove('alerta');
+      return;
+    }
+    const dur = durFromEnd(time, end.value || null);
+    const demais = dur > 720;                        // 12h: quase sempre erro de digitacao
+    hint.textContent = end.value
+      ? 'duração: ' + minsToHm(dur) + (demais ? ' — confere?' : '')
+      : 'sem final: 1h';
+    hint.classList.toggle('alerta', demais);
+  }
+
   function effectiveElapsed(t) {
     let e = t.elapsed || 0;
     if (t.status === 'active' && t.startedAt) e += Date.now() - t.startedAt;
@@ -3867,7 +3933,8 @@
     document.getElementById('f-name').value = '';
     document.getElementById('f-date').value = dateStr || defaultDateForView();
     document.getElementById('f-time').value = timeStr || '';
-    document.getElementById('f-dur').value = '';
+    document.getElementById('f-end').value = '';
+    syncDurHint('f-time', 'f-end', 'f-hint');
     populateProjectSelect();
     // Criar uma tarefa vendo um projeto põe a tarefa naquele projeto.
     const viewProj = currentProject();
@@ -3886,7 +3953,8 @@
     document.getElementById('f-name').value = t.name;
     document.getElementById('f-date').value = t.date || '';
     document.getElementById('f-time').value = t.time || '';
-    document.getElementById('f-dur').value = t.dur || '';
+    document.getElementById('f-end').value = endFromDur(t.time, t.dur);
+    syncDurHint('f-time', 'f-end', 'f-hint');
     populateProjectSelect();
     document.getElementById('f-project').value = t.projectId;
     syncFormPresetButtons();
@@ -3901,7 +3969,7 @@
 
     let date = document.getElementById('f-date').value || null;
     const time = document.getElementById('f-time').value || null;
-    const dur = time ? (parseInt(document.getElementById('f-dur').value) || 60) : null;
+    const dur = durFromEnd(time, document.getElementById('f-end').value || null);
 
     // Horário sem dia não significa nada: assume hoje.
     if (time && !date) date = todayStr();
@@ -3941,7 +4009,8 @@
     document.getElementById('sched-task-name').textContent = t.name;
     document.getElementById('sched-date').value = t.date || todayStr();
     document.getElementById('sched-time').value = t.time || '';
-    document.getElementById('sched-dur').value = t.dur || '';
+    document.getElementById('sched-end').value = endFromDur(t.time, t.dur);
+    syncDurHint('sched-time', 'sched-end', 'sched-hint');
     syncSchedPresetButtons();
     document.getElementById('schedule-overlay').classList.add('open');
     document.body.style.overflow = 'hidden';
@@ -3972,7 +4041,7 @@
 
     t.date = document.getElementById('sched-date').value || todayStr();
     t.time = time;
-    t.dur = time ? (parseInt(document.getElementById('sched-dur').value) || 60) : null;
+    t.dur = durFromEnd(time, document.getElementById('sched-end').value || null);
 
     save();
     closeScheduleModal();
