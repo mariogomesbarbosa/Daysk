@@ -176,6 +176,48 @@ eq('cima exatamente em 00:00', alca('ini', 15, 45, 0), '0-45');
   eq(`duracao >= CAL_SNAP para ${b} em ${m}`, r.fim - r.ini >= 15, true);
 });
 
+/* ---------- fecharSessao: o unico lugar que soma em elapsed ---------- */
+/* Muta o objeto recebido e nao le global nenhum, entao extrai sozinha. */
+const { fecharSessao } = new Function(`
+  ${extrair('fecharSessao')}
+  return { fecharSessao };
+`)();
+
+const T0 = 1_700_000_000_000;
+
+let t1 = { elapsed: 0, startedAt: T0 };
+fecharSessao(t1, T0 + 90_000);
+eq('soma o trecho em elapsed', t1.elapsed, 90_000);
+eq('zera startedAt', t1.startedAt, null);
+
+let t2 = { elapsed: 300_000, startedAt: T0 };
+fecharSessao(t2, T0 + 60_000);
+eq('acumula sobre o elapsed que ja existia', t2.elapsed, 360_000);
+
+let t3 = { elapsed: 500, startedAt: null };
+fecharSessao(t3, T0);
+eq('sem cronometro aberto nao mexe em elapsed', t3.elapsed, 500);
+eq('sem cronometro aberto startedAt segue nulo', t3.startedAt, null);
+
+let t4 = { startedAt: T0 };                     // registro sem o campo elapsed
+fecharSessao(t4, T0 + 1000);
+eq('elapsed ausente conta como zero', t4.elapsed, 1000);
+
+let t5 = { elapsed: 10, startedAt: T0 };
+fecharSessao(t5, T0 + 5000);
+fecharSessao(t5, T0 + 99_000);                  // segunda chamada, ja fechado
+eq('chamar duas vezes nao soma de novo', t5.elapsed, 5010);
+
+/* O NaN que a duplicacao antiga permitia: status 'active' com startedAt nulo
+   fazia (Date.now() - null) contaminar elapsed para sempre. Nao era alcancavel
+   pela interface, mas dado sincronizado de fora nao passa por ela. */
+let t6 = { elapsed: 1234, startedAt: null, status: 'active' };
+fecharSessao(t6, T0);
+eq('status active com startedAt nulo nao vira NaN', Number.isNaN(t6.elapsed), false);
+eq('e nao altera o valor', t6.elapsed, 1234);
+
+eq('tarefa inexistente nao explode', (() => { fecharSessao(undefined, T0); return 'ok'; })(), 'ok');
+
 console.log(`\n${ok} passaram, ${falhas.length} falharam\n`);
 if (falhas.length) {
   falhas.forEach(f => console.log('  ✗ ' + f + '\n'));
