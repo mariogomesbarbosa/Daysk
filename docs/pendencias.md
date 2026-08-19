@@ -186,20 +186,29 @@ também não menciona `docs/`.
 Não foi corrigido porque reescrever a comunicação do produto é decisão de quem
 mantém, não consequência automática da mudança técnica.
 
-## Harnesses de teste não commitados
+## Harnesses de teste: metade recuperada
 
-A verificação de lógica foi feita com três scripts Node que extraíam funções do
-`index.html` por casamento de chaves e as avaliavam: baldes e ordenação (25
-casos), `getProgress` (8) e `padTime` (8). **Eles viviam em diretório temporário
-e foram perdidos.**
+A verificação de lógica da reestruturação foi feita com três scripts Node que
+extraíam funções do `index.html` por casamento de chaves e as avaliavam: baldes
+e ordenação (25 casos), `getProgress` (8) e `padTime` (8). **Eles viviam em
+diretório temporário e foram perdidos.**
 
-Se valer recriá-los, o padrão é: localizar `function nome(` no fonte, casar
-chaves até o fechamento, concatenar as funções e dependências, e avaliar num
-escopo isolado. Vale principalmente para as regras de balde e para `getProgress`,
-onde os casos de borda (limite d+7/d+8, virada de ano, data futura vs atrasada)
-não são óbvios à inspeção.
+O padrão foi recuperado e **commitado** em `tests/funcoes-puras.mjs`, junto do
+campo "Final": localizar `function nome(` no fonte, casar chaves até o
+fechamento, concatenar as funções e suas dependências, e avaliar num escopo
+isolado. São 33 casos hoje, todos sobre a conversão duração ↔ relógio.
 
-Uma alternativa mais durável seria extrair essas funções puras para um
+**O que continua faltando** são os casos que se perderam: as regras de balde e
+`getProgress`, onde os limites (d+7/d+8, virada de ano, data futura vs atrasada)
+não são óbvios à inspeção. Acrescentá-los ao arquivo que agora existe é trabalho
+de uma sentada, e não depende de decisão nenhuma.
+
+Uma limitação do método, que vale saber antes de estender: o casamento de chaves
+é ingênuo — não pula chaves dentro de strings, template literals ou comentários.
+Serve para função pequena e pura, que é o alvo. `calChipHtml` e `taskRowHtml`,
+que são template literals inteiros, não são extraíveis assim.
+
+A alternativa mais durável seria extrair as funções puras para um
 `<script type="module">` ou um arquivo separado — o que colide com a decisão de
 manter tudo em um único `index.html`. Vale a conversa, não a mudança silenciosa.
 
