@@ -826,12 +826,10 @@
 
   .cal-block:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 
-  /* R18 — declaração que faltava. .cal-block e .cal-chip são origem de arraste
-     e vivem dentro de .cal-scroll, que rola na vertical. Sem isto o navegador
-     reivindica o gesto para a rolagem, e uma vez reivindicado preventDefault()
-     no pointermove não desfaz: chega pointercancel e o arraste morre.
-     Medido antes de corrigir: .cal-block computava `auto` enquanto
-     .cal-unplanned-item computava `none`, e .cal-scroll de fato rola. */
+  /* touch-action: none entrega o gesto ao app em vez de à rolagem do
+     navegador. No mouse isso é o que faz o arraste funcionar, e não custa nada.
+     No TOQUE custa caro, e a regra é invertida logo abaixo — ver o bloco
+     any-pointer: coarse na seção de arraste. */
   .cal-block, .cal-chip { touch-action: none; }
 
   /* As alças. Ficam dentro do <button>, e o pointerdown delas para de propagar
@@ -875,16 +873,16 @@
      dedo. Então ela só existe depois do pressionar-e-segurar, e vem maior. */
   @media (pointer: coarse) {
     .cal-resize { display: none; }
-    .cal-block.resizing .cal-resize {
+    .cal-block.armado .cal-resize {
       display: block;
       height: 14px;
       background: var(--line);
       opacity: .55;
     }
-    .cal-block.resizing.tiny .cal-resize.ini { display: none; }
+    .cal-block.armado.tiny .cal-resize.ini { display: none; }
   }
 
-  .cal-block.resizing { outline: 2px solid var(--line); outline-offset: -1px; }
+  .cal-block.armado { outline: 2px solid var(--line); outline-offset: -1px; }
 
   body.cal-resizing { cursor: ns-resize; }
   body.cal-resizing .cal-slot:hover { background: none; }
@@ -1057,6 +1055,24 @@
   .cal-unplanned-date.atrasada { color: var(--red); }
 
   /* ---- arraste ---- */
+
+  /* No toque, touch-action: none sobre uma tarefa significa que o dedo pousado
+     nela NUNCA rola o calendário — e rolar é o gesto mais comum da tela. Foi o
+     que o PR #17 provocou ao corrigir o arraste: consertou uma ponta e quebrou
+     a outra, que é a comum.
+
+     Então no toque a rolagem volta a ser do navegador, e o arraste passa a
+     exigir pressionar e segurar. Só depois disso o bloco recebe .armado e
+     retoma o gesto para si.
+
+     any-pointer e não pointer: num aparelho híbrido (notebook com tela) o
+     ponteiro primário é fino, mas o dedo continua existindo — e é o dedo que
+     precisa rolar. touch-action só afeta entrada por toque, então devolvê-lo
+     não muda nada para o mouse. */
+  @media (any-pointer: coarse) {
+    .cal-block, .cal-chip, .cal-unplanned-item { touch-action: auto; }
+    .cal-block.armado { touch-action: none; }
+  }
 
   body.cal-dragging { cursor: grabbing; }
   body.cal-dragging .cal-slot:hover { background: none; }
@@ -4877,10 +4893,10 @@
         const estreito = b.cols >= 3 ? ' narrow' : '';
         // Abaixo de 28px não cabem duas alças — ver o CSS de .cal-block.tiny.
         const miudo = alt < 28 ? ' tiny' : '';
-        const emModo = resizeMode === b.t.id ? ' resizing' : '';
+        const armado = blocoArmado === b.t.id ? ' armado' : '';
         const alca = borda => `<span class="cal-resize ${borda}" aria-hidden="true"
           onpointerdown="startResize('${b.t.id}', event, '${borda}')"></span>`;
-        return `<button type="button" class="cal-block${b.t.status === 'done' ? ' done' : ''}${compacto}${estreito}${miudo}${emModo}"
+        return `<button type="button" class="cal-block${b.t.status === 'done' ? ' done' : ''}${compacto}${estreito}${miudo}${armado}"
           data-id="${b.t.id}"
           style="top:${b.ini / 60 * CAL_HOUR_H}px;height:${alt}px;left:${b.col * w}%;width:${w}%;${c ? `--bloco:${c.fg};--bloco-bg:${c.bg}` : ''}"
           onpointerdown="startDrag('${b.t.id}', event, 'grid')"
@@ -4965,7 +4981,7 @@
 
   function setCalendarView(view) {
     if (!CAL_VIEWS.includes(view)) return;
-    resizeMode = null;                               // o modo não sobrevive à troca de visão
+    blocoArmado = null;                              // o estado não sobrevive à troca de visão
     calendarView = view;
     // A âncora é renormalizada para a unidade da nova visão, partindo do dia
     // selecionado — trocar de visão não deve teleportar para outro período.
@@ -4984,7 +5000,7 @@
 
   /* Um passo anda na unidade da visão. */
   function setCalendarStep(delta) {
-    resizeMode = null;
+    blocoArmado = null;
     if (calendarView === 'month') calendarAnchor = addMonths(calendarAnchor, delta);
     else if (calendarView === 'week') calendarAnchor = addDays(calendarAnchor, 7 * delta);
     else if (calendarView === 'day') calendarAnchor = addDays(calendarAnchor, delta);
@@ -5070,9 +5086,18 @@
 
   let dragState = null;
   let tapSelected = null;
-  /* Modo de redimensionar, só do toque: no ponteiro fino as alças já estão lá. */
-  let resizeMode = null;
-  const PONTEIRO_GROSSO = matchMedia('(pointer: coarse)').matches;
+  /* Bloco "armado", só do toque: no ponteiro fino nada disto existe, porque lá
+     o mouse não disputa a rolagem com o app.
+
+     Armado quer dizer duas coisas ao mesmo tempo, e é por isso que deixou de se
+     chamar resizeMode: as alças ficam visíveis (redimensionar) E o bloco retoma
+     o touch-action para si (arrastar para mover). Um pressionar-e-segurar
+     destranca os dois. */
+  let blocoArmado = null;
+
+  /* Enquanto verdadeiro, o touchmove do documento é barrado — é o que impede o
+     calendário de rolar debaixo de um arraste já destrancado. */
+  let arrasteDestrancado = false;
 
   /* O alvo é resolvido por coordenada, não por listener em cada célula: os alvos
      são recriados a cada render, e o render roda a cada 60s — listener preso a nó
@@ -5134,35 +5159,45 @@
      ficam na window, não no elemento, para o arraste sobreviver a um render. */
   function startDrag(id, ev, origem) {
     if (ev.button && ev.button !== 0) return;
-    // No modo de redimensionar o corpo do bloco não move: puxar o meio
-    // significaria mover a tarefa, que é o oposto do que o modo prometeu.
-    if (resizeMode === id) return;
     const t = tasks.find(x => x.id === id);
     if (!t) return;
     const x0 = ev.clientX, y0 = ev.clientY, pid = ev.pointerId;
     let moveu = false;
     let ghost = null, linha = null;
 
-    /* Pressionar e segurar entra no modo de redimensionar — só no toque. No
-       ponteiro fino as alças já estão lá, e o timer seria caminho morto que
-       ainda por cima roubaria o clique-direito. A ORDEM importa: mover antes
-       dos 500ms cancela o timer, porque mover é o gesto barato e o comum. */
-    const bloco = PONTEIRO_GROSSO && origem === 'grid' && t.time
-      ? (ev.target.closest ? ev.target.closest('.cal-block') : null) : null;
-    let abortado = false;
+    /* No toque o gesto sobre uma tarefa nasce TRANCADO, e destranca com
+       pressionar e segurar por 500ms.
+
+       O motivo é o gesto mais comum da tela: rolar. Sem a tranca, o dedo
+       pousado sobre uma tarefa a arrasta em vez de rolar o calendário — que é
+       exatamente o que o touch-action: none do PR #17 provocou.
+
+       Gatilho por pointerType e não pela media query: num aparelho híbrido o
+       ponteiro primário é fino, mas o dedo continua existindo, e é o dedo que
+       precisa da tranca. O mouse não passa por aqui. */
+    const doToque = ev.pointerType === 'touch';
+    const jaArmado = blocoArmado === id;
+    let destrancado = !doToque || jaArmado;
+    let virouRolagem = false;
     let semMenu = null;
-    let timerLongo = bloco ? setTimeout(() => {
+
+    /* A ORDEM importa: mover antes dos 500ms cancela o timer, porque rolar é o
+       gesto barato e o comum, e ele tem de continuar barato. */
+    let timerLongo = (doToque && !jaArmado) ? setTimeout(() => {
       timerLongo = null;
-      abortado = true;
-      resizeMode = id;
+      destrancado = true;
+      arrasteDestrancado = true;                     // barra a rolagem daqui em diante
       navigator.vibrate?.(10);
-      encerrar(null);
-      renderCalendar();
+      // Arma o bloco: as alças aparecem, e o touch-action volta a ser do app.
+      // O gesto NÃO termina aqui — o dedo já está na tela, então continuar a
+      // mover arrasta, e soltar sem mover deixa as alças à disposição.
+      if (origem === 'grid') { blocoArmado = id; renderCalendar(); }
     }, 500) : null;
-    if (bloco) {
+
+    if (doToque) {
       // Pressionar e segurar é o gesto do menu nativo de contexto no toque.
       semMenu = e => e.preventDefault();
-      bloco.addEventListener('contextmenu', semMenu);
+      window.addEventListener('contextmenu', semMenu);
     }
 
     const onMove = e => {
@@ -5171,6 +5206,14 @@
         // Limiar: sem ele todo toque vira arraste de zero pixel e o clique some.
         if (Math.abs(e.clientX - x0) < 4 && Math.abs(e.clientY - y0) < 4) return;
         if (timerLongo) { clearTimeout(timerLongo); timerLongo = null; }
+        // Trancado: o movimento é do navegador. Encerra o gesto por completo —
+        // sem isto o pointerup seguinte cairia no ramo de "toque curto" e
+        // abriria a edição no fim de cada rolagem.
+        if (!destrancado) { virouRolagem = true; encerrar(null); return; }
+        // Barra a rolagem a partir daqui. No bloco armado o touch-action já
+        // fazia isso, mas o chip do mês nunca recebe .armado — e sem esta linha
+        // ele só arrastaria no gesto contínuo, nunca no segundo toque.
+        arrasteDestrancado = true;
         moveu = true;
         dragState = { id };
         document.body.classList.add('cal-dragging');
@@ -5191,16 +5234,19 @@
       window.removeEventListener('pointercancel', cancelar);
       window.removeEventListener('keydown', onKey);
       if (timerLongo) { clearTimeout(timerLongo); timerLongo = null; }
-      if (semMenu && bloco) setTimeout(() => bloco.removeEventListener('contextmenu', semMenu), 0);
+      arrasteDestrancado = false;
+      if (semMenu) setTimeout(() => window.removeEventListener('contextmenu', semMenu), 0);
       if (ghost) ghost.remove();
       document.body.classList.remove('cal-dragging');
       limparAlvo();
       const arrastou = moveu;
       dragState = null;
+      // Virou rolagem: não é toque curto nem arraste, e não deve fazer nada.
+      if (virouRolagem) return;
       if (origem === 'grid') engolirProximoClique();
-      // O gesto que virou modo de redimensionar não é toque curto nem arraste:
-      // não abre a edição e não grava nada.
-      if (abortado) return;
+      // Segurar e soltar sem mover não é toque curto: armou o bloco, e é só
+      // isso que deve ter acontecido. Não abre a edição e não grava nada.
+      if (destrancado && doToque && !arrastou && !jaArmado) return;
       if (!arrastou) {
         // Vindo da grade, o toque curto abre a edição — é o que o D8 queria e não
         // conseguiu, porque um chip dentro de uma célula-botão não podia ser botão.
@@ -5208,10 +5254,13 @@
         return;
       }
       const alvo = e && e.clientX !== undefined ? resolveTarget(e.clientX, e.clientY) : null;
-      if (aplicarSoltura(t, alvo)) { save(); render(); } else renderCalendar();
+      if (aplicarSoltura(t, alvo)) { blocoArmado = null; save(); render(); }
+      else renderCalendar();
     }
 
     const cancelar = () => {
+      // pointercancel com o gesto trancado = o navegador assumiu a rolagem.
+      if (!destrancado) virouRolagem = true;
       moveu = false;                                  // soltar fora não grava nada
       encerrar(null);
     };
@@ -5354,7 +5403,7 @@
       if (!mudou) { renderCalendar(); return; }      // desfaz o desenho ao vivo
       t.time = padTime(novoIni);
       t.dur = novoFim - novoIni;
-      resizeMode = null;                             // aplicou, sai do modo
+      blocoArmado = null;                            // aplicou, desarma
       save();
       render();
     }
@@ -5373,20 +5422,34 @@
     window.addEventListener('keydown', onKey);
   }
 
-  function sairDoModoRedimensionar() {
-    if (!resizeMode) return false;
-    resizeMode = null;
+  function desarmarBloco() {
+    if (!blocoArmado) return false;
+    blocoArmado = null;
     renderCalendar();
     return true;
   }
 
-  /* Tocar fora sai do modo. Na fase de captura porque o alvo pode ser um nó que
+  /* Barra a rolagem enquanto um arraste está destrancado.
+
+     Registrado UMA vez, no carregamento, e não a cada gesto: o Chrome decide no
+     touchstart se pode rolar na thread do compositor, e um listener não-passivo
+     acrescentado depois disso chega tarde demais para impedir a rolagem daquele
+     gesto. O preço é o documento não usar mais o caminho rápido de rolagem por
+     toque; num app deste tamanho, é troca barata pelo gesto funcionar.
+
+     passive: false explícito porque o Chrome assume passivo em touchmove de
+     document, e listener passivo não pode chamar preventDefault(). */
+  document.addEventListener('touchmove', e => {
+    if (arrasteDestrancado) e.preventDefault();
+  }, { passive: false });
+
+  /* Tocar fora desarma. Na fase de captura porque o alvo pode ser um nó que
      o renderCalendar() logo em seguida substitui. O primeiro toque fora é
-     engolido — sair de um modo é o que ele significa, e isso é previsível. */
+     engolido — desarmar é o que ele significa, e isso é previsível. */
   document.addEventListener('pointerdown', e => {
-    if (!resizeMode) return;
-    if (e.target.closest && e.target.closest(`.cal-block[data-id="${resizeMode}"]`)) return;
-    sairDoModoRedimensionar();
+    if (!blocoArmado) return;
+    if (e.target.closest && e.target.closest(`.cal-block[data-id="${blocoArmado}"]`)) return;
+    desarmarBloco();
   }, true);
 
   /* Em window, e não em document, para acompanhar os outros dois Escape do
@@ -5394,7 +5457,7 @@
      focado e sobe pelos dois, então a escolha não muda comportamento — muda
      não haver duas convenções para a mesma tecla. */
   window.addEventListener('keydown', e => {
-    if (e.key === 'Escape') sairDoModoRedimensionar();
+    if (e.key === 'Escape') desarmarBloco();
   });
 
   /* ---------- render: report ---------- */
