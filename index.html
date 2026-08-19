@@ -549,6 +549,46 @@
     font-weight: 600;
   }
 
+  /* O preenchimento diz o projeto; a BORDA e quem carrega o contraste.
+     A WCAG 1.4.11 pede 3:1 para o LIMITE do componente, nao para o
+     preenchimento contra o container — e um preenchimento escuro o bastante
+     para bater 3:1 viraria um bloco macico de cor, comendo a regua de horas e
+     competindo com a linha do "agora".
+
+     Antes disto o bloco era --surface2 sobre --surface: 1.15:1 no escuro,
+     1.14:1 no claro, e o chip do mes chegava a 1.06:1. O que se via era o
+     texto, nao o objeto.
+
+     Tema claro: o par bg/fg da PALETTE ja e o certo. Medido nos dez projetos,
+     borda em 5.02-7.58:1 sobre --surface. */
+  .cal-chip, .cal-block {
+    --fill: var(--bloco-bg, var(--surface2));
+    --line: var(--bloco, var(--text2));
+  }
+
+  /* Escuro: nao ha par escuro na PALETTE, e o bg claro sobre fundo escuro seria
+     fluorescente — o preenchimento e derivado. Os 24% sairam de medir 20/24/28:
+     em 20% o preenchimento some contra a grade; em 28% os tons quentes competem
+     com o --red da linha do "agora". A borda PRECISA ser clareada com --text: o
+     fg puro sobre --surface da 2.11-3.19:1, e sete dos dez reprovariam.
+     Medido: borda 5.43-6.59:1 sobre --surface, texto 11.22-12.50:1.
+     Escrito duas vezes de proposito — e a convencao de tema do arquivo. */
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .cal-chip,
+    :root:not([data-theme="light"]) .cal-block {
+      --fill: color-mix(in srgb, var(--bloco, var(--text2)) 24%, var(--surface));
+      --line: color-mix(in srgb, var(--bloco, var(--text2)) 55%, var(--text));
+    }
+  }
+
+  [data-theme="dark"] .cal-chip,
+  [data-theme="dark"] .cal-block {
+    --fill: color-mix(in srgb, var(--bloco, var(--text2)) 24%, var(--surface));
+    --line: color-mix(in srgb, var(--bloco, var(--text2)) 55%, var(--text));
+  }
+
+  /* Padding vertical zerado para a borda de 1px nao aumentar a altura do chip:
+     16.2px antes, 16.2px depois. A celula do mes conta com essa medida. */
   .cal-chip {
     display: flex;
     align-items: center;
@@ -556,13 +596,12 @@
     min-width: 0;
     font-size: 10.5px;
     line-height: 1.35;
-    padding: 1px 3px;
+    padding: 0 3px;
     border-radius: 4px;
     color: var(--text);
-    background: var(--surface2);
+    background: var(--fill);
+    border: 1px solid var(--line);
   }
-
-  .cal-cell.selected .cal-chip { background: var(--surface); }
 
   .cal-chip-time {
     font-family: var(--mono);
@@ -579,8 +618,12 @@
     white-space: nowrap;
   }
 
-  /* Concluída aparece — o Calendário é mapa do tempo, não lista de pendências. */
-  .cal-chip.done { opacity: .55; }
+  /* Concluída aparece — o Calendário é mapa do tempo, não lista de pendências.
+     Mas opacity .55 sobre preenchimento tingido lavaria o objeto de volta ao
+     invisível de onde ele veio. Então concluída troca de estratégia: o
+     preenchimento volta ao neutro (concluído não precisa gritar o projeto) e a
+     borda continua colorida, então o limite continua passando o 3:1. */
+  .cal-chip.done { opacity: .7; background: var(--surface2); }
   .cal-chip.done .cal-chip-name { text-decoration: line-through; }
 
   .cal-more {
@@ -760,12 +803,12 @@
     flex-direction: column;
     gap: 0;
     overflow: hidden;
-    padding: 1px 4px;
+    padding: 0 4px;
     text-align: left;
     font-family: var(--sans);
-    background: var(--surface2);
-    border: none;
-    border-left: 3px solid var(--bloco, var(--accent));
+    background: var(--fill);
+    border: 1px solid var(--line);
+    border-left-width: 3px;
     border-radius: 3px;
     cursor: pointer;
     box-shadow: var(--shadow-sm);
@@ -795,7 +838,7 @@
   .cal-block.compact .cal-block-time { font-size: 8.5px; }
   .cal-block.narrow .cal-block-time { display: none; }
 
-  .cal-block.done { opacity: .55; }
+  .cal-block.done { opacity: .7; background: var(--surface2); }
   .cal-block.done .cal-block-name { text-decoration: line-through; }
 
   .cal-now {
@@ -4483,13 +4526,17 @@
     return proj ? PALETTE[proj.colorIndex % PALETTE.length] : null;
   }
 
+  /* O ponto do projeto saiu de dentro do chip: com o chip tingido pela cor do
+     projeto ele repetia a informacao e comia ~10px do nome, que e justamente o
+     que falta na celula do mes. Os pontos que aparecem abaixo de 600px sao
+     outros — vem de renderMonthGrid() e continuam. */
   function calChipHtml(t) {
     const c = projColor(t);
-    const ponto = c ? `<span class="project-dot" style="background:${c.fg}"></span>` : '';
+    const cor = c ? ` style="--bloco:${c.fg};--bloco-bg:${c.bg}"` : '';
     const hora = t.time ? `<span class="cal-chip-time">${t.time}</span>` : '';
-    return `<span class="cal-chip${t.status === 'done' ? ' done' : ''}" data-id="${t.id}"
+    return `<span class="cal-chip${t.status === 'done' ? ' done' : ''}" data-id="${t.id}"${cor}
                  onpointerdown="startDrag('${t.id}', event, 'grid')" title="${esc(t.name)}">
-      ${ponto}${hora}<span class="cal-chip-name">${esc(t.name)}</span>
+      ${hora}<span class="cal-chip-name">${esc(t.name)}</span>
     </span>`;
   }
 
@@ -4615,7 +4662,7 @@
         const estreito = b.cols >= 3 ? ' narrow' : '';
         return `<button type="button" class="cal-block${b.t.status === 'done' ? ' done' : ''}${compacto}${estreito}"
           data-id="${b.t.id}"
-          style="top:${b.ini / 60 * CAL_HOUR_H}px;height:${alt}px;left:${b.col * w}%;width:${w}%;${c ? `--bloco:${c.fg}` : ''}"
+          style="top:${b.ini / 60 * CAL_HOUR_H}px;height:${alt}px;left:${b.col * w}%;width:${w}%;${c ? `--bloco:${c.fg};--bloco-bg:${c.bg}` : ''}"
           onpointerdown="startDrag('${b.t.id}', event, 'grid')"
           title="${esc(b.t.name)} · ${b.t.time}–${padTime(fimReal)}">
           <span class="cal-block-time">${b.t.time}</span>
