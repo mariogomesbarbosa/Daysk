@@ -21,6 +21,7 @@ o *porquê* delas.
 | [calendario.md](calendario.md) | O Calendário: as 13 decisões, o desvio do D8 e a verificação |
 | [calendario-alternador-de-visao.md](calendario-alternador-de-visao.md) | As quatro visões e o planejar por arraste: 24 decisões, e os dois desvios que desfizeram |
 | [refinamento-calendario.md](refinamento-calendario.md) | Os quatro ajustes de refino: coluna, campo Final, redimensionar e contraste |
+| [refinamento-relatorios.md](refinamento-relatorios.md) | Largura da página, registro de sessões no modelo e as horas trabalhadas nos gráficos |
 | [instalacao-android.md](instalacao-android.md) | Por que o atalho não abria, e o que instalar como app custou à arquitetura |
 | [pendencias.md](pendencias.md) | Ressalvas conhecidas, incluindo o que foi para `main` sem verificação visual |
 
