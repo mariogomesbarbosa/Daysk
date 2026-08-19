@@ -131,10 +131,20 @@ redimensionar de verdade** — `window.innerWidth` respondeu, a media query de
 - Nenhum scroll horizontal; com 16 itens o conteúdo continua caber, e o
   `overflow-y: auto` está no lugar para telas mais curtas.
 
-**O que ainda falta:** 375px de largura real. O pane do navegador não desce
-abaixo de 480px — pedir 375 devolve sucesso mas entrega 480. Como 480px é
-justamente um dos breakpoints do arquivo (o de "só ícone" da navbar), a faixa
-375–479px segue sem olhos em cima.
+**O que ainda falta:** 375px de largura real **na aba Tasks**. Na época, o pane
+do navegador não descia abaixo de 480px — pedir 375 devolvia sucesso e entregava
+480.
+
+**Isso deixou de ser verdade.** Durante o ajuste de largura dos Relatórios o
+navegador embutido redimensionou para 375px de verdade (`window.innerWidth === 375`
+confirmado), e a página de Relatórios foi medida ali: uma coluna, sem scroll
+horizontal, com a tabela rolando dentro do próprio contêiner. **A ferramenta
+existe agora** — o que falta é apontá-la para a gaveta do sidebar, que é o que
+esta ressalva sempre foi.
+
+Uma armadilha do pane embutido, para quem for repetir: **com ele oculto a página
+não compõe frames**, então `screenshot` expira. Medição por `getBoundingClientRect`
+funciona normalmente; só a captura precisa do pane visível.
 
 ### Uma armadilha de medição que custou tempo
 
