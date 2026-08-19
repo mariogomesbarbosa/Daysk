@@ -96,6 +96,48 @@ eq('minsToHm 120', minsToHm(120), '2h');
 eq('minsToHm 45', minsToHm(45), '45min');
 eq('minsToHm 1335', minsToHm(1335), '22h15min');
 
+
+
+/* ---------- asideGroups: os dois grupos da coluna do Calendário ---------- */
+/* asideGroups() lê o global `tasks`, então o escopo isolado precisa declarar
+   essa ligação e deixá-la substituível — é o preço de testar uma função que
+   fecha sobre estado de módulo. */
+const ALVOS_ASIDE = ['taskSortKey', 'asideGroups'];
+const cal = new Function(`
+  let tasks = [];
+  ${ALVOS_ASIDE.map(extrair).join('\n')}
+  return { asideGroups, semear: t => { tasks = t; } };
+`)();
+
+const tarefa = (id, campos) => ({ id, name: id, status: 'pending', ...campos });
+cal.semear([
+  tarefa('a', { date: null, time: null }),                        // sem prazo
+  tarefa('b', { date: null, time: null, status: 'done' }),        // sem prazo, concluída
+  tarefa('c', { date: '2026-08-25', time: null }),                // sem hora, futura
+  tarefa('d', { date: '2026-08-19', time: null }),                // sem hora, mais próxima
+  tarefa('e', { date: '2026-08-01', time: null }),                // sem hora, atrasada
+  tarefa('f', { date: '2026-08-19', time: null, status: 'done' }),// sem hora, concluída
+  tarefa('g', { date: '2026-08-19', time: '10:00' }),             // planejada: em nenhum grupo
+  tarefa('h', { date: null, time: null, status: undefined }),     // registro antigo, sem status
+  tarefa('i', { date: '2026-08-20', time: null, status: 'active' }),
+]);
+const g = cal.asideGroups();
+const ids = l => l.map(t => t.id).join(',');
+
+eq('semPrazo pega só o que não tem data', ids(g.semPrazo), 'a,h');
+eq('semPrazo exclui concluída', g.semPrazo.some(t => t.id === 'b'), false);
+eq('status ausente conta como aberta', g.semPrazo.some(t => t.id === 'h'), true);
+eq('semHora pega data sem hora, ordenada por data', ids(g.semHora), 'e,d,i,c');
+eq('semHora exclui concluída', g.semHora.some(t => t.id === 'f'), false);
+eq('semHora mantém active (é pendência)', g.semHora.some(t => t.id === 'i'), true);
+eq('tarefa com data E hora não entra em grupo nenhum',
+   g.semPrazo.concat(g.semHora).some(t => t.id === 'g'), false);
+eq('contador da coluna soma os dois', g.semPrazo.length + g.semHora.length, 6);
+
+cal.semear([tarefa('x', { date: '2026-08-19', time: '09:00' })]);
+const vazio = cal.asideGroups();
+eq('tudo planejado zera os dois grupos', vazio.semPrazo.length + vazio.semHora.length, 0);
+
 console.log(`\n${ok} passaram, ${falhas.length} falharam\n`);
 if (falhas.length) {
   falhas.forEach(f => console.log('  ✗ ' + f + '\n'));
