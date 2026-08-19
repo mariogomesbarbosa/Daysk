@@ -20,6 +20,7 @@ o *porquê* delas.
 | [ajuste-balde-hoje-concluidas.md](ajuste-balde-hoje-concluidas.md) | Por que "Hoje" exclui toda tarefa concluída — e as duas rodadas que levaram a essa regra |
 | [calendario.md](calendario.md) | O Calendário: as 13 decisões, o desvio do D8 e a verificação |
 | [calendario-alternador-de-visao.md](calendario-alternador-de-visao.md) | As quatro visões e o planejar por arraste: 24 decisões, e os dois desvios que desfizeram |
+| [refinamento-calendario.md](refinamento-calendario.md) | Os quatro ajustes de refino: coluna, campo Final, redimensionar e contraste |
 | [pendencias.md](pendencias.md) | Ressalvas conhecidas, incluindo o que foi para `main` sem verificação visual |
 
 ## Estado atual
