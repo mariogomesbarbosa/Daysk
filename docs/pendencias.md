@@ -176,7 +176,25 @@ conferir que o botão de menu aparece, que a gaveta desliza e que nenhuma faixa
 gera scroll horizontal. As faixas a olhar são 900px, 860px, 600px e 480px — os
 três breakpoints do arquivo interagem nessa região.
 
-## O pressionar-e-segurar do redimensionar nunca foi tocado com um dedo
+## O `touch-action: none` do PR #17 roubou a rolagem — e a lição
+
+Registro de um erro meu, porque o modo de falha é instrutivo.
+
+O PR #17 achou uma declaração faltando (`touch-action: none` em `.cal-block` e
+`.cal-chip`), mediu, confirmou e corrigiu. A correção estava certa **para o
+arraste** e errada para tudo o mais: com ela, o dedo pousado sobre uma tarefa
+deixa de rolar o calendário. E rolar é o gesto mais comum da tela.
+
+**A lição:** `touch-action: none` não "conserta o arraste" — ele **transfere o
+gesto** do navegador para o app. Toda transferência tem um lado que perde. Eu
+medi o lado que ganhava (o arraste voltou a funcionar) e não medi o que perdia
+(a rolagem parou), porque não tinha como exercitar toque de verdade.
+
+O conserto foi devolver a rolagem ao navegador no toque e trancar o arraste
+atrás de um pressionar-e-segurar — que era, aliás, o que o R16 já fazia para
+redimensionar. O gesto do toque agora é um só, e não dois.
+
+## O pressionar-e-segurar nunca foi tocado com um dedo
 
 O modo de redimensionar no toque — pressionar e segurar 500ms num bloco para as
 alças aparecerem — está atrás de `matchMedia('(pointer: coarse)')`, avaliado uma
@@ -184,15 +202,19 @@ alças aparecerem — está atrás de `matchMedia('(pointer: coarse)')`, avaliad
 fino**, e emular toque exigiria que a emulação estivesse ativa *antes* do load,
 o que o ferramental disponível não garante.
 
-**O que foi verificado no lugar:** a máquina de estados inteira, dirigindo
-`resizeMode` direto — o bloco ganha `.resizing`, `startDrag` fica suspenso para
-ele (puxar o meio não move a tarefa), e os quatro caminhos de saída funcionam
-(aplicar, tocar fora, `Escape`, trocar de visão ou de período).
+**O que foi verificado no lugar:** os sete caminhos do gesto, com
+`PointerEvent` sintético carregando `pointerType: 'touch'` — deslizar sem
+segurar (rola, não arrasta), segurar e soltar (arma), segurar e arrastar no
+mesmo gesto, toque curto (abre a edição), `pointercancel` no meio de uma
+rolagem, mouse sem tranca nenhuma, e bloco já armado arrastando ao primeiro
+toque.
 
-**O que falta:** o gesto em si num aparelho real — o timer de 500ms, o
-`navigator.vibrate`, o `contextmenu` não abrindo, e as alças de 14px sendo
-acertáveis com o dedo. É a mesma dívida que o PR #12 já registrou para o
-arraste, e pela mesma razão.
+**O que falta:** o gesto num aparelho real — o timer de 500ms sob um dedo que
+treme, o `navigator.vibrate`, o `contextmenu` não abrindo, e as alças de 14px
+sendo acertáveis. Sintetizar `pointerType: 'touch'` exercita a lógica do app,
+**mas não exercita o navegador decidindo entre rolar e entregar o gesto** — que
+é exatamente onde o erro do PR #17 morava. É a mesma dívida que o PR #12
+registrou, e pela mesma razão.
 
 ## README.md desatualizado
 
