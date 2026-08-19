@@ -170,9 +170,34 @@ Duas armadilhas do pane embutido, para quem for repetir:
   do pane visível.
 - **O redimensionamento pode reportar sucesso e entregar outra largura.** Numa
   sessão o pane desceu a 375px; noutra ficou preso em 451px, respondendo "ok" a
-  pedidos de 375 e 380. É a mesma classe de armadilha que a ferramenta antiga
-  tinha, num piso diferente. **Sempre confira `window.innerWidth`** depois de
-  redimensionar, em vez de confiar no retorno.
+  pedidos de 375 e 380 — e depois voltou a descer a 375px sem nada ter mudado.
+  É a mesma classe de armadilha que a ferramenta antiga tinha, num piso
+  diferente e intermitente. **Sempre confira `window.innerWidth`** depois de
+  redimensionar, em vez de confiar no retorno; e se der errado, tente de novo
+  antes de concluir que a faixa é inalcançável.
+
+## Medir a coisa certa: `scrollWidth` do elemento não detecta transbordo
+
+Custou um bug enviado ao revisor, então fica escrito.
+
+Ao acomodar três KPIs na Visão Geral, os selos de tendência ganharam
+`white-space: nowrap`. Medi `selo.scrollWidth > selo.clientWidth` e deu
+**falso** — e concluí que estava tudo bem. Estava errado: `nowrap` faz o
+elemento **crescer** até caber o texto, então ele nunca transborda a si mesmo.
+Quem transbordava era a **coluna** e o **cartão**.
+
+Os três selos somavam **384px** num espaço de **341px**, e a terceira coluna
+vazava 67px para fora do cartão — visível a olho nu na tela, invisível na
+medição que eu escolhi.
+
+**A medição certa para transbordo é sempre no contêiner**, não no filho:
+
+```js
+pai.scrollWidth > pai.clientWidth              // o conteúdo cabe no pai?
+filho.getBoundingClientRect().right > limite   // o filho passou da borda?
+```
+
+Onde `limite` desconta padding e borda do pai. Vale o mesmo para altura.
 
 ### Uma armadilha de medição que custou tempo
 

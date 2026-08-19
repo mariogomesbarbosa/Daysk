@@ -1811,17 +1811,24 @@
     flex: 1;
   }
 
+  /* min-width: 0 e flex: 1 1 0 — sem isso a coluna não encolhe abaixo do
+     conteúdo e a terceira vaza para fora do cartão, que é o que acontecia. */
   .overview-col {
     display: flex;
+    flex: 1 1 0;
+    min-width: 0;
     flex-direction: column;
     align-items: center;
     gap: 4px;
   }
 
-  /* 26px e nao 32: com a chegada do KPI de horas sao tres colunas onde havia
-     duas, e o cartao continua com a mesma largura. */
+  /* 26px e não 32: com a chegada do KPI de horas são três colunas onde havia
+     duas, e o cartão continua com a mesma largura.
+     clamp para a coluna estreita não ser estourada por um número longo como
+     "10h30" — 4cqi amarra o tamanho à largura do CARTÃO, que é o que varia
+     entre uma e três colunas do grid. */
   .overview-num {
-    font-size: 26px;
+    font-size: clamp(18px, 4cqi + 8px, 26px);
     font-weight: 700;
     color: var(--text);
     line-height: 1;
@@ -1842,18 +1849,34 @@
     font-weight: 500;
   }
 
-  /* nowrap: o selo quebrando em duas linhas desalinhava as tres colunas entre
-     si, porque cada texto tem um comprimento. */
+  /* nowrap para o selo não quebrar em duas linhas e desalinhar as colunas —
+     mas com max-width e ellipsis, senão nowrap vira transbordo, que foi
+     exatamente o que aconteceu: os três selos somavam 384px num espaço de
+     341px. O texto encurtou junto (ver a legenda única abaixo da faixa). */
   .overview-trend {
     display: inline-flex;
     align-items: center;
     gap: 4px;
+    max-width: 100%;
     font-size: 10px;
     font-weight: 600;
     padding: 3px 7px;
     border-radius: 12px;
     margin-top: 4px;
     white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Uma legenda para as três colunas, no lugar de "vs anterior" repetido três
+     vezes. Diz a mesma coisa e não disputa largura com o número. */
+  .overview-caption {
+    font-family: var(--mono);
+    font-size: 9.5px;
+    letter-spacing: 0.04em;
+    text-align: center;
+    color: var(--text2);
+    margin-top: 2px;
   }
 
   /* Cores de TEMA, e não fixas. As anteriores (#16a34a sobre rgba verde, e
@@ -2665,21 +2688,22 @@
           <div class="overview-col">
             <div class="overview-num" id="r-hours">0min</div>
             <div class="overview-lbl">Horas Trabalhadas</div>
-            <div class="overview-trend neutral" id="r-hours-trend">— vs anterior</div>
+            <div class="overview-trend neutral" id="r-hours-trend">—</div>
           </div>
           <div class="overview-divider"></div>
           <div class="overview-col">
             <div class="overview-num" id="r-done">0</div>
             <div class="overview-lbl">Tarefas Concluídas</div>
-            <div class="overview-trend neutral" id="r-done-trend">— vs anterior</div>
+            <div class="overview-trend neutral" id="r-done-trend">—</div>
           </div>
           <div class="overview-divider"></div>
           <div class="overview-col">
             <div class="overview-num" id="r-rate">0%</div>
             <div class="overview-lbl">Taxa de Conclusão</div>
-            <div class="overview-trend neutral" id="r-rate-trend">— vs anterior</div>
+            <div class="overview-trend neutral" id="r-rate-trend">—</div>
           </div>
         </div>
+        <p class="overview-caption" id="r-trend-caption"></p>
         <div class="overview-substats">
           <div class="substat-item">
             <span class="substat-lbl">Média por Dia Trabalhado</span>
@@ -3802,6 +3826,18 @@
     const mm = Math.abs(m) % 60;
     if (h === 0) return mm + 'min';
     return h + 'h' + (mm ? mm + 'min' : '');
+  }
+
+  /* Formato compacto, só para o número grande da Visão Geral: "10h30" em vez de
+     "10h30min". O sufixo `min` depois das horas é redundante quando o rótulo
+     logo abaixo já diz "Horas Trabalhadas", e custa três caracteres num número
+     de 26px dentro de uma coluna de ~110px — medido, "10h30min" ocupava 125px
+     e transbordava o cartão. minsToHm() continua intacta em todo o resto. */
+  function hmCompacto(min) {
+    const h = Math.floor(Math.abs(min) / 60);
+    const m = Math.abs(min) % 60;
+    if (!h) return m + 'min';
+    return m ? h + 'h' + String(m).padStart(2, '0') : h + 'h';
   }
 
   function padTime(m) {
@@ -6229,7 +6265,7 @@
 
     // Overview KPIs
     const minTotal = Math.round(totalMs / 60000);
-    document.getElementById('r-hours').textContent = minsToHm(minTotal);
+    document.getElementById('r-hours').textContent = hmCompacto(minTotal);
     document.getElementById('r-done').textContent = doneCount;
     document.getElementById('r-rate').textContent = rate + '%';
     // Média por dia TRABALHADO, e não por dia do calendário: dividir por dias
@@ -6244,49 +6280,42 @@
     const doneTrendEl = document.getElementById('r-done-trend');
     const rateTrendEl = document.getElementById('r-rate-trend');
 
+    /* O selo carrega só o delta; "vs anterior" virou uma legenda única embaixo
+       da faixa. Repetido três vezes ele somava 384px num espaço de 341px e
+       empurrava a terceira coluna para fora do cartão. O texto completo fica no
+       title, para quem passar o mouse. */
+    const legenda = document.getElementById('r-trend-caption');
+    const põeSelo = (el, texto, classe, completo) => {
+      el.textContent = texto;
+      el.className = 'overview-trend ' + classe;
+      el.title = completo;
+    };
+
     if (currentPeriod === 'all') {
-      hoursTrendEl.textContent = 'total acumulado';
-      hoursTrendEl.className = 'overview-trend neutral';
-      doneTrendEl.textContent = 'total acumulado';
-      doneTrendEl.className = 'overview-trend neutral';
-      rateTrendEl.textContent = 'taxa acumulada';
-      rateTrendEl.className = 'overview-trend neutral';
+      if (legenda) legenda.textContent = '';
+      põeSelo(hoursTrendEl, 'acumulado', 'neutral', 'total acumulado');
+      põeSelo(doneTrendEl, 'acumulado', 'neutral', 'total acumulado');
+      põeSelo(rateTrendEl, 'acumulada', 'neutral', 'taxa acumulada');
     } else {
+      if (legenda) legenda.textContent = 'comparado ao período anterior';
       const difMin = Math.round((totalMs - prevMs) / 60000);
       if (difMin > 0) {
-        hoursTrendEl.textContent = `↑ +${minsToHm(difMin)} vs anterior`;
-        hoursTrendEl.className = 'overview-trend up';
+        põeSelo(hoursTrendEl, `↑ +${hmCompacto(difMin)}`, 'up', `↑ +${minsToHm(difMin)} vs período anterior`);
       } else if (difMin < 0) {
-        hoursTrendEl.textContent = `↓ -${minsToHm(-difMin)} vs anterior`;
-        hoursTrendEl.className = 'overview-trend down';
+        põeSelo(hoursTrendEl, `↓ -${hmCompacto(-difMin)}`, 'down', `↓ -${minsToHm(-difMin)} vs período anterior`);
       } else {
-        hoursTrendEl.textContent = `= igual ao anterior`;
-        hoursTrendEl.className = 'overview-trend neutral';
+        põeSelo(hoursTrendEl, '= igual', 'neutral', 'igual ao período anterior');
       }
 
       const doneDiff = doneCount - prevDoneCount;
-      if (doneDiff > 0) {
-        doneTrendEl.textContent = `↑ +${doneDiff} vs anterior`;
-        doneTrendEl.className = 'overview-trend up';
-      } else if (doneDiff < 0) {
-        doneTrendEl.textContent = `↓ ${doneDiff} vs anterior`;
-        doneTrendEl.className = 'overview-trend down';
-      } else {
-        doneTrendEl.textContent = `= igual ao anterior`;
-        doneTrendEl.className = 'overview-trend neutral';
-      }
+      if (doneDiff > 0) põeSelo(doneTrendEl, `↑ +${doneDiff}`, 'up', `↑ +${doneDiff} vs período anterior`);
+      else if (doneDiff < 0) põeSelo(doneTrendEl, `↓ ${doneDiff}`, 'down', `↓ ${doneDiff} vs período anterior`);
+      else põeSelo(doneTrendEl, '= igual', 'neutral', 'igual ao período anterior');
 
       const rateDiff = rate - prevRate;
-      if (rateDiff > 0) {
-        rateTrendEl.textContent = `↑ +${rateDiff}% vs anterior`;
-        rateTrendEl.className = 'overview-trend up';
-      } else if (rateDiff < 0) {
-        rateTrendEl.textContent = `↓ ${rateDiff}% vs anterior`;
-        rateTrendEl.className = 'overview-trend down';
-      } else {
-        rateTrendEl.textContent = `= igual ao anterior`;
-        rateTrendEl.className = 'overview-trend neutral';
-      }
+      if (rateDiff > 0) põeSelo(rateTrendEl, `↑ +${rateDiff}%`, 'up', `↑ +${rateDiff}% vs período anterior`);
+      else if (rateDiff < 0) põeSelo(rateTrendEl, `↓ ${rateDiff}%`, 'down', `↓ ${rateDiff}% vs período anterior`);
+      else põeSelo(rateTrendEl, '= igual', 'neutral', 'igual ao período anterior');
     }
 
     // Render Charts
@@ -6379,7 +6408,7 @@
         const comTempoT = tasks.filter(t => msNoPeriodo(t, agoraT) > 0).length;
 
         const põe = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
-        põe('r-hours', minsToHm(minT));
+        põe('r-hours', hmCompacto(minT));
         põe('r-avg', diasT ? minsToHm(Math.round(minT / diasT)) : '0min');
         põe('r-per-task', comTempoT ? minsToHm(Math.round(minT / comTempoT)) : '0min');
 

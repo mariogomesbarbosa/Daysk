@@ -315,6 +315,23 @@ eq('duracao negativa nao grava sessao', tneg.sessions.length, 0);
 eq('duracao negativa nao mexe em elapsed', tneg.elapsed, 500);
 eq('mas fecha o cronometro mesmo assim', tneg.startedAt, null);
 
+/* ---------- hmCompacto: o formato do numero grande da Visao Geral ---------- */
+const { hmCompacto } = new Function(`
+  ${extrair('hmCompacto')}
+  return { hmCompacto };
+`)();
+
+eq('horas redondas nao levam minutos', hmCompacto(120), '2h');
+eq('horas com minutos vem coladas e com zero a esquerda', hmCompacto(125), '2h05');
+eq('o caso do relato', hmCompacto(630), '10h30');
+eq('menos de uma hora mantem min', hmCompacto(45), '45min');
+eq('zero', hmCompacto(0), '0min');
+eq('uma hora cravada', hmCompacto(60), '1h');
+eq('negativo usa o valor absoluto (o sinal vem do selo)', hmCompacto(-90), '1h30');
+eq('dois digitos de minuto', hmCompacto(659), '10h59');
+/* O ponto do formato: e mais curto que minsToHm, que transbordava o cartao. */
+eq('e mais curto que minsToHm', hmCompacto(630).length < minsToHm(630).length, true);
+
 console.log(`\n${ok} passaram, ${falhas.length} falharam\n`);
 if (falhas.length) {
   falhas.forEach(f => console.log('  ✗ ' + f + '\n'));
