@@ -68,6 +68,27 @@ uma vez em vez de deixar metade do arquivo escapando e metade não. O risco real
 aqui é quebra de layout, não execução de terceiros — os dados são locais e do
 próprio usuário.
 
+## Selo de tendência: --green e --red erram o 4.5:1 no tema claro
+
+Os selos "↑ +33h vs anterior" da Visão Geral usavam **cores fixas** que não
+respondiam ao tema: `#16a34a` sobre `rgba(34,197,94,.12)` e `#dc2626` sobre
+`rgba(239,68,68,.12)`. Medido, isso dava **2.97:1** para o de alta no tema claro
+e **2.95:1** para o de queda no escuro — abaixo até do 3:1 de componente.
+
+Corrigido para os tokens `--green` e `--red` sobre `--surface2`, o mesmo fundo
+que o selo `.neutral` já usa. Medido depois: **4.39** e **4.23** no claro,
+**7.96** e **5.02** no escuro.
+
+**O que sobra:** o tema claro fica ~0.2 abaixo do 4.5:1 de texto normal. O
+limite são os próprios tokens — `--green` #15803D dá 4.39:1 sobre `--surface2` e
+`--red` #DC2626 dá 4.23:1, e nenhuma escolha de fundo resolve sem escurecer o
+texto. Fechar a fresta exige mexer em `--green` e `--red` no app inteiro, o que
+é decisão de design system e não consequência de um cartão — mesma lógica da
+ressalva do `--text3` abaixo.
+
+Vale saber que a informação **não depende da cor**: a seta (`↑` / `↓`) e o sinal
+do número dizem a mesma coisa.
+
 ## Contraste dos botões de ícone, no app inteiro
 
 Medido durante o Bloco 4, com as transições desligadas. `--text3` sobre `--bg`
@@ -142,9 +163,41 @@ horizontal, com a tabela rolando dentro do próprio contêiner. **A ferramenta
 existe agora** — o que falta é apontá-la para a gaveta do sidebar, que é o que
 esta ressalva sempre foi.
 
-Uma armadilha do pane embutido, para quem for repetir: **com ele oculto a página
-não compõe frames**, então `screenshot` expira. Medição por `getBoundingClientRect`
-funciona normalmente; só a captura precisa do pane visível.
+Duas armadilhas do pane embutido, para quem for repetir:
+
+- **Com ele oculto a página não compõe frames**, então `screenshot` expira.
+  Medição por `getBoundingClientRect` funciona normalmente; só a captura precisa
+  do pane visível.
+- **O redimensionamento pode reportar sucesso e entregar outra largura.** Numa
+  sessão o pane desceu a 375px; noutra ficou preso em 451px, respondendo "ok" a
+  pedidos de 375 e 380 — e depois voltou a descer a 375px sem nada ter mudado.
+  É a mesma classe de armadilha que a ferramenta antiga tinha, num piso
+  diferente e intermitente. **Sempre confira `window.innerWidth`** depois de
+  redimensionar, em vez de confiar no retorno; e se der errado, tente de novo
+  antes de concluir que a faixa é inalcançável.
+
+## Medir a coisa certa: `scrollWidth` do elemento não detecta transbordo
+
+Custou um bug enviado ao revisor, então fica escrito.
+
+Ao acomodar três KPIs na Visão Geral, os selos de tendência ganharam
+`white-space: nowrap`. Medi `selo.scrollWidth > selo.clientWidth` e deu
+**falso** — e concluí que estava tudo bem. Estava errado: `nowrap` faz o
+elemento **crescer** até caber o texto, então ele nunca transborda a si mesmo.
+Quem transbordava era a **coluna** e o **cartão**.
+
+Os três selos somavam **384px** num espaço de **341px**, e a terceira coluna
+vazava 67px para fora do cartão — visível a olho nu na tela, invisível na
+medição que eu escolhi.
+
+**A medição certa para transbordo é sempre no contêiner**, não no filho:
+
+```js
+pai.scrollWidth > pai.clientWidth              // o conteúdo cabe no pai?
+filho.getBoundingClientRect().right > limite   // o filho passou da borda?
+```
+
+Onde `limite` desconta padding e borda do pai. Vale o mesmo para altura.
 
 ### Uma armadilha de medição que custou tempo
 
