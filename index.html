@@ -138,10 +138,13 @@
     grid-template-columns: minmax(0, 880px);
   }
 
-  /* O Calendário usa a largura inteira do container. O teto de 880px foi criado
-     no Bloco 3 para proteger telas que ninguém havia desenhado; o Calendário
-     agora é desenhado, e uma grade de 7 colunas ganha com cada coluna mais
-     larga. Seletor com duas classes no body para vencer a regra acima por
+  /* Calendário e Relatórios usam a largura inteira do container. O teto de
+     880px foi criado no Bloco 3 para proteger telas que ninguém havia
+     desenhado; as duas agora são desenhadas — a grade de 7 colunas ganha com
+     cada coluna mais larga, e o painel de relatórios ganha um cartão a mais por
+     linha. Medido antes: o container tem 1180px e a coluna de conteúdo tinha
+     880px, então eram 300px de faixa vazia à direita.
+     Seletor com duas classes no body para vencer a regra acima por
      especificidade, não por ordem no arquivo. */
   body.no-sidebar.wide-content .app-shell {
     grid-template-columns: minmax(0, 1fr);
@@ -1716,13 +1719,28 @@
     margin-bottom: 1.5rem;
   }
 
+  /* Com os 1180px liberados, três colunas. O ganho não é cartão maior — é o
+     contrário, cada um encolhe de 582px para ~380px. O ganho é mais cartão
+     visível sem rolar, que é o que um painel quer. */
+  @media (min-width: 1100px) {
+    .report-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
   @media (max-width: 860px) {
     .report-grid {
       grid-template-columns: minmax(0, 1fr);
     }
   }
 
+  /* O cartão vira contexto de container query. A legenda do donut precisa
+     reagir à largura do CARTÃO e não à do viewport: com o grid de três colunas,
+     o mesmo viewport produz cartões de larguras diferentes conforme o
+     breakpoint, e nenhuma media query sabe disso.
+     Mesma linha de base de suporte do color-mix que o PR #14 já introduziu. */
   .report-card {
+    container-type: inline-size;
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: var(--radius-lg);
@@ -1889,6 +1907,25 @@
     gap: 1.25rem;
     flex: 1;
     min-height: 190px;
+  }
+
+  /* Medido a 1100px de viewport, com três colunas: o cartão fica em 340px e a
+     legenda ao lado do donut sobra com 139px — o nome do projeto recebe 60px
+     para 86 necessários e é cortado. Empilhada, ela recebe a largura inteira.
+
+     320px e não 380: a container query mede a CONTENT BOX do cartão, não a
+     borda. Os 20px de padding de cada lado e a borda tiram 42px, então o cartão
+     de 383px do container cheio mede 341px aqui, e o de 340px mede 298px. O
+     limiar de 320 separa os dois — preservando o desenho original lado a lado
+     onde ele cabe, e empilhando só onde não cabe. */
+  @container (max-width: 320px) {
+    .donut-wrapper {
+      flex-direction: column;
+      align-items: center;
+      gap: .75rem;
+    }
+
+    .donut-legend { width: 100%; }
   }
 
   .donut-chart-box {
@@ -4191,8 +4228,9 @@
     document.getElementById('btn-add').style.display = tab === 'today' ? '' : 'none';
     // Os baldes só valem para a lista de tarefas.
     document.body.classList.toggle('no-sidebar', tab !== 'today');
-    // Só o Calendário abre mão do teto de 880px: a grade de 7 colunas usa tudo.
-    document.body.classList.toggle('wide-content', tab === 'calendar');
+    // Calendário e Relatórios abrem mão do teto de 880px. A aba Tasks não:
+    // lá a coluna de conteúdo divide o espaço com o sidebar de 260px.
+    document.body.classList.toggle('wide-content', tab === 'calendar' || tab === 'report');
     closeSidebar();
     updateHeader();
     window.scrollTo({ top: 0 });
