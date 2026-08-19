@@ -1889,6 +1889,15 @@
   }
 
   /* Charts Container */
+  /* Nota de rodapé de cartão: onde o gráfico precisa se explicar. --text2 e
+     não --text3, que neste arquivo nunca é usado para texto. */
+  .card-nota {
+    font-size: 10.5px;
+    line-height: 1.35;
+    color: var(--text2);
+    margin-top: 6px;
+  }
+
   .chart-box {
     position: relative;
     flex: 1;
@@ -2663,6 +2672,7 @@
         <div class="chart-box">
           <canvas id="chart-curve"></canvas>
         </div>
+        <p class="card-nota" id="curve-nota" style="display:none"></p>
       </div>
 
       <!-- CARD 4: Classified Completion Statistics (Donut Chart) -->
@@ -3135,7 +3145,18 @@
         if (Array.isArray(remoteTasks) && remoteTasks.length > 0) {
           const tMap = new Map();
           tasks.forEach(t => tMap.set(t.id, t));
-          remoteTasks.forEach(t => tMap.set(t.id, t));
+          remoteTasks.forEach(t => {
+            /* O remoto vence, como sempre — MENOS no histórico de sessões.
+               Um dispositivo com versão anterior do app grava a tarefa sem o
+               campo sessions, e a fusão apagaria o histórico local sem nada
+               denunciar: os totais continuariam certos, porque vêm de elapsed,
+               e só o recorte por dia sumiria.
+               Sessões são append-only — não há interface que apague uma — então
+               preservar as locais é seguro por construção. */
+            const local = tMap.get(t.id);
+            if (local && local.sessions && !t.sessions) t = { ...t, sessions: local.sessions };
+            tMap.set(t.id, t);
+          });
           tasks = Array.from(tMap.values());
           localStorage.setItem('daily-tasks', JSON.stringify(tasks));
           loadedAny = true;
@@ -3792,8 +3813,56 @@
      fora não passa por ela. */
   function fecharSessao(t, agora) {
     if (!t || !t.startedAt) return;
-    t.elapsed = (t.elapsed || 0) + (agora - t.startedAt);
+    const dur = agora - t.startedAt;
+    // Duração não-positiva não vira nada: o relógio do sistema pode andar para
+    // trás, e uma sessão invertida envenenaria msPorDia() em silêncio.
+    if (dur > 0) {
+      t.elapsed = (t.elapsed || 0) + dur;
+      (t.sessions = t.sessions || []).push({ ini: t.startedAt, fim: agora });
+    }
     t.startedAt = null;
+  }
+
+  /* As sessões fechadas mais a que está aberta agora. Sem a aberta, o dia de
+     hoje aparece menor do que é enquanto o cronômetro roda — é a mesma regra de
+     effectiveElapsed(), e por isso mora ao lado dela.
+     Recebe `agora` em vez de chamar Date.now() para poder ser testada. */
+  function sessoesDe(t, agora) {
+    const fechadas = t.sessions || [];
+    return (t.status === 'active' && t.startedAt)
+      ? fechadas.concat([{ ini: t.startedAt, fim: agora }])
+      : fechadas;
+  }
+
+  /* Reparte sessões pelos dias que elas cobrem, devolvendo Map<'YYYY-MM-DD', ms>.
+
+     Uma sessão das 23:00 às 01:00 são duas horas em DOIS dias. Atribuir tudo ao
+     dia de início repetiria, em escala menor, exatamente o erro que o registro
+     de sessões existe para corrigir.
+
+     A meia-noite seguinte é construída por componentes — new Date(y, m, d + 1) —
+     que é horário local e atravessa mês, ano e ano bissexto corretamente. É a
+     mesma armadilha de fuso documentada em modelo-de-dados.md: o que não se pode
+     fazer é PARSEAR string de data, não construir por componentes.
+
+     Pura: é aqui que o harness aponta, porque virada de dia e de mês não se
+     conferem no olho. */
+  function msPorDia(sessoes) {
+    const mapa = new Map();
+    (sessoes || []).forEach(sess => {
+      let ini = sess.ini;
+      const fim = sess.fim;
+      if (!(fim > ini)) return;
+      while (ini < fim) {
+        const d = new Date(ini);
+        const proximaMeiaNoite = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1).getTime();
+        const corte = Math.min(fim, proximaMeiaNoite);
+        const ds = toDateStr(d);
+        mapa.set(ds, (mapa.get(ds) || 0) + (corte - ini));
+        ini = corte;
+      }
+    });
+    return mapa;
   }
 
   function statusTitle(s) {
@@ -3833,6 +3902,28 @@
         if (!t.projectId) t.projectId = projects[0].id;
         delete t.done;
         delete t.tag;
+      }
+
+      /* Sem isto o histórico inteiro some do gráfico diário: uma tarefa antiga
+         tem elapsed e nenhuma sessão, então o total diz 3h e o recorte por dia
+         diz zero. Dois números discordando na mesma tela é pior que uma
+         aproximação assumida.
+
+         Meio-dia e não meia-noite: uma sessão sintética longa ancorada em 00:00
+         vazaria para o dia anterior se a regra de partição mudar, e 12:00 mantém
+         a maioria dos casos dentro do próprio dia.
+
+         A flag `sintetica` NÃO é decorativa — é o que permite a interface dizer
+         que aquela parte é estimada, em vez de a aproximação virar mentira
+         silenciosa.
+
+         Fica de fora quem não tem data: não há dia onde ancorar. Essas continuam
+         contando no total e ausentes do recorte diário, que é a única
+         inconsistência que sobra — pequena e explicável. */
+      if (!t.sessions && (t.elapsed || 0) > 0 && t.date) {
+        changed = true;
+        const meioDia = new Date(t.date + 'T12:00:00').getTime();
+        t.sessions = [{ ini: meioDia, fim: meioDia + t.elapsed, sintetica: true }];
       }
     });
     if (changed) { save(); saveProjects(); }
@@ -5709,16 +5800,40 @@
       }
     }
 
-    // 2. Recent Completion Curve (Line Area Chart)
+    /* 2. Curva de Desempenho. A métrica de TEMPO passa a ler as sessões.
+
+       Sobre TODAS as tarefas e não só as filtradas: `filtered` recorta por data
+       PLANEJADA, e hora trabalhada num dia pertence àquele dia mesmo que a
+       tarefa estivesse marcada para outro. Somar effectiveElapsed por t.date,
+       que era o que estava aqui, é justamente o erro que o registro de sessões
+       veio corrigir — uma tarefa marcada para segunda e trabalhada quarta
+       jogava todas as horas na segunda. */
+    const agoraMs = Date.now();
+    const porDia = currentCurveMetric === 'time'
+      ? msPorDia(tasks.flatMap(t => sessoesDe(t, agoraMs)))
+      : null;
     const curveData = timelineDays.map(ds => {
-      const dayTasks = filtered.filter(t => t.date === ds);
       if (currentCurveMetric === 'time') {
-        const totalMs = dayTasks.reduce((s, t) => s + effectiveElapsed(t), 0);
-        return Math.round((totalMs / 3600000) * 10) / 10;
-      } else {
-        return dayTasks.filter(t => t.status === 'done').length;
+        return Math.round(((porDia.get(ds) || 0) / 3600000) * 10) / 10;
       }
+      return filtered.filter(t => t.date === ds && t.status === 'done').length;
     });
+
+    /* Se o período mostrado contém sessão sintética (a do histórico anterior ao
+       registro), o cartão diz isso. Sem a nota, a aproximação vira mentira
+       silenciosa — que é o que a flag `sintetica` existe para evitar. */
+    const notaEl = document.getElementById('curve-nota');
+    if (notaEl) {
+      const porDiaEstimado = currentCurveMetric === 'time'
+        ? msPorDia(tasks.flatMap(t => (t.sessions || []).filter(x => x.sintetica)))
+        : null;
+      const temEstimado = porDiaEstimado
+        && timelineDays.some(ds => (porDiaEstimado.get(ds) || 0) > 0);
+      notaEl.textContent = temEstimado
+        ? 'parte destas horas é estimada a partir da data planejada — é o histórico anterior ao registro de sessões'
+        : '';
+      notaEl.style.display = temEstimado ? '' : 'none';
+    }
 
     const ctxCurve = document.getElementById('chart-curve');
     if (ctxCurve) {
