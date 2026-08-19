@@ -138,6 +138,44 @@ cal.semear([tarefa('x', { date: '2026-08-19', time: '09:00' })]);
 const vazio = cal.asideGroups();
 eq('tudo planejado zera os dois grupos', vazio.semPrazo.length + vazio.semHora.length, 0);
 
+/* ---------- aplicarAlca: a conta das alcas de redimensionar ---------- */
+/* aplicarAlca() le a constante CAL_SNAP, que vive fora dela — o escopo isolado
+   declara a constante junto, como faz o proprio index.html. */
+const { aplicarAlca } = new Function(`
+  const CAL_SNAP = 15;
+  ${extrair('aplicarAlca')}
+  return { aplicarAlca };
+`)();
+
+const alca = (borda, ini, fim, mins) => {
+  const r = aplicarAlca(borda, ini, fim, mins);
+  return `${r.ini}-${r.fim}`;
+};
+
+/* alca de baixo: move o fim, mantem o inicio */
+eq('baixo estica 09:00-10:00 ate 11:00', alca('fim', 540, 600, 660), '540-660');
+eq('baixo encolhe 09:00-11:00 para 09:30', alca('fim', 540, 660, 570), '540-570');
+eq('baixo no piso de 15min', alca('fim', 540, 600, 545), '540-555');
+eq('baixo puxado para ANTES do inicio trava no piso', alca('fim', 540, 600, 360), '540-555');
+eq('baixo exatamente no inicio trava no piso', alca('fim', 540, 600, 540), '540-555');
+eq('baixo alem da meia-noite trava em 1440', alca('fim', 1380, 1410, 1800), '1380-1440');
+eq('baixo exatamente na meia-noite', alca('fim', 1380, 1410, 1440), '1380-1440');
+
+/* alca de cima: move o inicio, mantem o FIM */
+eq('cima sobe 10:00-11:00 para 09:00', alca('ini', 600, 660, 540), '540-660');
+eq('cima desce 09:00-11:00 para 10:00', alca('ini', 540, 660, 600), '600-660');
+eq('cima no piso de 15min', alca('ini', 540, 600, 590), '585-600');
+eq('cima puxada para DEPOIS do fim trava no piso', alca('ini', 540, 600, 1320), '585-600');
+eq('cima exatamente no fim trava no piso', alca('ini', 540, 600, 600), '585-600');
+eq('cima antes de 00:00 trava em 0', alca('ini', 15, 45, -300), '0-45');
+eq('cima exatamente em 00:00', alca('ini', 15, 45, 0), '0-45');
+
+/* a duracao resultante nunca fica abaixo do passo, nas quatro direcoes */
+[['fim',540,600,0],['fim',540,600,2000],['ini',540,600,0],['ini',540,600,2000]].forEach(([b,i,f,m]) => {
+  const r = aplicarAlca(b, i, f, m);
+  eq(`duracao >= CAL_SNAP para ${b} em ${m}`, r.fim - r.ini >= 15, true);
+});
+
 console.log(`\n${ok} passaram, ${falhas.length} falharam\n`);
 if (falhas.length) {
   falhas.forEach(f => console.log('  ✗ ' + f + '\n'));

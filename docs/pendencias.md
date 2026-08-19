@@ -176,6 +176,24 @@ conferir que o botão de menu aparece, que a gaveta desliza e que nenhuma faixa
 gera scroll horizontal. As faixas a olhar são 900px, 860px, 600px e 480px — os
 três breakpoints do arquivo interagem nessa região.
 
+## O pressionar-e-segurar do redimensionar nunca foi tocado com um dedo
+
+O modo de redimensionar no toque — pressionar e segurar 500ms num bloco para as
+alças aparecerem — está atrás de `matchMedia('(pointer: coarse)')`, avaliado uma
+única vez no carregamento. **O Chrome usado na verificação reporta ponteiro
+fino**, e emular toque exigiria que a emulação estivesse ativa *antes* do load,
+o que o ferramental disponível não garante.
+
+**O que foi verificado no lugar:** a máquina de estados inteira, dirigindo
+`resizeMode` direto — o bloco ganha `.resizing`, `startDrag` fica suspenso para
+ele (puxar o meio não move a tarefa), e os quatro caminhos de saída funcionam
+(aplicar, tocar fora, `Escape`, trocar de visão ou de período).
+
+**O que falta:** o gesto em si num aparelho real — o timer de 500ms, o
+`navigator.vibrate`, o `contextmenu` não abrindo, e as alças de 14px sendo
+acertáveis com o dedo. É a mesma dívida que o PR #12 já registrou para o
+arraste, e pela mesma razão.
+
 ## README.md desatualizado
 
 O `README.md` na raiz descreve **"Contextos Temporais (Hoje, Amanhã e Fazer

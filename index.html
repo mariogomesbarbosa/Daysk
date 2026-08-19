@@ -816,6 +816,69 @@
 
   .cal-block:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 
+  /* R18 — declaração que faltava. .cal-block e .cal-chip são origem de arraste
+     e vivem dentro de .cal-scroll, que rola na vertical. Sem isto o navegador
+     reivindica o gesto para a rolagem, e uma vez reivindicado preventDefault()
+     no pointermove não desfaz: chega pointercancel e o arraste morre.
+     Medido antes de corrigir: .cal-block computava `auto` enquanto
+     .cal-unplanned-item computava `none`, e .cal-scroll de fato rola. */
+  .cal-block, .cal-chip { touch-action: none; }
+
+  /* As alças. Ficam dentro do <button>, e o pointerdown delas para de propagar
+     — senão o startDrag do bloco dispara junto e o gesto vira mover. */
+  .cal-resize {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 6px;
+    cursor: ns-resize;
+    touch-action: none;
+    z-index: 2;
+  }
+
+  .cal-resize.ini { top: 0; }
+  .cal-resize.fim { bottom: 0; }
+
+  /* No ponteiro fino a afordância é o cursor; a barra só aparece no hover para
+     não sujar a grade. */
+  .cal-block:hover .cal-resize::after {
+    content: '';
+    position: absolute;
+    left: 25%;
+    right: 25%;
+    top: 2px;
+    height: 2px;
+    border-radius: 1px;
+    background: var(--line);
+    opacity: .7;
+  }
+
+  /* Um bloco no piso de desenho tem 19px. Duas alças de 6px deixariam 7px para
+     agarrar e mover, e para acertar e abrir a edição — ou seja, nada. Abaixo de
+     28px só a alça de baixo existe; a borda de cima continua sendo área de
+     mover. Classe própria, e não a .compact: aquela tem outro limiar (34px) e
+     outro propósito, e amarrar as duas faria uma mudança de tipografia mexer no
+     gesto. */
+  .cal-block.tiny .cal-resize.ini { display: none; }
+
+  /* No toque não há hover nem ponteiro fino, e alça de 6px não se acerta com o
+     dedo. Então ela só existe depois do pressionar-e-segurar, e vem maior. */
+  @media (pointer: coarse) {
+    .cal-resize { display: none; }
+    .cal-block.resizing .cal-resize {
+      display: block;
+      height: 14px;
+      background: var(--line);
+      opacity: .55;
+    }
+    .cal-block.resizing.tiny .cal-resize.ini { display: none; }
+  }
+
+  .cal-block.resizing { outline: 2px solid var(--line); outline-offset: -1px; }
+
+  body.cal-resizing { cursor: ns-resize; }
+  body.cal-resizing .cal-slot:hover { background: none; }
+
   .cal-block-time {
     font-family: var(--mono);
     font-size: 9px;
@@ -4786,13 +4849,20 @@
         // Num cluster apertado a hora come o espaco do nome. A posicao vertical ja
         // diz a hora; o nome e o que identifica, entao e ele que fica.
         const estreito = b.cols >= 3 ? ' narrow' : '';
-        return `<button type="button" class="cal-block${b.t.status === 'done' ? ' done' : ''}${compacto}${estreito}"
+        // Abaixo de 28px não cabem duas alças — ver o CSS de .cal-block.tiny.
+        const miudo = alt < 28 ? ' tiny' : '';
+        const emModo = resizeMode === b.t.id ? ' resizing' : '';
+        const alca = borda => `<span class="cal-resize ${borda}" aria-hidden="true"
+          onpointerdown="startResize('${b.t.id}', event, '${borda}')"></span>`;
+        return `<button type="button" class="cal-block${b.t.status === 'done' ? ' done' : ''}${compacto}${estreito}${miudo}${emModo}"
           data-id="${b.t.id}"
           style="top:${b.ini / 60 * CAL_HOUR_H}px;height:${alt}px;left:${b.col * w}%;width:${w}%;${c ? `--bloco:${c.fg};--bloco-bg:${c.bg}` : ''}"
           onpointerdown="startDrag('${b.t.id}', event, 'grid')"
           title="${esc(b.t.name)} · ${b.t.time}–${padTime(fimReal)}">
+          ${alca('ini')}
           <span class="cal-block-time">${b.t.time}</span>
           <span class="cal-block-name">${esc(b.t.name)}</span>
+          ${alca('fim')}
         </button>`;
       }).join('');
 
@@ -4869,6 +4939,7 @@
 
   function setCalendarView(view) {
     if (!CAL_VIEWS.includes(view)) return;
+    resizeMode = null;                               // o modo não sobrevive à troca de visão
     calendarView = view;
     // A âncora é renormalizada para a unidade da nova visão, partindo do dia
     // selecionado — trocar de visão não deve teleportar para outro período.
@@ -4887,6 +4958,7 @@
 
   /* Um passo anda na unidade da visão. */
   function setCalendarStep(delta) {
+    resizeMode = null;
     if (calendarView === 'month') calendarAnchor = addMonths(calendarAnchor, delta);
     else if (calendarView === 'week') calendarAnchor = addDays(calendarAnchor, 7 * delta);
     else if (calendarView === 'day') calendarAnchor = addDays(calendarAnchor, delta);
@@ -4972,6 +5044,9 @@
 
   let dragState = null;
   let tapSelected = null;
+  /* Modo de redimensionar, só do toque: no ponteiro fino as alças já estão lá. */
+  let resizeMode = null;
+  const PONTEIRO_GROSSO = matchMedia('(pointer: coarse)').matches;
 
   /* O alvo é resolvido por coordenada, não por listener em cada célula: os alvos
      são recriados a cada render, e o render roda a cada 60s — listener preso a nó
@@ -5033,17 +5108,43 @@
      ficam na window, não no elemento, para o arraste sobreviver a um render. */
   function startDrag(id, ev, origem) {
     if (ev.button && ev.button !== 0) return;
+    // No modo de redimensionar o corpo do bloco não move: puxar o meio
+    // significaria mover a tarefa, que é o oposto do que o modo prometeu.
+    if (resizeMode === id) return;
     const t = tasks.find(x => x.id === id);
     if (!t) return;
     const x0 = ev.clientX, y0 = ev.clientY, pid = ev.pointerId;
     let moveu = false;
     let ghost = null, linha = null;
 
+    /* Pressionar e segurar entra no modo de redimensionar — só no toque. No
+       ponteiro fino as alças já estão lá, e o timer seria caminho morto que
+       ainda por cima roubaria o clique-direito. A ORDEM importa: mover antes
+       dos 500ms cancela o timer, porque mover é o gesto barato e o comum. */
+    const bloco = PONTEIRO_GROSSO && origem === 'grid' && t.time
+      ? (ev.target.closest ? ev.target.closest('.cal-block') : null) : null;
+    let abortado = false;
+    let semMenu = null;
+    let timerLongo = bloco ? setTimeout(() => {
+      timerLongo = null;
+      abortado = true;
+      resizeMode = id;
+      navigator.vibrate?.(10);
+      encerrar(null);
+      renderCalendar();
+    }, 500) : null;
+    if (bloco) {
+      // Pressionar e segurar é o gesto do menu nativo de contexto no toque.
+      semMenu = e => e.preventDefault();
+      bloco.addEventListener('contextmenu', semMenu);
+    }
+
     const onMove = e => {
       if (e.pointerId !== pid) return;
       if (!moveu) {
         // Limiar: sem ele todo toque vira arraste de zero pixel e o clique some.
         if (Math.abs(e.clientX - x0) < 4 && Math.abs(e.clientY - y0) < 4) return;
+        if (timerLongo) { clearTimeout(timerLongo); timerLongo = null; }
         moveu = true;
         dragState = { id };
         document.body.classList.add('cal-dragging');
@@ -5058,17 +5159,22 @@
       marcarAlvo(resolveTarget(e.clientX, e.clientY));
     };
 
-    const encerrar = e => {
+    function encerrar(e) {
       window.removeEventListener('pointermove', onMove);
       window.removeEventListener('pointerup', encerrar);
       window.removeEventListener('pointercancel', cancelar);
       window.removeEventListener('keydown', onKey);
+      if (timerLongo) { clearTimeout(timerLongo); timerLongo = null; }
+      if (semMenu && bloco) setTimeout(() => bloco.removeEventListener('contextmenu', semMenu), 0);
       if (ghost) ghost.remove();
       document.body.classList.remove('cal-dragging');
       limparAlvo();
       const arrastou = moveu;
       dragState = null;
       if (origem === 'grid') engolirProximoClique();
+      // O gesto que virou modo de redimensionar não é toque curto nem arraste:
+      // não abre a edição e não grava nada.
+      if (abortado) return;
       if (!arrastou) {
         // Vindo da grade, o toque curto abre a edição — é o que o D8 queria e não
         // conseguiu, porque um chip dentro de uma célula-botão não podia ser botão.
@@ -5077,7 +5183,7 @@
       }
       const alvo = e && e.clientX !== undefined ? resolveTarget(e.clientX, e.clientY) : null;
       if (aplicarSoltura(t, alvo)) { save(); render(); } else renderCalendar();
-    };
+    }
 
     const cancelar = () => {
       moveu = false;                                  // soltar fora não grava nada
@@ -5136,6 +5242,134 @@
     tapSelected = tapSelected === id ? null : id;
     renderUnplannedList();
   }
+
+  /* ---------- calendário: redimensionar pela borda ---------- */
+
+  /* Mesma arquitetura de startDrag(), e de propósito: Pointer Events (a API de
+     arraste do HTML5 não dispara em toque nenhum), listeners na window e não no
+     elemento (para o gesto sobreviver a um render), limiar de 4px, Escape
+     cancela, e engolirProximoClique() no fim para o pointerup não abrir a
+     edição.
+
+     E o MESMO guard de render: dragState. O `if (dragState) return` no topo de
+     renderCalendar() já impede o render de 60s de recriar os alvos debaixo do
+     dedo — um segundo guard seria um segundo lugar para esquecer de limpar. */
+  /* A conta das alças, separada do gesto pelo mesmo motivo que aplicarSoltura()
+     é separada: dá para testar sem mover um pixel. Pura.
+
+     O piso é CAL_SNAP (15min). CAL_MIN_BLOCK_MIN (~24min) é piso de DESENHO —
+     existe para o rótulo caber em 19px e para o packOverlaps não deixar dois
+     blocos curtos se sobreporem sem saber. Usá-lo aqui faria o gesto recusar em
+     silêncio um valor perfeitamente válido.
+
+     A alça de cima mantém o FIM parado; a de baixo mantém o início. É o que
+     todo calendário faz, e o que se espera ao puxar cada borda. */
+  function aplicarAlca(borda, iniOriginal, fimOriginal, mins) {
+    if (borda === 'fim') {
+      return { ini: iniOriginal, fim: Math.max(iniOriginal + CAL_SNAP, Math.min(1440, mins)) };
+    }
+    return { ini: Math.min(fimOriginal - CAL_SNAP, Math.max(0, mins)), fim: fimOriginal };
+  }
+
+  function startResize(id, ev, borda) {
+    ev.stopPropagation();                            // senão o startDrag do bloco dispara junto
+    if (ev.button && ev.button !== 0) return;
+    const t = tasks.find(x => x.id === id);
+    if (!t || !t.time) return;
+    const bloco = ev.target.closest('.cal-block');
+    const col = bloco && bloco.closest('[data-drop="time"]');
+    if (!col) return;
+
+    const iniOriginal = toMins(t.time);
+    const fimOriginal = iniOriginal + (t.dur || 60);
+    const pid = ev.pointerId, y0 = ev.clientY;
+    const rotulo = bloco.querySelector('.cal-block-time');
+    const rotuloOriginal = rotulo ? rotulo.textContent : '';
+    let moveu = false;
+    let novoIni = iniOriginal, novoFim = fimOriginal;
+
+    /* O passo é CAL_SNAP, o mesmo da A4: arrastar não é medir. */
+    const snap = y => {
+      const r = col.getBoundingClientRect();
+      const bruto = (y - r.top) / CAL_HOUR_H * 60;
+      return Math.max(0, Math.min(1440, Math.round(bruto / CAL_SNAP) * CAL_SNAP));
+    };
+
+    const onMove = e => {
+      if (e.pointerId !== pid) return;
+      if (!moveu) {
+        if (Math.abs(e.clientY - y0) < 4) return;
+        moveu = true;
+        dragState = { id, tipo: 'resize' };
+        document.body.classList.add('cal-resizing');
+      }
+      e.preventDefault();
+      const r = aplicarAlca(borda, iniOriginal, fimOriginal, snap(e.clientY));
+      novoIni = r.ini;
+      novoFim = r.fim;
+      // Desenho ao vivo, sem render(): reempacotar a cada pointermove seria
+      // rodar packOverlaps() a 60fps para melhorar meio segundo de tela. O bloco
+      // cresce por cima do vizinho durante o gesto; o render do pointerup acerta.
+      bloco.style.top = novoIni / 60 * CAL_HOUR_H + 'px';
+      bloco.style.height =
+        Math.max(CAL_MIN_BLOCK_H, (Math.min(novoFim, 1440) - novoIni) / 60 * CAL_HOUR_H) + 'px';
+      if (rotulo) rotulo.textContent = padTime(novoIni) + '–' + padTime(novoFim);
+    };
+
+    function encerrar() {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', encerrar);
+      window.removeEventListener('pointercancel', cancelar);
+      window.removeEventListener('keydown', onKey);
+      document.body.classList.remove('cal-resizing');
+      const mudou = moveu;
+      dragState = null;
+      engolirProximoClique();
+      if (!mudou) { renderCalendar(); return; }      // desfaz o desenho ao vivo
+      t.time = padTime(novoIni);
+      t.dur = novoFim - novoIni;
+      resizeMode = null;                             // aplicou, sai do modo
+      save();
+      render();
+    }
+
+    const cancelar = () => {
+      moveu = false;                                 // cancelar não grava nada
+      if (rotulo) rotulo.textContent = rotuloOriginal;
+      encerrar();
+    };
+
+    const onKey = e => { if (e.key === 'Escape') cancelar(); };
+
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', encerrar);
+    window.addEventListener('pointercancel', cancelar);
+    window.addEventListener('keydown', onKey);
+  }
+
+  function sairDoModoRedimensionar() {
+    if (!resizeMode) return false;
+    resizeMode = null;
+    renderCalendar();
+    return true;
+  }
+
+  /* Tocar fora sai do modo. Na fase de captura porque o alvo pode ser um nó que
+     o renderCalendar() logo em seguida substitui. O primeiro toque fora é
+     engolido — sair de um modo é o que ele significa, e isso é previsível. */
+  document.addEventListener('pointerdown', e => {
+    if (!resizeMode) return;
+    if (e.target.closest && e.target.closest(`.cal-block[data-id="${resizeMode}"]`)) return;
+    sairDoModoRedimensionar();
+  }, true);
+
+  /* Em window, e não em document, para acompanhar os outros dois Escape do
+     arquivo (startDrag e startResize). Um keydown real nasce no elemento
+     focado e sobe pelos dois, então a escolha não muda comportamento — muda
+     não haver duas convenções para a mesma tecla. */
+  window.addEventListener('keydown', e => {
+    if (e.key === 'Escape') sairDoModoRedimensionar();
+  });
 
   /* ---------- render: report ---------- */
 
