@@ -176,6 +176,35 @@ Duas armadilhas do pane embutido, para quem for repetir:
   redimensionar, em vez de confiar no retorno; e se der errado, tente de novo
   antes de concluir que a faixa é inalcançável.
 
+## `requestAnimationFrame` não dispara em nenhum dos dois navegadores
+
+Medido: **zero quadros em 400ms** no pane embutido e **zero em 300ms** no Chrome
+real com a aba em segundo plano. `pendencias.md` já registrava isso para o pane
+("esperar por ele trava a chamada"); a novidade é que o Chrome real, dirigido por
+automação, tem o mesmo comportamento.
+
+**Consequência prática:** qualquer coisa construída sobre `rAF` — animação,
+auto-rolagem, laço de física — não se verifica por medição neste ferramental. O
+efeito medido é sempre zero, e isso parece bug do código.
+
+**O que funciona no lugar:** substituir `requestAnimationFrame` por
+`setTimeout` durante o teste, o que exercita o **corpo** do laço (leitura de
+estado, escolha do alvo, aplicação do efeito) e deixa de fora apenas o
+agendador:
+
+```js
+const rafO = window.requestAnimationFrame;
+window.requestAnimationFrame = fn => setTimeout(() => fn(performance.now()), 16);
+// … exercita …
+window.requestAnimationFrame = rafO;
+```
+
+Uma segunda armadilha empilhada nessa: **`setTimeout` também é estrangulado em
+aba de segundo plano**, para ≥1000ms depois das primeiras chamadas. Um laço que
+deveria rodar 18 vezes em 300ms roda uma. O jeito de conferir que a conta está
+certa é comparar o delta de UM passo com o valor calculado, e não contar
+iterações.
+
 ## O pane embutido não registra service worker
 
 Quatro erros `An unknown error occurred when fetching the script.` no console do
