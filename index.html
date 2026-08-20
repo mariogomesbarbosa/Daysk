@@ -478,7 +478,42 @@
      comiam altura numa tela que já é curta. */
   .cal-view-select { display: none; }
 
+  /* No mobile a barra de controles e os cabeçalhos de coluna grudam no topo ao
+     rolar. Nada de `fixed`: `sticky` é a semântica exata do pedido — o elemento
+     rola junto e para na borda apenas quando sairia da tela.
+
+     A altura da barra vive numa variável porque DUAS regras dependem dela: o
+     `top` dos cabeçalhos tem de ser exatamente a altura ocupada pela barra,
+     senão sobra fresta (conteúdo aparecendo entre as duas) ou sobreposição. */
   @media (max-width: 860px) {
+    :root { --cal-barra: 48px; }
+
+    .cal-toolbar {
+      position: sticky;
+      top: 0;
+      z-index: 21;
+      /* Sem fundo opaco o conteúdo rolaria visível por baixo. */
+      background: var(--bg);
+      /* As margens negativas anulam o padding lateral do body para a barra
+         encostar nas bordas; o padding devolve o alinhamento do conteúdo. Sem
+         isso, o que rola por baixo apareceria nas duas goteiras de 1rem. */
+      margin: 0 -1rem 12px;
+      padding: 8px 1rem;
+    }
+
+    /* Grudam LOGO ABAIXO da barra, e não no topo: dois sticky no mesmo `top` se
+       sobrepõem. */
+    .cal-time-head,
+    .cal-weekdays {
+      position: sticky;
+      top: var(--cal-barra);
+      z-index: 20;
+      background: var(--bg);
+      margin-left: -1rem;
+      margin-right: -1rem;
+      padding: 4px 1rem;
+    }
+
     #cal-view-pills { display: none; }
     .cal-view-select { display: inline-block; }
 

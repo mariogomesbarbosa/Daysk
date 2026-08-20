@@ -203,6 +203,22 @@ propriedades de posicionamento precisam ser reafirmadas — inclusive as que voc
 não quer, com `auto`. Herdar metade de um esquema de posicionamento e metade de
 outro dá um resultado que parece aleatório.
 
+## `innerWidth` inclui a barra de rolagem; o layout não
+
+Mordeu **três vezes** nesta sessão, sempre parecendo bug de CSS:
+
+- "a pílula da navegação não está centralizada" — centro em 592 contra
+  `innerWidth/2` = 600
+- "a barra fixa não vai de borda a borda" — termina em 410 com `innerWidth` 426
+- "o cabeçalho de coluna não cobre a largura toda" — mesmo 410 contra 426
+
+Nos três casos o elemento estava **certo**: ele cobre o viewport de **layout**,
+e a diferença era a barra de rolagem de 16px.
+
+**A regra:** para qualquer comparação de largura ou de centro, use
+`document.documentElement.clientWidth`, não `window.innerWidth`. O `innerWidth`
+serve para saber qual media query casou; não serve para conferir geometria.
+
 ## Medir a coisa certa: `scrollWidth` do elemento não detecta transbordo
 
 Custou um bug enviado ao revisor, então fica escrito.
