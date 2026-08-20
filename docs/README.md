@@ -22,6 +22,7 @@ o *porquê* delas.
 | [calendario-alternador-de-visao.md](calendario-alternador-de-visao.md) | As quatro visões e o planejar por arraste: 24 decisões, e os dois desvios que desfizeram |
 | [refinamento-calendario.md](refinamento-calendario.md) | Os quatro ajustes de refino: coluna, campo Final, redimensionar e contraste |
 | [refinamento-relatorios.md](refinamento-relatorios.md) | Largura da página, registro de sessões no modelo e as horas trabalhadas nos gráficos |
+| [bandeja-de-nao-planejadas-no-mobile.md](bandeja-de-nao-planejadas-no-mobile.md) | Por que o botão parecia não fazer nada, e a bandeja inferior que resolve |
 | [instalacao-android.md](instalacao-android.md) | Por que o atalho não abria, e o que instalar como app custou à arquitetura |
 | [pendencias.md](pendencias.md) | Ressalvas conhecidas, incluindo o que foi para `main` sem verificação visual |
 
