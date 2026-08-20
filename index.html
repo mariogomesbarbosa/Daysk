@@ -115,8 +115,16 @@
     background: var(--bg);
     color: var(--text);
     min-height: 100vh;
-    padding: 2rem 1rem calc(96px + env(safe-area-inset-bottom, 0px));
+    padding: 2rem 1rem var(--rodape);
     transition: background .2s ease, color .2s ease;
+  }
+
+  /* Espaço que a navegação inferior reserva. Vive numa variável porque quatro
+     lugares dependem dela: o padding do body, a bandeja, a faixa de toque e o
+     translateY que esconde a bandeja. No mobile a navegação passa a ser barra
+     fixa colada no fundo, e o número muda — ver o bloco de 860px. */
+  :root {
+    --rodape: calc(96px + env(safe-area-inset-bottom, 0px));
   }
 
   .container {
@@ -983,8 +991,8 @@
       position: fixed;
       left: 12px;
       right: 12px;
-      bottom: calc(96px + env(safe-area-inset-bottom, 0px));
-      z-index: 93;
+      bottom: var(--rodape);
+      z-index: 92;
       display: flex;
       align-items: center;
       gap: 10px;
@@ -1047,6 +1055,31 @@
   @media (max-width: 860px) {
     .so-desktop { display: none; }
     .so-mobile { display: inline; }
+  }
+
+  /* Só no mobile: no desktop a coluna é recolhida pelo botão da toolbar, e um X
+     dentro dela seria um segundo controle para a mesma coisa. Na folha o X é o
+     que se espera, e o botão da toolbar fica longe do dedo. */
+  .cal-aside-fechar { display: none; }
+
+  @media (max-width: 860px) {
+    .cal-aside-fechar {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      /* 32px de área de toque, não 16 do ícone. */
+      width: 32px;
+      height: 32px;
+      margin: -6px -6px -6px 0;
+      background: none;
+      border: none;
+      border-radius: var(--radius-sm);
+      color: var(--text2);
+      cursor: pointer;
+    }
+
+    .cal-aside-fechar:hover { background: var(--surface2); color: var(--text); }
   }
 
   .cal-aside-hint {
@@ -1200,6 +1233,51 @@
     .cal-dots { display: none; }
   }
 
+  /* No mobile a navegação deixa de ser pílula flutuante e vira barra fixa
+     colada no fundo, de borda a borda. A pílula centralizada custa duas coisas
+     no telefone: ela cobre o conteúdo por flutuar sobre ele, e o alvo de toque
+     fica no meio da tela em vez de na borda, que é onde o polegar chega.
+
+     O --rodape encolhe junto: a pílula ocupava até 80px do fundo e o body
+     reservava 96px; a barra ocupa 64px contando o padding e a área segura. */
+  @media (max-width: 860px) {
+    :root { --rodape: calc(64px + env(safe-area-inset-bottom, 0px)); }
+
+    .app-nav {
+      left: 0;
+      right: 0;
+      bottom: 0;
+      transform: none;
+      gap: 0;
+      padding: 6px 4px calc(6px + env(safe-area-inset-bottom, 0px));
+      border-radius: 0;
+      border-left: none;
+      border-right: none;
+      border-bottom: none;
+      box-shadow: none;
+      /* Acima da bandeja (92), para ela deslizar por trás ao recolher. */
+      z-index: 93;
+    }
+
+    .nav-item {
+      flex: 1;
+      flex-direction: column;
+      justify-content: center;
+      gap: 3px;
+      padding: 7px 4px;
+      border-radius: var(--radius-sm);
+    }
+
+    /* O rótulo volta: quem o escondia era a pílula, que não podia crescer. Numa
+       barra de borda a borda cada item recebe ~125px a 375px de tela, e
+       "Calendário" a 10px ocupa ~62px. */
+    .nav-label {
+      display: block;
+      font-size: 10px;
+      letter-spacing: 0.02em;
+    }
+  }
+
   /* No mobile a coluna vira BANDEJA INFERIOR.
 
      Antes ela "ia para baixo" — e ia mesmo: medido a 375x812, o <aside> caía a
@@ -1233,15 +1311,17 @@
       /* Mesmo 96px que o body já reserva: a navbar é fixed, 56px de altura e
          24px do fundo. Cobri-la prenderia o usuário na página, porque ela é o
          único caminho para sair do Calendário. */
-      bottom: calc(96px + env(safe-area-inset-bottom, 0px));
-      /* Escada existente: navbar 90, backdrop 94, gaveta da aba Tasks 95. */
-      z-index: 93;
+      bottom: var(--rodape);
+      /* Escada: bandeja 92, navegação 93 no mobile, backdrop 94, gaveta da aba
+         Tasks 95. A bandeja fica ABAIXO da barra de navegação de propósito —
+         ao recolher, ela desliza por trás dela, que é o comportamento nativo. */
+      z-index: 92;
       display: flex;
       flex-direction: column;
       max-height: 42vh;
       border-radius: var(--radius-md) var(--radius-md) 0 0;
       box-shadow: var(--shadow-md);
-      transform: translateY(calc(100% + 96px + env(safe-area-inset-bottom, 0px)));
+      transform: translateY(calc(100% + var(--rodape)));
       transition: transform .22s ease;
     }
 
@@ -2586,10 +2666,9 @@
     .header-actions .btn-add { flex: 1 1 auto; justify-content: center; min-width: 110px; }
   }
 
-  @media (max-width: 480px) {
-    .nav-label { display: none; }
-    .nav-item { padding: 12px; }
-  }
+  /* O bloco de 480px que escondia o rótulo e apertava o item saiu: as duas
+     regras existiam para a pílula flutuante não crescer além da tela, e a
+     pílula não existe mais abaixo de 860px. */
 </style>
 </head>
 <body>
@@ -2781,6 +2860,10 @@
       <div class="cal-aside-head">
         <span class="cal-aside-title">Não planejadas</span>
         <span class="ctx-count" id="cal-unplanned-count">0</span>
+        <button type="button" class="cal-aside-fechar" onclick="fecharBandeja()"
+                aria-label="Fechar" title="Fechar">
+          <svg class="icon" width="16" height="16" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M205.66,194.34a8,8,0,0,1-11.32,11.32L128,139.31,61.66,205.66a8,8,0,0,1-11.32-11.32L116.69,128,50.34,61.66A8,8,0,0,1,61.66,50.34L128,116.69l66.34-66.35a8,8,0,0,1,11.32,11.32L139.31,128Z"/></svg>
+        </button>
       </div>
       <p class="cal-aside-hint">
         <span class="so-desktop">Arraste para o calendário — ou toque para escolher e toque num dia.</span>
