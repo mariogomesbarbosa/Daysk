@@ -176,6 +176,33 @@ Duas armadilhas do pane embutido, para quem for repetir:
   redimensionar, em vez de confiar no retorno; e se der errado, tente de novo
   antes de concluir que a faixa é inalcançável.
 
+## O pane embutido não registra service worker
+
+Quatro erros `An unknown error occurred when fetching the script.` no console do
+pane embutido, e `navigator.serviceWorker.getRegistration()` devolvendo
+`undefined`. **É o pane, não o código:** no Chrome real, mesma URL, o service
+worker registra e fica `active` com o escopo certo.
+
+Vale saber porque o console do pane vai mostrar esses quatro erros em toda
+sessão de verificação, e eles não significam nada. As CDNs, essas, carregam
+normalmente ali — conferido com `fetch` nas quatro.
+
+## Regra base de coluna vazando para caixa `fixed` — segunda ocorrência
+
+O PR #6 já tinha sido mordido: `align-self: start`, necessário para o sticky da
+coluna, cancelava o esticamento vertical da gaveta `fixed`.
+
+Aconteceu de novo com a bandeja do Calendário, e com outra propriedade. A regra
+base de `.cal-aside` tem `position: sticky; top: 2rem`. Ao virar `fixed` na media
+query eu sobrescrevi `position`, `left`, `right` e `bottom` — **e não `top`**.
+Com `fixed` e `top` definido, a bandeja ancorou no **topo** da tela: medido, ela
+aparecia em `top: 32px`, que é exatamente o `2rem`.
+
+**A lição:** ao converter uma coluna sticky em caixa fixa, as quatro
+propriedades de posicionamento precisam ser reafirmadas — inclusive as que você
+não quer, com `auto`. Herdar metade de um esquema de posicionamento e metade de
+outro dá um resultado que parece aleatório.
+
 ## Medir a coisa certa: `scrollWidth` do elemento não detecta transbordo
 
 Custou um bug enviado ao revisor, então fica escrito.

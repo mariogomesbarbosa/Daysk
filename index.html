@@ -974,6 +974,56 @@
 
   .cal-aside.drop-target { border-color: var(--accent); background: var(--accent-bg); }
 
+  /* Faixa de "tarefa na mão". Escondida por padrão em toda largura: no desktop o
+     arraste é o caminho e ela não tem função. */
+  .cal-tap-bar { display: none; }
+
+  @media (max-width: 860px) {
+    .cal-tap-bar.aberta {
+      position: fixed;
+      left: 12px;
+      right: 12px;
+      bottom: calc(96px + env(safe-area-inset-bottom, 0px));
+      z-index: 93;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      background: var(--surface);
+      border: 1px solid var(--accent);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-md);
+    }
+
+    .cal-tap-texto {
+      flex: 1;
+      min-width: 0;
+      font-size: 12px;
+      line-height: 1.3;
+      color: var(--text2);
+    }
+
+    .cal-tap-nome {
+      display: block;
+      color: var(--text);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .cal-tap-cancelar {
+      flex-shrink: 0;
+      font-family: var(--mono);
+      font-size: 11px;
+      padding: 6px 10px;
+      color: var(--text2);
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+    }
+  }
+
   .cal-aside-head {
     display: flex;
     align-items: center;
@@ -989,6 +1039,14 @@
     letter-spacing: 0.08em;
     text-transform: uppercase;
     color: var(--text2);
+  }
+
+  /* Texto que muda com a largura é trabalho de CSS, não de JS. */
+  .so-mobile { display: none; }
+
+  @media (max-width: 860px) {
+    .so-desktop { display: none; }
+    .so-mobile { display: inline; }
   }
 
   .cal-aside-hint {
@@ -1142,11 +1200,74 @@
     .cal-dots { display: none; }
   }
 
-  /* No mobile a coluna deixa de ser coluna e vai para baixo, no mesmo ponto em
-     que o sidebar da aba Tasks vira gaveta. */
+  /* No mobile a coluna vira BANDEJA INFERIOR.
+
+     Antes ela "ia para baixo" — e ia mesmo: medido a 375x812, o <aside> caía a
+     1212px da página, 400px abaixo da dobra, enquanto o botão que o controla
+     ficava a 297px. O botão funcionava; governava algo fora da tela.
+
+     A bandeja reusa a mecânica da gaveta da aba Tasks (fixed + transform +
+     transição) e REJEITA a modalidade dela: sem backdrop e sem trava de
+     overflow no body, porque o calendário acima precisa continuar tocável — é
+     nele que acontece o segundo toque do modo de dois toques. Um backdrop
+     mataria justamente a interação que a bandeja existe para permitir.
+     Isto é divergência deliberada de um padrão da casa; não "corrigir". */
   @media (max-width: 860px) {
     .cal-layout { grid-template-columns: minmax(0, 1fr); }
-    .cal-aside { position: static; }
+
+    /* O display: none vem do estado da COLUNA do desktop e não vale aqui —
+       no mobile quem manda é .aberta. */
+    .cal-layout.aside-closed .cal-aside { display: flex; }
+
+    .cal-aside {
+      position: fixed;
+      left: 0;
+      right: 0;
+      /* top: auto anula o `top: 2rem` da regra base, que existe para o sticky da
+         coluna do desktop. Sem isto, `fixed` + `top` definido ancora a bandeja
+         no TOPO da tela — medido, ela aparecia em top: 32px, que é exatamente
+         o 2rem. É a mesma família de bug que pendencias.md registra para a
+         gaveta da aba Tasks: propriedade da coluna sticky vazando para a caixa
+         fixed. Lá o culpado foi align-self; aqui, top. */
+      top: auto;
+      /* Mesmo 96px que o body já reserva: a navbar é fixed, 56px de altura e
+         24px do fundo. Cobri-la prenderia o usuário na página, porque ela é o
+         único caminho para sair do Calendário. */
+      bottom: calc(96px + env(safe-area-inset-bottom, 0px));
+      /* Escada existente: navbar 90, backdrop 94, gaveta da aba Tasks 95. */
+      z-index: 93;
+      display: flex;
+      flex-direction: column;
+      max-height: 42vh;
+      border-radius: var(--radius-md) var(--radius-md) 0 0;
+      box-shadow: var(--shadow-md);
+      transform: translateY(calc(100% + 96px + env(safe-area-inset-bottom, 0px)));
+      transition: transform .22s ease;
+    }
+
+    .cal-aside.aberta { transform: translateY(0); }
+
+    /* Durante o arraste a bandeja sai do caminho do elementFromPoint. Fica aqui
+       porque a classe é posta pelo JS do grupo D; sem pointer-events os
+       primeiros quadros do arraste resolveriam para a bandeja. */
+    .cal-aside.transparente { pointer-events: none; }
+
+    /* Afordância de folha. Não é área de gesto: o controle é o botão da barra. */
+    .cal-aside::before {
+      content: '';
+      align-self: center;
+      width: 36px;
+      height: 4px;
+      flex-shrink: 0;
+      margin-bottom: 10px;
+      border-radius: 2px;
+      background: var(--border2);
+    }
+
+    /* O teto da lista passa a ser a própria bandeja, e a rolagem acontece no
+       contêiner que se declara rolável — padrão do .cal-scroll e do
+       .report-table-wrap. */
+    .cal-unplanned { max-height: none; flex: 1; }
 
     /* A grade de horas rola horizontalmente DENTRO de si, com largura mínima de
        coluna. Não é o scroll de página que o PR #8 caçou: é o padrão do
@@ -2661,9 +2782,20 @@
         <span class="cal-aside-title">Não planejadas</span>
         <span class="ctx-count" id="cal-unplanned-count">0</span>
       </div>
-      <p class="cal-aside-hint">Arraste para o calendário — ou toque para escolher e toque num dia.</p>
+      <p class="cal-aside-hint">
+        <span class="so-desktop">Arraste para o calendário — ou toque para escolher e toque num dia.</span>
+        <span class="so-mobile">Toque para escolher e toque num dia do calendário.</span>
+      </p>
       <div class="cal-unplanned" id="cal-unplanned"></div>
     </aside>
+
+    <!-- Faixa de "tarefa na mão", só no mobile. Fica fora do .cal-aside porque
+         aparece justamente quando a bandeja se retrai. -->
+    <div class="cal-tap-bar" id="cal-tap-bar" role="status" aria-live="polite">
+      <span class="cal-tap-texto">toque num dia para colocar
+        <strong class="cal-tap-nome"></strong></span>
+      <button type="button" class="cal-tap-cancelar" onclick="cancelarToqueSelecionado()">cancelar</button>
+    </div>
 
    </div>
   </div>
@@ -4444,6 +4576,11 @@
     // lá a coluna de conteúdo divide o espaço com o sidebar de 260px.
     document.body.classList.toggle('wide-content', tab === 'calendar' || tab === 'report');
     closeSidebar();
+    // A bandeja e a "tarefa na mão" são do Calendário e não sobrevivem a ele.
+    bandejaAberta = false;
+    tapSelected = null;
+    sincronizarBandeja();
+    sincronizarFaixaDeToque();
     updateHeader();
     window.scrollTo({ top: 0 });
     if (tab === 'report') renderReport(); else render();
@@ -4831,7 +4968,12 @@
   let calendarView = CAL_VIEWS.includes(localStorage.getItem('daysk-cal-view'))
     ? localStorage.getItem('daysk-cal-view') : 'month';
   let calendarMultiDays = Math.min(6, Math.max(2, parseInt(localStorage.getItem('daysk-cal-days'), 10) || 3));
+  /* calendarAsideOpen significa "a COLUNA do desktop está expandida", e
+     persiste. A bandeja do mobile tem estado próprio e NÃO persiste: nascer
+     aberta cobriria 42% da tela na chegada, sem ninguém pedir. */
   let calendarAsideOpen = localStorage.getItem('daysk-cal-aside') !== 'closed';
+  let bandejaAberta = false;
+  const ehMobile = () => matchMedia('(max-width: 860px)').matches;
   let calendarAnchor = normalizeAnchor(calendarView, todayStr());
   let calendarSelected = todayStr();
 
@@ -5041,6 +5183,10 @@
 
     renderUnplannedList();
     renderCalendarDayPanel(porData);
+    // A bandeja e a faixa não são reconstruídas pelo render, mas o estado delas
+    // pode ter mudado fora daqui — reafirmar é mais barato que rastrear.
+    sincronizarBandeja();
+    sincronizarFaixaDeToque();
   }
 
   function syncCalendarToolbar() {
@@ -5229,6 +5375,7 @@
   function setCalendarView(view) {
     if (!CAL_VIEWS.includes(view)) return;
     blocoArmado = null;                              // o estado não sobrevive à troca de visão
+    if (ehMobile()) fecharBandeja();                 // o contexto mudou
     calendarView = view;
     // A âncora é renormalizada para a unidade da nova visão, partindo do dia
     // selecionado — trocar de visão não deve teleportar para outro período.
@@ -5263,10 +5410,56 @@
     renderCalendar();
   }
 
+  /* Um botão, dois estados — o do desktop persiste, o do mobile não. Despachar
+     aqui mantém o comportamento do desktop byte a byte igual. */
   function toggleCalendarAside() {
+    if (ehMobile()) {
+      bandejaAberta ? fecharBandeja() : abrirBandeja();
+      return;
+    }
     calendarAsideOpen = !calendarAsideOpen;
     saveCalendarPrefs();
     renderCalendar();
+  }
+
+  function abrirBandeja() {
+    bandejaAberta = true;
+    sincronizarBandeja();
+  }
+
+  /* Chamada de dois lugares: do botão e da seleção por toque (e, no grupo D, do
+     destravamento do arraste). Uma função, não três implementações. */
+  function fecharBandeja() {
+    bandejaAberta = false;
+    sincronizarBandeja();
+  }
+
+  function sincronizarBandeja() {
+    const el = document.getElementById('cal-aside');
+    if (el) el.classList.toggle('aberta', bandejaAberta);
+    const btn = document.getElementById('cal-aside-toggle');
+    if (btn && ehMobile()) btn.setAttribute('aria-expanded', String(bandejaAberta));
+  }
+
+  /* A faixa de "tarefa na mão". Sem ela o modo de dois toques fica invisível no
+     mobile — que é exatamente o problema que esta entrega corrige. E precisa do
+     cancelar: entrar num modo sem saída óbvia é pior que não ter modo. */
+  function sincronizarFaixaDeToque() {
+    const faixa = document.getElementById('cal-tap-bar');
+    if (!faixa) return;
+    const t = tapSelected ? tasks.find(x => x.id === tapSelected) : null;
+    if (!t) {
+      faixa.classList.remove('aberta');
+      return;
+    }
+    faixa.querySelector('.cal-tap-nome').textContent = t.name;
+    faixa.classList.add('aberta');
+  }
+
+  function cancelarToqueSelecionado() {
+    tapSelected = null;
+    sincronizarFaixaDeToque();
+    renderUnplannedList();
   }
 
   function selectCalendarDay(ds) {
@@ -5563,6 +5756,12 @@
   function toggleTapSelect(id) {
     tapSelected = tapSelected === id ? null : id;
     renderUnplannedList();
+    /* Retrai para o calendário aparecer. Sem isto o usuário escolhe um item e
+       fica com 42% da tela ocupada justamente pela lista de onde ele já
+       escolheu — a faixa de confirmação é o que substitui a bandeja como
+       âncora visual. */
+    if (ehMobile() && tapSelected) fecharBandeja();
+    sincronizarFaixaDeToque();
   }
 
   /* ---------- calendário: redimensionar pela borda ---------- */
