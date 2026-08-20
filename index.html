@@ -473,6 +473,26 @@
     margin-left: auto;
   }
 
+  /* As duas formas do mesmo controle: pílulas no desktop, select no mobile.
+     Abaixo de 860px as quatro pílulas quebravam a toolbar em duas linhas e
+     comiam altura numa tela que já é curta. */
+  .cal-view-select { display: none; }
+
+  @media (max-width: 860px) {
+    #cal-view-pills { display: none; }
+    .cal-view-select { display: inline-block; }
+
+    /* A contagem do multi-dia virou opção do select de visão, então o segundo
+       select não tem função aqui — e não caberia: medido a 375px, os dois
+       selects somavam 185px numa toolbar de 343px, e a navegação de quatro
+       botões ficava cortada. */
+    #cal-days-select { display: none !important; }
+
+    /* Uma linha só: o select à esquerda, a navegação empurrada para a direita
+       pelo margin-left: auto que a .cal-toolbar-nav já tem. */
+    .cal-toolbar { flex-wrap: nowrap; }
+  }
+
   .cal-days-select {
     font-family: var(--mono);
     font-size: 12px;
@@ -2797,6 +2817,19 @@
           <button class="period-btn" data-view="day" onclick="setCalendarView('day')">dia</button>
           <button class="period-btn" data-view="multi" onclick="setCalendarView('multi')">multi-dia</button>
         </div>
+        <!-- No mobile as quatro pílulas quebram a toolbar em duas linhas. Este
+             select as substitui abaixo de 860px — ver o CSS. -->
+        <select id="cal-view-select" class="cal-days-select cal-view-select"
+                onchange="setCalendarViewFromSelect(this.value)" aria-label="Visão do calendário">
+          <option value="month">mês</option>
+          <option value="week">semana</option>
+          <option value="day">dia</option>
+          <option value="multi:2">2 dias</option>
+          <option value="multi:3">3 dias</option>
+          <option value="multi:4">4 dias</option>
+          <option value="multi:5">5 dias</option>
+          <option value="multi:6">6 dias</option>
+        </select>
         <select id="cal-days-select" class="cal-days-select" onchange="setCalendarDays(this.value)"
                 aria-label="Quantidade de dias" style="display:none">
           <option value="2">2 dias</option>
@@ -5275,6 +5308,14 @@
   function syncCalendarToolbar() {
     document.querySelectorAll('#cal-view-pills .period-btn').forEach(b =>
       b.classList.toggle('active', b.dataset.view === calendarView));
+    // O select é a mesma verdade em outra forma: sincronizar os dois evita que
+    // trocar de largura mostre um controle desatualizado.
+    const selVisao = document.getElementById('cal-view-select');
+    if (selVisao) {
+      selVisao.value = calendarView === 'multi'
+        ? 'multi:' + calendarMultiDays
+        : calendarView;
+    }
     const sel = document.getElementById('cal-days-select');
     sel.style.display = calendarView === 'multi' ? '' : 'none';
     sel.value = String(calendarMultiDays);
@@ -5466,6 +5507,19 @@
     saveCalendarPrefs();
     updateHeader();
     renderCalendar();
+  }
+
+  /* No mobile o multi-dia e a contagem viram um controle só: escolher "4 dias"
+     é uma decisão, não duas. Também tira o segundo select da toolbar, que a
+     343px não cabia junto da navegação.
+     A contagem é gravada ANTES de setCalendarView() para haver um render só. */
+  function setCalendarViewFromSelect(valor) {
+    if (valor.startsWith('multi:')) {
+      calendarMultiDays = Math.min(6, Math.max(2, parseInt(valor.slice(6), 10) || 3));
+      setCalendarView('multi');
+      return;
+    }
+    setCalendarView(valor);
   }
 
   function setCalendarDays(n) {
