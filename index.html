@@ -3404,7 +3404,11 @@
   let gdriveFolderName = localStorage.getItem('daysk-gdrive-folder-name') || 'Daysk';
   let gdriveUserEmail = localStorage.getItem('daysk-gdrive-email') || null;
   let gdriveTokenClient = null;
-  let gdriveWriteQueued = false;
+  /* Dois estados, e não um: "está escrevendo agora" e "chegou coisa nova
+     enquanto escrevia". A variável única antiga misturava os dois e por isso
+     descartava. */
+  let gdriveEscrevendo = false;
+  let gdrivePendente = false;
 
   // GOOGLE OAUTH CLIENT ID CONFIGURADO:
   const DEFAULT_GDRIVE_CLIENT_ID = '664945687530-k0dl56iffpl3f222jvlur6deuoe8h18l.apps.googleusercontent.com';
@@ -3474,20 +3478,27 @@
     await writable.close();
   }
 
-  let writeQueued = false;
+  let escrevendoNaPasta = false;
+  let pendenteNaPasta = false;
+  /* O mesmo descarte do writeToGoogleDrive(), com o mesmo conserto. Aqui a
+     gravação é em disco e a janela é bem menor, mas a lógica era idêntica —
+     corrigir só o Drive deixaria um bug conhecido no irmão. */
   async function writeToFolder() {
     if (!syncDirHandle || syncStatus !== 'connected') return;
-    if (writeQueued) return;
-    writeQueued = true;
+    if (escrevendoNaPasta) { pendenteNaPasta = true; return; }
+    escrevendoNaPasta = true;
     try {
-      await writeFolderFile('tasks.json', JSON.stringify(tasks, null, 2));
-      await writeFolderFile('projects.json', JSON.stringify(projects, null, 2));
+      do {
+        pendenteNaPasta = false;
+        await writeFolderFile('tasks.json', JSON.stringify(tasks, null, 2));
+        await writeFolderFile('projects.json', JSON.stringify(projects, null, 2));
+      } while (pendenteNaPasta);
     } catch (e) {
       console.error('Falha ao gravar na pasta sincronizada', e);
       syncStatus = 'error';
       updateSyncUI();
     } finally {
-      writeQueued = false;
+      escrevendoNaPasta = false;
     }
   }
 
@@ -3719,17 +3730,37 @@
     return null;
   }
 
+  /* A guarda antiga se chamava "queued" e DESCARTAVA: um save() durante um
+     upload em voo caía no `return` e aquela gravação nunca chegava ao Drive. A
+     janela é a duração de dois uploads — segundos numa conexão ruim — e o
+     cronômetro produz saves em rajada. Auto-corrigia se viesse outro save
+     depois, mas o ÚLTIMO save de uma sequência sumia, e o erro só ia para o
+     console.
+
+     A troca é marcar em vez de descartar, e repetir.
+
+     Nada precisa ser guardado em buffer: o JSON.stringify roda DENTRO do laço e
+     lê o estado atual, então a repetição sobe o que existe agora — não uma fila
+     de versões antigas. É por isso que um laço resolve onde uma fila seria a
+     resposta óbvia e errada.
+
+     O laço termina sozinho: a marca é zerada no topo de cada volta e só volta a
+     true se houver save durante aquela volta. Rajada de N saves dá duas voltas,
+     não N. */
   async function writeToGoogleDrive() {
     if (syncMode !== 'gdrive' || gdriveStatus !== 'connected') return;
-    if (gdriveWriteQueued) return;
-    gdriveWriteQueued = true;
+    if (gdriveEscrevendo) { gdrivePendente = true; return; }
+    gdriveEscrevendo = true;
     try {
-      await writeGDriveFile('tasks.json', JSON.stringify(tasks, null, 2));
-      await writeGDriveFile('projects.json', JSON.stringify(projects, null, 2));
+      do {
+        gdrivePendente = false;
+        await writeGDriveFile('tasks.json', JSON.stringify(tasks, null, 2));
+        await writeGDriveFile('projects.json', JSON.stringify(projects, null, 2));
+      } while (gdrivePendente);
     } catch (e) {
       console.error('Falha ao sincronizar com Google Drive:', e);
     } finally {
-      gdriveWriteQueued = false;
+      gdriveEscrevendo = false;
     }
   }
 
