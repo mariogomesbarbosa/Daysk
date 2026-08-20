@@ -2630,6 +2630,17 @@
   .sync-status.on { background: var(--green-bg); color: var(--green); }
   .sync-status.warn { background: var(--amber-bg); color: var(--amber); }
 
+  /* O botão da barra só existe no modo Drive — nos outros não há para onde
+     enviar, e isso limita o aperto de largura a quem de fato usa o Drive. */
+  .btn-enviar[disabled] { opacity: .6; cursor: default; }
+
+  .btn-enviar.erro { border-color: var(--red); color: var(--red); }
+
+  /* Abaixo de 480px vira só ícone, como a barra já faz com outros controles. */
+  @media (max-width: 480px) {
+    .btn-enviar-txt { display: none; }
+  }
+
   .sync-actions {
     display: flex;
     gap: 8px;
@@ -2748,6 +2759,11 @@
     <div class="brand-actions">
       <!-- O acesso ao gerenciador de projetos agora é o "+" da seção Projetos no
            sidebar, onde os projetos vivem. -->
+      <button class="btn-add btn-secondary btn-enviar" id="btn-enviar-agora" onclick="enviarAgora()"
+              style="display:none" title="Enviar agora para o Google Drive">
+        <svg class="icon" width="16" height="16" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M240,56v48a8,8,0,0,1-8,8H184a8,8,0,0,1,0-16H211.4L184.81,71.64l-.25-.24a80,80,0,1,0-1.67,114.78,8,8,0,0,1,11,11.63A95.44,95.44,0,0,1,128,224h-1.32A96,96,0,1,1,195.75,60L224,85.8V56a8,8,0,1,1,16,0Z"/></svg>
+        <span class="btn-enviar-txt">Enviar agora</span>
+      </button>
       <button class="btn-add btn-secondary" onclick="openSyncManager()" title="Modo de Sincronização">
         <svg class="icon" width="14" height="14" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M224,48V96a8,8,0,0,1-8,8H168a8,8,0,0,1,0-16h28.69L182.06,73.37a79.56,79.56,0,0,0-56.13-23.43h-.45A79.52,79.52,0,0,0,69.59,72.71,8,8,0,0,1,58.41,61.27a96,96,0,0,1,135,.79L208,76.69V48a8,8,0,0,1,16,0ZM186.41,183.29a80,80,0,0,1-112.47-.66L59.31,168H88a8,8,0,0,0,0-16H40a8,8,0,0,0-8,8v48a8,8,0,0,0,16,0V179.31l14.63,14.63A95.43,95.43,0,0,0,130,222.06h.53a95.36,95.36,0,0,0,67.07-27.33,8,8,0,0,0-11.18-11.44Z"/></svg>
         Sincronização
@@ -3266,6 +3282,11 @@
             <div class="sync-detail-panel" id="sync-panel-gdrive" style="display:none">
               <div class="sync-status" id="gdrive-status-box">Não conectado ao Google Drive.</div>
               <div class="sync-actions">
+                <!-- Primeiro e com o estilo primário: conectado, enviar é a ação que se
+                     vem buscar aqui. Os três somam 368px numa linha de 330 e quebram;
+                     com ela na frente, quem sobra para a segunda linha são as
+                     secundárias. Mesmo papel que "conectar" tem quando desconectado. -->
+                <button class="btn-save" id="gdrive-enviar-btn" onclick="event.stopPropagation(); enviarAgora()" style="display:none">enviar agora</button>
                 <button class="btn-cancel-form" id="gdrive-disconnect-btn" onclick="event.stopPropagation(); disconnectGoogleDrive()" style="display:none">desconectar</button>
                 <button class="btn-cancel-form" id="gdrive-picker-btn" onclick="event.stopPropagation(); openGoogleDrivePicker()" style="display:none">alterar pasta</button>
                 <button class="btn-save" id="gdrive-connect-btn" onclick="event.stopPropagation(); connectGoogleDrive()">conectar Google Drive</button>
@@ -3409,6 +3430,15 @@
      descartava. */
   let gdriveEscrevendo = false;
   let gdrivePendente = false;
+  /* Último modifiedTime que ESTE aparelho viu depois de subir. Persistido, para
+     sobreviver ao recarregamento — sem isso todo reload acusaria conflito. */
+  let gdriveCarimbo = localStorage.getItem('daysk-gdrive-carimbo') || null;
+  /* modifiedTime observado por findGDriveFileId(), por arquivo. */
+  const gdriveModificadoEm = {};
+  /* Estado do envio manual, para a interface: null | 'enviando' | 'erro'. */
+  let envioEstado = null;
+  let envioErro = '';
+  let ultimoEnvioEm = parseInt(localStorage.getItem('daysk-gdrive-enviado-em'), 10) || null;
 
   // GOOGLE OAUTH CLIENT ID CONFIGURADO:
   const DEFAULT_GDRIVE_CLIENT_ID = '664945687530-k0dl56iffpl3f222jvlur6deuoe8h18l.apps.googleusercontent.com';
@@ -3653,6 +3683,9 @@
       if (data.files && data.files.length > 0) {
         data.files.sort((a, b) => (parseInt(b.size || 0) - parseInt(a.size || 0)));
         const primaryFile = data.files[0];
+        /* O modifiedTime já vinha no `fields` e era descartado. Guardá-lo é o
+           que permite a checagem de conflito sem chamada nova. */
+        gdriveModificadoEm[filename] = primaryFile.modifiedTime || null;
 
         if (deduplicate && data.files.length > 1) {
           for (let i = 1; i < data.files.length; i++) {
@@ -3747,6 +3780,20 @@
      O laço termina sozinho: a marca é zerada no topo de cada volta e só volta a
      true se houver save durante aquela volta. Rajada de N saves dá duas voltas,
      não N. */
+  /* Conflita quando o arquivo no Drive foi tocado por alguém que não fomos nós.
+
+     Pura, e é aqui que o harness aponta: a regra tem três casos e dois deles
+     são fáceis de errar.
+
+     O carimbo comparado é o `modifiedTime` DO DRIVE, nunca Date.now() local.
+     Usar o relógio do aparelho produziria conflito falso a cada desvio entre
+     ele e o Google — o tipo de bug que só aparece na casa de alguém. */
+  function haConflito(carimboGuardado, modificadoRemoto) {
+    if (!modificadoRemoto) return false;   // arquivo ainda não existe lá
+    if (!carimboGuardado) return false;    // primeiro envio deste aparelho
+    return carimboGuardado !== modificadoRemoto;
+  }
+
   async function writeToGoogleDrive() {
     if (syncMode !== 'gdrive' || gdriveStatus !== 'connected') return;
     if (gdriveEscrevendo) { gdrivePendente = true; return; }
@@ -3757,11 +3804,87 @@
         await writeGDriveFile('tasks.json', JSON.stringify(tasks, null, 2));
         await writeGDriveFile('projects.json', JSON.stringify(projects, null, 2));
       } while (gdrivePendente);
+      // Relê o carimbo: sem isto o próximo envio manual acusaria conflito com a
+      // gravação que este mesmo aparelho acabou de fazer.
+      await findGDriveFileId('tasks.json');
+      registrarEnvio();
+      if (envioEstado === 'erro') { envioEstado = null; envioErro = ''; }
+      updateSyncUI();
     } catch (e) {
       console.error('Falha ao sincronizar com Google Drive:', e);
+      // Sem alert: no automático ele seria intrusivo e dispararia em série.
+      envioEstado = 'erro';
+      envioErro = e && e.message ? e.message : 'erro desconhecido';
+      updateSyncUI();
     } finally {
       gdriveEscrevendo = false;
     }
+  }
+
+  /* "Enviar agora": sobe sob comando. Só sobe — não baixa e não funde, e é por
+     isso que se chama enviar e não sincronizar. A descida continua acontecendo
+     no carregamento, por initSync(). */
+  async function enviarAgora() {
+    if (syncMode !== 'gdrive' || gdriveStatus !== 'connected') return;
+    if (envioEstado === 'enviando') return;
+
+    envioEstado = 'enviando';
+    envioErro = '';
+    updateSyncUI();
+    try {
+      /* Confere ANTES de subir. O caso real: você mexeu no celular, abre o PC
+         com dados velhos e aperta enviar — um upload cego apagaria o que o
+         celular gravou. findGDriveFileId() preenche gdriveModificadoEm. */
+      await findGDriveFileId('tasks.json');
+      if (haConflito(gdriveCarimbo, gdriveModificadoEm['tasks.json'])) {
+        const seguir = confirm(
+          'O arquivo no Google Drive foi alterado depois do último envio deste ' +
+          'aparelho — provavelmente por outro dispositivo.\n\n' +
+          'Enviar agora vai SOBRESCREVER o que está lá.\n\n' +
+          'OK para enviar mesmo assim, Cancelar para não mexer.');
+        if (!seguir) {
+          envioEstado = null;
+          updateSyncUI();
+          return;
+        }
+      }
+
+      await writeGDriveFile('tasks.json', JSON.stringify(tasks, null, 2));
+      await writeGDriveFile('projects.json', JSON.stringify(projects, null, 2));
+
+      // Relê o carimbo depois de subir: é o do Drive que vale como referência.
+      await findGDriveFileId('tasks.json');
+      registrarEnvio();
+      envioEstado = null;
+    } catch (e) {
+      console.error('Falha ao enviar para o Google Drive:', e);
+      envioEstado = 'erro';
+      envioErro = e && e.message ? e.message : 'erro desconhecido';
+      // alert só no manual: aqui o usuário está esperando resposta. No
+      // automático seria intrusivo e poderia disparar em série.
+      alert('Não foi possível enviar para o Google Drive.\n\n' + envioErro);
+    }
+    updateSyncUI();
+  }
+
+  function registrarEnvio() {
+    gdriveCarimbo = gdriveModificadoEm['tasks.json'] || null;
+    ultimoEnvioEm = Date.now();
+    if (gdriveCarimbo) localStorage.setItem('daysk-gdrive-carimbo', gdriveCarimbo);
+    localStorage.setItem('daysk-gdrive-enviado-em', String(ultimoEnvioEm));
+  }
+
+  /* "há 3 min", "agora mesmo". Só para exibição — a comparação de conflito
+     nunca usa este relógio. */
+  function haQuantoTempo(ts) {
+    if (!ts) return null;
+    const s = Math.max(0, Math.round((Date.now() - ts) / 1000));
+    if (s < 60) return 'agora mesmo';
+    const m = Math.round(s / 60);
+    if (m < 60) return 'há ' + m + ' min';
+    const h = Math.round(m / 60);
+    if (h < 24) return 'há ' + h + 'h';
+    return 'há ' + Math.round(h / 24) + ' dia(s)';
   }
 
   async function loadFromGoogleDrive() {
@@ -3961,6 +4084,45 @@
       }
       if (gdisconnectBtn) gdisconnectBtn.style.display = (gdriveStatus === 'connected' || gdriveStatus === 'needs-auth') ? '' : 'none';
       if (gpickerBtn) gpickerBtn.style.display = (gdriveStatus === 'connected') ? '' : 'none';
+
+      /* Os três retornos. Antes disto não havia nenhum: não dava para saber se
+         o Drive estava em dia sem abrir o Drive, e falha de upload ia só para o
+         console — o pior modo de falha possível num app de sincronização, onde
+         o usuário confia num backup que não existe. */
+      const ativo = syncMode === 'gdrive' && gdriveStatus === 'connected';
+      const quando = haQuantoTempo(ultimoEnvioEm);
+
+      if (gs.cls === 'on') {
+        if (envioEstado === 'erro') {
+          gbox.className = 'sync-status warn';
+          gbox.textContent = 'Falha ao enviar: ' + envioErro + '. Os dados seguem salvos neste navegador.';
+        } else if (quando) {
+          gbox.textContent = gs.text + ' Último envio ' + quando + '.';
+        }
+      }
+
+      const genviarBtn = document.getElementById('gdrive-enviar-btn');
+      if (genviarBtn) {
+        genviarBtn.style.display = ativo ? '' : 'none';
+        genviarBtn.disabled = envioEstado === 'enviando';
+        genviarBtn.textContent = envioEstado === 'enviando' ? 'enviando…' : 'enviar agora';
+      }
+    }
+
+    // 4. Botão da barra superior
+    const barra = document.getElementById('btn-enviar-agora');
+    if (barra) {
+      const ativo = syncMode === 'gdrive' && gdriveStatus === 'connected';
+      barra.style.display = ativo ? '' : 'none';
+      barra.disabled = envioEstado === 'enviando';
+      barra.classList.toggle('erro', envioEstado === 'erro');
+      const txt = barra.querySelector('.btn-enviar-txt');
+      if (txt) txt.textContent = envioEstado === 'enviando' ? 'Enviando…' : 'Enviar agora';
+      barra.title = envioEstado === 'erro'
+        ? 'Falha no último envio: ' + envioErro
+        : (haQuantoTempo(ultimoEnvioEm)
+            ? 'Último envio ' + haQuantoTempo(ultimoEnvioEm)
+            : 'Enviar agora para o Google Drive');
     }
   }
 

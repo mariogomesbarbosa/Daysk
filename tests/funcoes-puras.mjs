@@ -22,6 +22,27 @@ import { dirname, join } from 'node:path';
 const raiz = join(dirname(fileURLToPath(import.meta.url)), '..');
 const fonte = readFileSync(join(raiz, 'index.html'), 'utf8');
 
+/* Antes de qualquer caso: o script principal do index.html PARSEIA?
+
+   Um erro de sintaxe deixa o app em branco, e nenhum teste de funcao pura
+   pega isso — eles extraem trechos, nao o arquivo. Nesta base ja quase foi
+   enviado um escape que virou quebra de linha real dentro de uma string, o
+   que derruba a pagina inteira.
+
+   new Function compila sem executar: e parse, nao e rodar o app. */
+{
+  const blocos = [...fonte.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(m => m[1]);
+  const principal = blocos[blocos.length - 1];
+  try {
+    new Function(principal);
+    console.log('script principal parseia (' + principal.length + ' chars)');
+  } catch (e) {
+    console.log('\n  x ERRO DE SINTAXE no script principal do index.html');
+    console.log('    ' + e.message);
+    process.exit(1);
+  }
+}
+
 function extrair(nome) {
   const marca = `function ${nome}(`;
   const i = fonte.indexOf(marca);
@@ -387,6 +408,33 @@ eq('dy e inteiro', Number.isInteger(AR(300, 120, RET).dy), true);
 const ESTREITO = { left: 0, top: 0, right: 40, bottom: 40 };
 eq('retangulo menor que a zona nao produz NaN',
    Number.isFinite(AR(20, 20, ESTREITO).dy) && Number.isFinite(AR(20, 20, ESTREITO).dx), true);
+
+/* ---------- haConflito: sobrescrever o Drive ou avisar antes ---------- */
+const { haConflito } = new Function(`
+  ${extrair('haConflito')}
+  return { haConflito };
+`)();
+
+const T1 = '2026-08-20T10:00:00.000Z';
+const T2 = '2026-08-20T11:30:00.000Z';
+
+eq('carimbos iguais nao conflitam', haConflito(T1, T1), false);
+eq('remoto diferente conflita', haConflito(T1, T2), true);
+/* Nao compara ordem: qualquer diferenca e "alguem mexeu". Um remoto ANTERIOR ao
+   carimbo tambem e anomalia — restauracao de versao, relogio do servidor — e
+   avisar e mais seguro que sobrescrever em silencio. */
+eq('remoto anterior tambem conflita', haConflito(T2, T1), true);
+
+eq('sem arquivo no Drive nao conflita', haConflito(T1, null), false);
+eq('sem arquivo e sem carimbo nao conflita', haConflito(null, null), false);
+eq('primeiro envio deste aparelho nao conflita', haConflito(null, T1), false);
+eq('carimbo vazio conta como ausente', haConflito('', T1), false);
+eq('remoto indefinido nao conflita', haConflito(T1, undefined), false);
+
+/* A invariante que importa: conflito exige os DOIS lados presentes e diferentes.
+   Errar isso nas duas pontas daria ou aviso a toda hora, ou sobrescrita muda. */
+eq('so conflita com os dois lados presentes e diferentes',
+   [[null, null], [null, T1], [T1, null], [T1, T1]].every(([a, b]) => !haConflito(a, b)), true);
 
 console.log(`\n${ok} passaram, ${falhas.length} falharam\n`);
 if (falhas.length) {
