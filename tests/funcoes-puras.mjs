@@ -332,6 +332,62 @@ eq('dois digitos de minuto', hmCompacto(659), '10h59');
 /* O ponto do formato: e mais curto que minsToHm, que transbordava o cartao. */
 eq('e mais curto que minsToHm', hmCompacto(630).length < minsToHm(630).length, true);
 
+/* ---------- calcularAutoRolagem: a conta da rolagem durante o arraste ---------- */
+/* Le as duas constantes de zona e velocidade, que o escopo isolado declara. */
+const auto = new Function(`
+  const AUTO_ZONA = 56;
+  const AUTO_VEL_MAX = 14;
+  ${extrair('calcularAutoRolagem')}
+  return { calcularAutoRolagem, AUTO_ZONA, AUTO_VEL_MAX };
+`)();
+const AR = auto.calcularAutoRolagem;
+/* Retangulo de teste: 400x600 comecando em (100, 100). */
+const RET = { left: 100, top: 100, right: 500, bottom: 700 };
+const eixo = (x, y) => { const r = AR(x, y, RET); return r.dx + ',' + r.dy; };
+
+eq('no centro nao rola', eixo(300, 400), '0,0');
+eq('perto do topo rola para cima', AR(300, 120, RET).dy < 0, true);
+eq('perto do fundo rola para baixo', AR(300, 680, RET).dy > 0, true);
+eq('perto da esquerda rola para a esquerda', AR(120, 400, RET).dx < 0, true);
+eq('perto da direita rola para a direita', AR(480, 400, RET).dx > 0, true);
+
+/* Fora da zona, nada — a zona e 56px. */
+eq('a 57px do topo nao rola', eixo(300, 157), '0,0');
+eq('a 56px do topo nao rola (limite exclusivo)', eixo(300, 156), '0,0');
+eq('a 55px do topo rola, no piso de 1px', AR(300, 155, RET).dy, -1);
+/* A faixa morta que o piso elimina: sem ele, os ~4px externos da zona davam
+   velocidade que arredondava para zero — dedo na zona e nada acontecendo. */
+eq('todo ponto dentro da zona produz movimento',
+   [1, 5, 10, 20, 30, 40, 50, 55].every(d => AR(300, 100 + d, RET).dy < 0), true);
+
+/* A velocidade cresce ao aproximar da borda, e satura nela. */
+eq('na borda exata usa a velocidade maxima', AR(300, 100, RET).dy, -14);
+eq('a meio caminho da zona usa metade', AR(300, 128, RET).dy, -7);
+eq('mais perto da borda rola mais rapido',
+   Math.abs(AR(300, 110, RET).dy) > Math.abs(AR(300, 140, RET).dy), true);
+
+/* Alem da borda continua na velocidade maxima: o dedo saiu do retangulo mas
+   ainda esta na margem de tolerancia, e parar ali seria travar o gesto. */
+eq('20px acima do topo ainda rola no maximo', AR(300, 80, RET).dy, -14);
+eq('longe demais acima nao rola', eixo(300, 40), '0,0');
+eq('longe demais a esquerda nao rola', eixo(30, 400), '0,0');
+
+/* Canto: os dois eixos ao mesmo tempo. */
+const canto = AR(110, 110, RET);
+eq('no canto superior esquerdo rola nos dois eixos', (canto.dx < 0 && canto.dy < 0), true);
+eq('no canto inferior direito rola nos dois eixos',
+   (() => { const c = AR(490, 690, RET); return c.dx > 0 && c.dy > 0; })(), true);
+
+/* Devolve inteiros: scrollTop com fracao acumula erro de arredondamento. */
+eq('dx e inteiro', Number.isInteger(AR(120, 400, RET).dx), true);
+eq('dy e inteiro', Number.isInteger(AR(300, 120, RET).dy), true);
+
+/* Retangulo mais estreito que duas zonas: as bordas se sobrepoem, e a regra de
+   "topo primeiro" tem de valer sem produzir NaN. */
+const ESTREITO = { left: 0, top: 0, right: 40, bottom: 40 };
+eq('retangulo menor que a zona nao produz NaN',
+   Number.isFinite(AR(20, 20, ESTREITO).dy) && Number.isFinite(AR(20, 20, ESTREITO).dx), true);
+
 console.log(`\n${ok} passaram, ${falhas.length} falharam\n`);
 if (falhas.length) {
   falhas.forEach(f => console.log('  ✗ ' + f + '\n'));

@@ -5734,6 +5734,67 @@
     return null;
   }
 
+  /* Quanto rolar, em cada eixo, com o ponteiro em (x, y) sobre um retângulo.
+
+     Pura de propósito — a auto-rolagem é gesto, e gesto não se depura no olho.
+     Devolve deslocamentos em px por quadro; zero significa "não rola".
+
+     A proximidade é medida da borda para dentro: quanto mais perto da borda,
+     mais rápido, até VELOCIDADE_MAX na borda exata. Velocidade constante faria
+     o dedo ter de ficar num fio de pixels para rolar devagar. */
+  const AUTO_ZONA = 56;                              // px de borda que ativam
+  const AUTO_VEL_MAX = 14;                           // px por quadro na borda
+
+  function calcularAutoRolagem(x, y, r) {
+    /* Mínimo de 1px dentro da zona. Sem ele, os ~4px externos da zona dão
+       velocidade que arredonda para zero: o dedo está na zona e nada acontece,
+       o que é uma faixa morta indistinguível de "não funciona". */
+    const vel = dist => {
+      const f = Math.min(1, Math.max(0, (AUTO_ZONA - dist) / AUTO_ZONA));
+      return f > 0 ? Math.max(1, Math.round(AUTO_VEL_MAX * f)) : 0;
+    };
+    // Fora do retângulo em qualquer eixo não rola: o dedo saiu da área.
+    if (x < r.left - AUTO_ZONA || x > r.right + AUTO_ZONA ||
+        y < r.top - AUTO_ZONA || y > r.bottom + AUTO_ZONA) return { dx: 0, dy: 0 };
+    let dy = 0, dx = 0;
+    if (y - r.top < AUTO_ZONA) dy = -vel(y - r.top);
+    else if (r.bottom - y < AUTO_ZONA) dy = vel(r.bottom - y);
+    if (x - r.left < AUTO_ZONA) dx = -vel(x - r.left);
+    else if (r.right - x < AUTO_ZONA) dx = vel(r.right - x);
+    return { dx, dy };
+  }
+
+  /* O laço. Um só, e ele MORRE em três lugares — pointerup, pointercancel e
+     Escape. Auto-rolagem que sobrevive ao gesto fica rolando a página sozinha, e
+     é o tipo de vazamento que não aparece num teste curto. */
+  let autoRolagem = null;
+
+  function pararAutoRolagem() {
+    if (autoRolagem === null) return;
+    cancelAnimationFrame(autoRolagem);
+    autoRolagem = null;
+  }
+
+  function iniciarAutoRolagem(lerPonteiro) {
+    pararAutoRolagem();
+    const passo = () => {
+      const pos = lerPonteiro();
+      if (!pos) { autoRolagem = null; return; }
+      // Na grade de horas rola o contêiner; na visão de mês, a página.
+      const box = document.getElementById('cal-scroll');
+      const usaCaixa = box && calendarView !== 'month' && box.offsetParent !== null;
+      const alvo = usaCaixa ? box : document.scrollingElement;
+      const r = usaCaixa
+        ? box.getBoundingClientRect()
+        : { left: 0, top: 0, right: innerWidth, bottom: innerHeight };
+      const { dx, dy } = calcularAutoRolagem(pos.x, pos.y, r);
+      if (dx) alvo.scrollLeft += dx;
+      if (dy) alvo.scrollTop += dy;
+      autoRolagem = requestAnimationFrame(passo);
+    };
+    autoRolagem = requestAnimationFrame(passo);
+  }
+
   /* A gravação, separada do gesto de propósito: dá para testar sem mover um
      pixel. As regras são as mesmas de saveQuickSchedule(), por onde já se
      reagenda hoje. */
@@ -5792,6 +5853,9 @@
     let destrancado = !doToque || jaArmado;
     let virouRolagem = false;
     let semMenu = null;
+    /* O laço da auto-rolagem roda em requestAnimationFrame e não recebe o
+       evento — lê a última posição conhecida daqui. */
+    let ultimoPonteiro = null;
 
     /* A ORDEM importa: mover antes dos 500ms cancela o timer, porque rolar é o
        gesto barato e o comum, e ele tem de continuar barato. */
@@ -5804,6 +5868,15 @@
       // O gesto NÃO termina aqui — o dedo já está na tela, então continuar a
       // mover arrasta, e soltar sem mover deixa as alças à disposição.
       if (origem === 'grid') { blocoArmado = id; renderCalendar(); }
+      /* Vindo da bandeja: ela sai da frente para o calendário aparecer.
+         As duas coisas juntas, e a segunda NÃO é opcional — resolveTarget() usa
+         elementFromPoint, e a bandeja recolhendo com transição de 220ms
+         continuaria debaixo do dedo durante a animação. Sem pointer-events:
+         none, os primeiros quadros resolveriam para a bandeja. */
+      if (origem === 'unplan') {
+        document.getElementById('cal-aside')?.classList.add('transparente');
+        fecharBandeja();
+      }
     }, 500) : null;
 
     if (doToque) {
@@ -5833,7 +5906,11 @@
         ghost.className = 'cal-ghost';
         ghost.textContent = t.name;
         document.body.appendChild(ghost);
+        // Sem ela o alcance do arraste é só o que está visível: a grade mostra
+        // ~10 de 24 horas, e abaixo de 860px também rola na horizontal.
+        iniciarAutoRolagem(() => ultimoPonteiro);
       }
+      ultimoPonteiro = { x: e.clientX, y: e.clientY };
       e.preventDefault();
       ghost.style.left = e.clientX + 'px';
       ghost.style.top = e.clientY + 'px';
@@ -5847,6 +5924,10 @@
       window.removeEventListener('keydown', onKey);
       if (timerLongo) { clearTimeout(timerLongo); timerLongo = null; }
       arrasteDestrancado = false;
+      // Morre aqui, e encerrar() é chamado pelo pointerup, pelo pointercancel
+      // (via cancelar) e pelo Escape (via cancelar) — os três caminhos.
+      pararAutoRolagem();
+      document.getElementById('cal-aside')?.classList.remove('transparente');
       if (semMenu) setTimeout(() => window.removeEventListener('contextmenu', semMenu), 0);
       if (ghost) ghost.remove();
       document.body.classList.remove('cal-dragging');
