@@ -25,6 +25,7 @@ o *porquê* delas.
 | [bandeja-de-nao-planejadas-no-mobile.md](bandeja-de-nao-planejadas-no-mobile.md) | Por que o botão parecia não fazer nada, e a bandeja inferior que resolve |
 | [instalacao-android.md](instalacao-android.md) | Por que o atalho não abria, e o que instalar como app custou à arquitetura |
 | [enviar-agora-e-o-descarte-silencioso.md](enviar-agora-e-o-descarte-silencioso.md) | Com que frequência o Drive recebe upload, o bug que descarta gravações, e o botão manual |
+| [sessao-do-google-expirando.md](sessao-do-google-expirando.md) | Por que todo envio ao Drive dizia "sessão expirada", e as três causas encadeadas |
 | [pendencias.md](pendencias.md) | Ressalvas conhecidas, incluindo o que foi para `main` sem verificação visual |
 
 ## Estado atual
