@@ -436,6 +436,37 @@ eq('remoto indefinido nao conflita', haConflito(T1, undefined), false);
 eq('so conflita com os dois lados presentes e diferentes',
    [[null, null], [null, T1], [T1, null], [T1, T1]].every(([a, b]) => !haConflito(a, b)), true);
 
+/* ---------- tokenValido: a pergunta que as inferencias antigas nao faziam ---------- */
+/* Le dois globais, entao o escopo isolado os declara e deixa substituiveis. */
+const tv = new Function(`
+  let gdriveAccessToken = null;
+  let gdriveTokenExpiraEm = 0;
+  ${extrair('tokenValido')}
+  return { tokenValido, set: (t, e) => { gdriveAccessToken = t; gdriveTokenExpiraEm = e; } };
+`)();
+/* T_AGORA e nao AGORA: o bloco de sessoes acima ja usa esse nome. */
+const T_AGORA = Date.now();
+
+tv.set('abc', T_AGORA + 600000);
+eq('token com validade no futuro e valido', tv.tokenValido(), true);
+tv.set('abc', T_AGORA - 1000);
+eq('token vencido nao e valido', tv.tokenValido(), false);
+tv.set('abc', 0);
+eq('token SEM validade registrada nao e valido', tv.tokenValido(), false);
+tv.set(null, T_AGORA + 600000);
+eq('sem token nao e valido', tv.tokenValido(), false);
+tv.set('', T_AGORA + 600000);
+eq('token vazio nao e valido', tv.tokenValido(), false);
+tv.set(null, 0);
+eq('nada de nada', tv.tokenValido(), false);
+
+/* O caso que causava o bug: token guardado no localStorage sem validade — era
+   exatamente o estado de toda instalacao anterior a esta correcao, e a
+   inferencia antiga o chamava de "conectado". */
+tv.set('token-antigo-sem-validade', 0);
+eq('token legado sem validade e tratado como invalido', tv.tokenValido(), false);
+
+
 console.log(`\n${ok} passaram, ${falhas.length} falharam\n`);
 if (falhas.length) {
   falhas.forEach(f => console.log('  ✗ ' + f + '\n'));
