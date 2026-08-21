@@ -3421,10 +3421,18 @@
   // Google Drive state
   let gdriveStatus = 'disconnected'; // 'disconnected' | 'connecting' | 'connected' | 'error' | 'needs-auth'
   let gdriveAccessToken = localStorage.getItem('daysk-gdrive-token') || null;
+  /* O token do fluxo implicito vale UMA HORA e nao ha refresh token no
+     navegador. Antes disto o expires_in era jogado fora e o token era reusado
+     para sempre — depois de uma hora, todo pedido respondia 401. */
+  let gdriveTokenExpiraEm = parseInt(localStorage.getItem('daysk-gdrive-expira'), 10) || 0;
   let gdriveFolderId = localStorage.getItem('daysk-gdrive-folder-id') || null;
   let gdriveFolderName = localStorage.getItem('daysk-gdrive-folder-name') || 'Daysk';
   let gdriveUserEmail = localStorage.getItem('daysk-gdrive-email') || null;
   let gdriveTokenClient = null;
+  /* Callback da renovação em curso. O GIS aceita um callback só por cliente, e
+     recriar o cliente a cada renovação perderia o consentimento em cache. */
+  let gdriveCallbackAtual = null;
+  let gdriveRenovacaoEmVoo = null;
   /* Dois estados, e não um: "está escrevendo agora" e "chegou coisa nova
      enquanto escrevia". A variável única antiga misturava os dois e por isso
      descartava. */
@@ -3596,15 +3604,113 @@
 
   /* ---------- Google Drive Sync ---------- */
 
+  /* A pergunta que as duas inferencias antigas nao faziam. Estado e estado;
+     derivar "conectado" de existir uma string sempre ia mentir. */
+  function tokenValido() {
+    return !!gdriveAccessToken && gdriveTokenExpiraEm > 0 && Date.now() < gdriveTokenExpiraEm;
+  }
+
+  function guardarToken(resposta) {
+    gdriveAccessToken = resposta.access_token;
+    // 60s de margem: a requisicao leva tempo, e um token que expira no meio dela
+    // produz exatamente o 401 que se quer evitar.
+    const segundos = parseInt(resposta.expires_in, 10) || 3600;
+    gdriveTokenExpiraEm = Date.now() + Math.max(0, segundos - 60) * 1000;
+    localStorage.setItem('daysk-gdrive-token', gdriveAccessToken);
+    localStorage.setItem('daysk-gdrive-expira', String(gdriveTokenExpiraEm));
+  }
+
+  /* O cliente de token vive fora do fluxo de conexão: renovar não pode exigir
+     passar por montar pasta e perguntar sobre fusão. */
+  function garantirTokenClient() {
+    if (gdriveTokenClient) return gdriveTokenClient;
+    const clientId = getGDriveClientId();
+    if (!clientId) return null;
+    if (typeof google === 'undefined' || !google.accounts || !google.accounts.oauth2) return null;
+    gdriveTokenClient = google.accounts.oauth2.initTokenClient({
+      client_id: clientId,
+      scope: 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.email',
+      callback: resposta => {
+        const cb = gdriveCallbackAtual;
+        gdriveCallbackAtual = null;
+        if (cb) cb(resposta);
+      }
+    });
+    return gdriveTokenClient;
+  }
+
+  const RENOVACAO_TIMEOUT = 20000;
+
+  /* Renovação sem interação. requestAccessToken({ prompt: '' }) já existia no
+     arquivo — só nunca era alcançada, porque o C2 impedia a tela de oferecer
+     reconectar.
+
+     Duas guardas que o embrulho ingênuo esquece:
+
+     1. UMA POR VEZ. Uma rajada de save() dispararia várias renovações
+        concorrentes. A promessa em voo é reusada — mesma lição do gdrivePendente.
+     2. TEMPO LIMITE. Se o GIS nunca chamar o callback (popup bloqueado,
+        biblioteca meio carregada), a promessa fica pendurada para sempre, e com
+        ela o save() que a espera. */
+  function renovarToken() {
+    if (gdriveRenovacaoEmVoo) return gdriveRenovacaoEmVoo;
+    const cliente = garantirTokenClient();
+    if (!cliente) return Promise.reject(new Error('Biblioteca do Google indisponível.'));
+
+    gdriveRenovacaoEmVoo = new Promise((ok, erro) => {
+      const relogio = setTimeout(() => {
+        gdriveCallbackAtual = null;
+        erro(new Error('O Google não respondeu ao pedido de renovação.'));
+      }, RENOVACAO_TIMEOUT);
+
+      gdriveCallbackAtual = resposta => {
+        clearTimeout(relogio);
+        if (!resposta || resposta.error || !resposta.access_token) {
+          erro(new Error('Não foi possível renovar a sessão do Google.'));
+          return;
+        }
+        guardarToken(resposta);
+        ok(resposta.access_token);
+      };
+      cliente.requestAccessToken({ prompt: '' });
+    }).finally(() => { gdriveRenovacaoEmVoo = null; });
+
+    return gdriveRenovacaoEmVoo;
+  }
+
+  function exigirReconexao() {
+    gdriveStatus = 'needs-auth';
+    updateSyncUI();
+    return new Error('Sessão do Google expirada. Reconecte a conta.');
+  }
+
+  /* Renova antes de sair quando o relógio já venceu, e repete UMA vez se o 401
+     vier mesmo assim — o caso do token revogado por fora, que o relógio não
+     prevê.
+
+     Uma repetição, e não um laço: se o token recém-renovado também é recusado, o
+     problema não é validade — é permissão revogada, escopo mudado ou conta
+     trocada. Insistir transforma um erro claro numa espera. */
   async function gdriveFetch(url, options = {}) {
     if (!gdriveAccessToken) throw new Error('Sem token do Google Drive');
-    options.headers = options.headers || {};
-    options.headers['Authorization'] = 'Bearer ' + gdriveAccessToken;
-    const res = await fetch(url, options);
+
+    if (!tokenValido()) {
+      try { await renovarToken(); }
+      catch (e) { throw exigirReconexao(); }
+    }
+
+    const disparar = () => {
+      const opts = { ...options, headers: { ...(options.headers || {}) } };
+      opts.headers['Authorization'] = 'Bearer ' + gdriveAccessToken;
+      return fetch(url, opts);
+    };
+
+    let res = await disparar();
     if (res.status === 401) {
-      gdriveStatus = 'needs-auth';
-      updateSyncUI();
-      throw new Error('Sessão do Google expirada. Reconecte a conta.');
+      try { await renovarToken(); }
+      catch (e) { throw exigirReconexao(); }
+      res = await disparar();
+      if (res.status === 401) throw exigirReconexao();
     }
     return res;
   }
@@ -3795,6 +3901,11 @@
   }
 
   async function writeToGoogleDrive() {
+    /* Esta linha já é o R4 do plano, e passou a funcionar sozinha: quando a
+       renovação desiste, exigirReconexao() põe 'needs-auth', e agora esse estado
+       SOBREVIVE — antes o updateSyncUI() o desfazia. A partir daí todo save()
+       para aqui, em vez de virar uma tentativa de renovação que falha e
+       martelar o Google por um erro que só o usuário resolve. */
     if (syncMode !== 'gdrive' || gdriveStatus !== 'connected') return;
     if (gdriveEscrevendo) { gdrivePendente = true; return; }
     gdriveEscrevendo = true;
@@ -3910,6 +4021,8 @@
       return;
     }
 
+    // Reconexão é quando a pasta já está configurada e o que faltou foi token.
+    const reconectando = !!gdriveFolderId;
     gdriveStatus = 'connecting';
     updateSyncUI();
 
@@ -3923,15 +4036,17 @@
           updateSyncUI();
           return;
         }
-        gdriveAccessToken = response.access_token;
-        localStorage.setItem('daysk-gdrive-token', gdriveAccessToken);
+        guardarToken(response);
 
         try {
           await fetchGDriveUserInfo();
           await findOrCreateGDriveFolder();
           
-          const existingTasks = await readGDriveFile('tasks.json');
-          const existingProjects = await readGDriveFile('projects.json');
+          /* Só na PRIMEIRA conexão. Ao renovar uma sessão o usuário só queria
+             voltar a enviar, e uma pergunta que pode substituir os dados locais
+             apagaria o trabalho da última hora. */
+          const existingTasks = reconectando ? null : await readGDriveFile('tasks.json');
+          const existingProjects = reconectando ? null : await readGDriveFile('projects.json');
           if (existingTasks !== null || existingProjects !== null) {
             const useRemote = confirm('A pasta do Google Drive já possui dados salvos. Clique em OK para usar os dados do Google Drive (substituindo os locais), ou Cancelar para manter os dados atuais e sobrescrever a nuvem.');
             if (useRemote) {
@@ -3999,7 +4114,9 @@
     gdriveFolderName = 'Daysk';
     gdriveUserEmail = null;
     gdriveStatus = 'disconnected';
+    gdriveTokenExpiraEm = 0;
     localStorage.removeItem('daysk-gdrive-token');
+    localStorage.removeItem('daysk-gdrive-expira');
     localStorage.removeItem('daysk-gdrive-folder-id');
     localStorage.removeItem('daysk-gdrive-folder-name');
     localStorage.removeItem('daysk-gdrive-email');
@@ -4064,9 +4181,11 @@
     const gpickerBtn = document.getElementById('gdrive-picker-btn');
 
     if (gbox) {
-      if (gdriveAccessToken && gdriveFolderId) {
-        gdriveStatus = 'connected';
-      }
+      /* Aqui morava a causa do problema: `if (token && pasta) status = connected`.
+         Uma função de DESENHAR interface escrevendo em estado de domínio — e o
+         gdriveFetch, ao detectar 401, punha 'needs-auth' e chamava esta função,
+         que desfazia o estado no mesmo instante. A tela nunca oferecia
+         reconectar. updateSyncUI() agora só lê. */
       const glabels = {
         disconnected: { text: 'Não conectado ao Google Drive.', cls: 'off' },
         connecting: { text: 'Autenticando no Google...', cls: 'off' },
@@ -4095,7 +4214,8 @@
       if (gs.cls === 'on') {
         if (envioEstado === 'erro') {
           gbox.className = 'sync-status warn';
-          gbox.textContent = 'Falha ao enviar: ' + envioErro + '. Os dados seguem salvos neste navegador.';
+          // envioErro já termina em pontuação; acrescentar a nossa dava "conta..".
+          gbox.textContent = 'Falha ao enviar: ' + envioErro + ' Os dados seguem salvos neste navegador.';
         } else if (quando) {
           gbox.textContent = gs.text + ' Último envio ' + quando + '.';
         }
@@ -4155,8 +4275,10 @@
     }
 
     if (gdriveAccessToken && gdriveFolderId) {
-      gdriveStatus = 'connected';
-      if (syncMode === 'gdrive') {
+      /* Token vencido no localStorage não é conexão: é conta configurada
+         precisando renovar, que é informação diferente e acionável. */
+      gdriveStatus = tokenValido() ? 'connected' : 'needs-auth';
+      if (syncMode === 'gdrive' && tokenValido()) {
         try {
           await loadFromGoogleDrive();
           populateProjectSelect();
