@@ -1,7 +1,14 @@
 # Menu lateral no desktop
 
-**Plano. Ainda não implementado.**
+**Implementado no PR #36.**
 
+> Este documento é o plano, e foi mantido como foi escrito antes da
+> implementação. As dez decisões foram todas seguidas; onde a implementação
+> desmentiu o plano, a correção está **em citação dentro da própria decisão**, e
+> o resumo está em [Desvios](#desvios). O texto original fica visível de
+> propósito — o registro do que eu supus errado vale mais que um plano
+> retroativamente correto.
+>
 > Referências a linhas valem para `2d9b2d2` (`main` no momento em que este plano
 > foi escrito). Se elas não baterem mais, busque pelo nome da classe ou da
 > função.
@@ -98,9 +105,14 @@ esse risco numa primeira rodada.
 ### D3 — Só ícones, 64px
 
 Os três botões já têm `title` e `aria-label` ([l. 3115–3125](../index.html:3115)),
-então tooltip e leitor de tela funcionam sem nenhum trabalho novo. O `.nav-label`
-continua oculto no desktop — exatamente como já está hoje na pílula, então isso
-não é sequer uma mudança.
+então tooltip e leitor de tela funcionam sem nenhum trabalho novo.
+
+> **Corrigido ao implementar.** Este parágrafo dizia que o `.nav-label` "continua
+> oculto no desktop, exatamente como já está hoje na pílula, então isso não é
+> sequer uma mudança". **Está errado.** Não existe nenhuma regra que esconda o
+> rótulo fora do bloco de 860px — a pílula mostra "Tasks / Calendário /
+> Relatórios" por extenso. Esconder exige `.nav-label { display: none; }`
+> explícito no bloco novo, e **é uma mudança visual real** no desktop.
 
 64px é o que custa. Ícone+rótulo custaria ~200px, e somados aos 260px do sidebar
 dariam 460px de colunas laterais — a 1366px a coluna de conteúdo começaria a
@@ -139,7 +151,14 @@ usuário de fato escolheu, invertendo a hierarquia.
 Proposta: o item ativo do rail usa a mesma linguagem do `.sidebar-item.active`
 ([l. 339](../index.html:339)) — `background: var(--surface2)`, ícone em
 `var(--text)` — mais uma barra de 3px em `var(--accent)` na borda esquerda como
-indicador. O sólido continua sendo do sidebar.
+indicador.
+
+> **Corrigido ao implementar.** A frase original terminava com "o sólido continua
+> sendo do sidebar", o que sugere que o `.sidebar-item.active` fosse o bloco em
+> `--accent`. Ele **nunca foi**: é `--surface2` com `font-weight: 500`. O sólido
+> sempre foi só da pílula. O raciocínio da decisão não muda — o que muda é que
+> rail e sidebar ficam com o **mesmo** fundo de ativo, e quem distingue os dois é
+> a barra na borda.
 
 > **Contestável — é a única decisão puramente visual aqui.**
 
@@ -168,6 +187,12 @@ que sobra, não na viewport. É o comportamento do TickTick e é o desejado.
 Orçamento horizontal: `1280 − 64 − 2rem = 1184px`, ainda acima dos 1180px do
 `.container`. Ou seja, só abaixo de ~1276px as páginas em `wide-content`
 (Calendário e Relatórios) começam a perder largura, e perdem pouco.
+
+> **Corrigido ao implementar.** A conta acima esquece a barra de rolagem, que é a
+> armadilha que `pendencias.md` já registra ("`innerWidth` inclui a barra de
+> rolagem; o layout não"). Medido a 1280px: o `.container` fica com **1169px**,
+> não 1184 — `1280 − 15 − 64 − 2rem`. A perda começa por volta de 1291px em vez
+> de 1276px, e a 1280px são 11px. A conclusão não muda; o número, sim.
 
 ## Fora de escopo
 
@@ -232,6 +257,21 @@ python -m http.server 8899 --bind 127.0.0.1
   deslocamento — é o teste que valida o **D4**
 - **Abaixo de 1025px:** a pílula e a barra inferior têm que estar idênticas ao
   que são hoje. Se algo mudou ali, o bloco novo vazou
+
+## Desvios
+
+Três coisas que o plano afirmava e a implementação desmentiu. Nenhuma mudou uma
+decisão; as três mudaram um fato.
+
+| Onde | O plano dizia | O código diz |
+|---|---|---|
+| **D3** | O `.nav-label` já está oculto na pílula, esconder não é mudança | Não há regra que o esconda fora dos 860px. A pílula mostra os três rótulos por extenso. Precisou de `display: none` explícito, e **é mudança visual** |
+| **D6** | "O sólido continua sendo do sidebar" | O `.sidebar-item.active` nunca foi sólido — é `--surface2` com `font-weight: 500`. O sólido era só da pílula |
+| **D10** | A 1280px o `.container` fica com 1184px | Fica com **1169px**: a conta esquecia os 15px da barra de rolagem |
+
+O que o plano acertou e vale registrar, porque era a aposta central: **o diff
+saiu com 117 inserções e nenhuma remoção.** Nenhuma regra existente foi editada,
+e nenhuma linha de HTML ou de JS foi tocada.
 
 ## Riscos conhecidos
 
