@@ -387,6 +387,37 @@ A alternativa mais durável seria extrair as funções puras para um
 `<script type="module">` ou um arquivo separado — o que colide com a decisão de
 manter tudo em um único `index.html`. Vale a conversa, não a mudança silenciosa.
 
+## Rail do desktop: ordem visual diferente da ordem de `Tab`
+
+No desktop a `<nav class="app-nav">` é a **primeira coluna na tela** e continua
+sendo o **último elemento antes dos modais no HTML**. Quem navega por teclado
+alcança a navegação principal depois de todo o conteúdo.
+
+**Por que ficou assim:** mover o nó para antes do `.container` conserta o
+desktop e **quebra a ordem do mobile**, onde a barra é visualmente a última e a
+posição no DOM está certa. O pedido era explicitamente não mexer no mobile, e
+não existe media query para ordem de DOM.
+
+A mitigação é que ela já é um landmark rotulado
+(`<nav aria-label="Navegação principal">`), e navegação por landmark não depende
+da ordem do DOM. O conserto de verdade é dar `order` ao rail dentro de um
+container flex/grid comum — que é a reforma de layout que o **D4** do plano
+evitou de propósito. Ver [menu-lateral-no-desktop.md](menu-lateral-no-desktop.md).
+
+## Rail do desktop: medido, não visto
+
+O rail foi verificado inteiramente por medição — geometria, cascata com as
+transições desligadas, `elementFromPoint`, transbordo por `clientWidth`, sticky
+com altura de rolagem real, e a fronteira 1024/1026 nas três abas e nos dois
+temas. **Não houve captura de tela:** o pane do navegador ficou oculto a sessão
+inteira, e sem ele a página não compõe frames — armadilha já registrada mais
+acima neste arquivo.
+
+É a mesma classe de dívida que escondeu o bug da gaveta no PR #6, onde duas
+rodadas de medição passaram e o olho pegou de primeira. O que falta é barato:
+abrir em 1440px e olhar o espaçamento dos três ícones, o peso do indicador de
+3px e o alinhamento do rail com a `brand-bar`.
+
 ## Cosmético, pré-existente
 
 `.context-selector` usa `grid-template-columns: repeat(3, 1fr)`, mas o modal de
