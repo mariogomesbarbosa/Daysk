@@ -1,7 +1,13 @@
 # Conteúdo em largura total
 
-**Plano, não implementado.**
+**Implementado.**
 
+> Este documento é o plano, e foi mantido como foi escrito antes da
+> implementação. Onde a implementação o desmentiu, a correção está **em citação
+> dentro da própria decisão**, e o resumo está em [Desvios](#desvios). O texto
+> original fica visível de propósito — o registro do que eu supus errado vale
+> mais que um plano retroativamente correto.
+>
 > Referências a linhas valem para `ce1e9fb` (`main` no momento em que este plano
 > foi escrito). Se elas não baterem mais, busque pelo nome da classe ou da
 > função.
@@ -173,6 +179,25 @@ dos três `#view-*` ([l. 2902](../index.html:2902)), servindo as três telas. O
 O `padding-bottom: 32px` do painel é para onde vai o respiro que o `--rodape`
 dava. Ver **D10**.
 
+> **Corrigido ao implementar, e é o único erro de CSS que o plano continha.**
+> Com `padding: 24px` no topo do `.content`, **o cabeçalho grudou a y=24 e não a
+> y=0** — medido. O `top: 0` do `sticky` se resolve contra a *área de conteúdo*
+> do painel, não contra a borda dele, e o `margin-top: -24px` não compensa isso.
+> Empurrar com `top: -24px` mascararia o sintoma; a correção move o respiro:
+> `.content` fica com `padding: 0 24px 32px` e os 24px do topo passam a viver no
+> `padding` do próprio cabeçalho.
+>
+> **Segundo erro na mesma regra:** `margin: -24px -24px 0` zerava silenciosamente
+> o `margin-bottom: 1.5rem` da regra base, e `padding: 24px 24px 14px` trocava o
+> `padding-bottom` de 1.25rem por 14px — duas mudanças que eu não decidi, só
+> deixei acontecer ao escrever a propriedade inteira em vez dos lados. A
+> implementação repete os valores da base embaixo: `margin: 0 -24px 1.5rem` e
+> `padding: 24px 24px 1.25rem`.
+>
+> **Faltou no plano:** `scrollbar-gutter: stable` nos dois painéis. Travar a
+> rolagem troca `overflow: auto` por `hidden`, a barra desaparece e o conteúdo
+> salta 15px na horizontal — medido. Reservar a calha elimina o salto.
+
 ### D5 — A `brand-bar` morre no desktop sem sair do lugar no HTML
 
 ```css
@@ -223,6 +248,14 @@ Vai como primeiro filho de `<nav class="app-nav">`, `display: none` abaixo de
 1025px e `aria-hidden="true"` — é decoração, não navegação, e o `.app-nav` já é
 `flex-direction: column` no desktop, então o símbolo assenta no topo sem
 posicionamento novo.
+
+> **O plano acertou a geometria e esqueceu a cor.** As regras de preenchimento
+> das duas classes internas estavam presas ao logotipo —
+> `.brand-logo .brand-dark { fill: ... }` — e são **quatro grupos**, contando as
+> inversões de tema claro/escuro ([l. 197–207](../index.html:197)). Sem incluir a
+> `.rail-mark` nelas, o símbolo cairia no preto padrão do SVG e não inverteria
+> com o tema. Reusar as classes internas não era suficiente: era preciso reusar
+> as regras. Os quatro grupos passaram a listar os dois desenhos.
 
 ### D7 — "Sincronização" precisa ganhar um `<span>`
 
@@ -304,6 +337,23 @@ Cinco pontos põem `document.body.style.overflow = 'hidden'`:
 > Esconder o overflow do `<body>` não diz nada a um `overflow-y: auto` que é
 > outro contêiner.
 
+> **O instrumento estava errado, embora a conclusão estivesse certa.** Aquele
+> "rolou para 600px" foi obtido **atribuindo `scrollTop` por script** — e
+> atribuição por script funciona mesmo com `overflow: hidden`, que barra o
+> *usuário* (roda, toque, barra de rolagem), não o código. Ou seja: a medição
+> nunca testou o que a pessoa sente, e depois da correção ela continuava
+> "falhando" pelo mesmo motivo espúrio.
+>
+> Quem responde "o usuário consegue rolar?" é o `overflow` computado. Eventos de
+> roda sintéticos também não servem — o Chrome não rola com evento não confiável.
+> A verificação passou a comparar `getComputedStyle(painel).overflowY` antes,
+> durante e depois de cada modal, e a conferir que a posição da rolagem não salta
+> ao travar.
+>
+> A conclusão do plano seguia de pé por outro caminho: um painel com
+> `overflow-y: auto` **é** contêiner de rolagem, e o `overflow` do `<body>` não o
+> alcança. O que faltava era medir isso, não deduzi-lo.
+
 Correção: um helper único — `travarRolagem(bool)` — usado pelos cinco pontos,
 que além do `<body>` marca uma classe no `<body>`; no bloco desktop essa classe
 põe `overflow: hidden` nos dois painéis. Um mecanismo só, em vez de cinco cópias
@@ -332,11 +382,83 @@ retângulo passa a ser o `getBoundingClientRect()` dele em vez do retângulo da
 viewport. `calcularAutoRolagem()` ([l. 6149](../index.html:6149)) já recebe o
 retângulo como parâmetro e não precisa mudar.
 
+> **Uma volta a mais do que o plano previa: como decidir "o painel é quem
+> rola?".** A primeira tentativa inferiu isso de
+> `painel.scrollHeight > painel.clientHeight`, e é teste ruim nas duas pontas —
+> falso negativo quando o conteúdo cabe na tela (aí o alvo caía no
+> `scrollingElement` travado) e falso positivo por arredondamento de subpixel no
+> mobile, onde o painel não é rolador nenhum.
+>
+> A pergunta real é "o shell de painéis está ativo?", e quem responde isso é o
+> breakpoint. Ficou `ehPainel()`, um `matchMedia('(min-width: 1025px)')` — o
+> mesmo 1025px do CSS, para as duas metades não poderem discordar.
+>
+> **Medido depois:** no mês o alvo é `.content` com retângulo `x 64–1920`; na
+> semana e no 3-dias segue `#cal-scroll` com `x 88–1593`, então a grade não
+> regrediu.
+
+## Desvios
+
+Cinco. Nenhuma decisão caiu — o que caiu foram detalhes de execução e um
+instrumento de medição.
+
+| # | Onde | O que o plano dizia | O que a implementação mostrou |
+|---|---|---|---|
+| 1 | **D4** | `.content` com `padding: 24px` no topo e cabeçalho com `margin-top: -24px` | O cabeçalho grudava a **y=24, não y=0**: o `top: 0` do `sticky` se resolve contra a área de conteúdo do painel. O respiro do topo mudou de lugar |
+| 2 | **D4** | `margin: -24px -24px 0` / `padding: 24px 24px 14px` | Zerava o `margin-bottom` e trocava o `padding-bottom` da regra base — duas mudanças não decididas, só não percebidas |
+| 3 | **D4** | — | Faltou `scrollbar-gutter: stable`. Travar a rolagem sumia com a barra e saltava 15px |
+| 4 | **D6** | O símbolo reusa as classes internas do logotipo | Reusar as classes não bastava: as **quatro** regras de `fill` estavam presas a `.brand-logo`. Sem estendê-las, o símbolo ficaria preto e não inverteria com o tema |
+| 5 | **JS 2 e 3** | "Medido: o painel rolou 600px" / "o alvo passa a ser o painel" | O instrumento estava errado — `scrollTop` por script atravessa `overflow: hidden`. E decidir "o painel é quem rola" por `scrollHeight` falha nas duas pontas; ficou o mesmo `matchMedia` de 1025px do CSS |
+
+O desvio 5 é o que vale relembrar: **a conclusão certa não valida o
+instrumento.** A medição do plano mostrava um número real, mas de outra pergunta.
+
 ## Verificação
 
 Sem suíte de testes; o que dá para verificar, verificar medindo — o
 [docs/README](README.md#verificação) registra duas vezes em que a captura de tela
-sugeriu um problema que a medição desmentiu.
+sugeriu um problema que a medição desmentiu. Nesta rodada não houve captura
+nenhuma: o painel do navegador não compunha quadros, então **tudo abaixo é
+medição de geometria e de estilo computado.**
+
+### O que foi verificado, e deu certo
+
+| Verificação | Resultado |
+|---|---|
+| Geometria a 1920x1000 | rail `0–64`, sidebar `64–324`, conteúdo `324–1920`. **Vãos zerados nos dois lados** |
+| A 1280 e a 1512, nas três abas | conteúdo encosta na borda direita em todas: `324–1280` / `324–1512` no Tasks, `64–…` no Calendário e Relatórios, onde o sidebar está oculto |
+| Transbordo horizontal | nenhum, em 1280, 1512, 1920, 1025, 1024 e 375, nas três abas (`scrollWidth <= innerWidth`) |
+| Largura de painel por aba a 1920 | Tasks 1596px, Calendário e Relatórios 1856px |
+| Rolagem | `<body>` não rola; `.sidebar` e `.content` rolam sozinhos |
+| Cabeçalho fixo | gruda em `y=0` a 250px e a 600px de rolagem, e sangra 1581px = `clientWidth` do painel |
+| `switchTab()` | zera o painel nas trocas para Calendário e Relatórios |
+| Travas dos quatro modais de desktop | `overflow-y` vai `auto → hidden → auto`, nos dois painéis, e a posição da rolagem não salta |
+| Auto-rolagem do arraste | mês → `.content` (`x 64–1920`); semana e 3-dias → `#cal-scroll` (`x 88–1593`), sem regressão |
+| Cliques no rail | tema, Sincronização e os três itens de navegação medidos com `elementFromPoint` — nenhum bloqueado pelo `.app-nav`, que cobre o rail inteiro |
+| Rótulos no rail | `.btn-label` e `.btn-enviar-txt` com `display: none` |
+| Rail cheio a 1025x600 | com as três ações visíveis, **220px de folga** entre a navegação e o pé; nada sai dos 64px |
+| Tablet a 1024x900 | pílula flutuante com rótulos, `brand-bar` visível, container em 1180px, sidebar `sticky` e transparente, `<body>` rolando — **idêntico a antes** |
+| Mobile a 375x812 | barra inferior colada, `menu-btn` presente, gaveta entra na tela, e a trava dela ainda funciona pelo helper novo |
+| Dois temas | sidebar (`--surface`) distinto da página (`--bg`) e borda visível nos dois; o símbolo inverte junto com o logotipo |
+| `node tests/funcoes-puras.mjs` | 140 passaram, 0 falharam — e o harness confirma que o script principal parseia |
+
+### Uma pegadinha de medição, para não custar duas vezes
+
+`getComputedStyle(document.body).backgroundColor` **mente** durante a troca de
+tema: o `<body>` tem `transition: background .2s ease`
+([l. 118](../index.html:118)), e a leitura devolveu o valor escuro mesmo com
+`--bg` já claro e mesmo depois de 1s de espera. Não havia bug — uma sonda nova
+com `background: var(--bg)` lia o valor certo, e o `<body>` também lia certo com
+a transição desligada.
+
+Ao medir cor durante troca de tema, meça num elemento sem `transition`, ou
+desligue a dele.
+
+### O roteiro que o plano previu
+
+Mantido como foi escrito. Foi seguido, com **duas ressalvas** anotadas depois:
+o segundo item da lista de JS precisou trocar de instrumento (ver o desvio 5), e
+nada foi verificado a olho — a inspeção visual da interface **não aconteceu**.
 
 **Geometria, no console, em três larguras (1280, 1512, 1920) e nas três abas:**
 
@@ -360,6 +482,22 @@ as três abas, abrir a gaveta, e conferir que a `brand-bar` está lá com o
 
 **Os dois temas**, porque o **D3** introduz `--surface` numa superfície que
 antes era `--bg`, e o contraste da borda entre painéis é diferente nos dois.
+
+### O que NÃO foi verificado
+
+**Nada foi visto.** O painel do navegador não compunha quadros, então não houve
+uma única captura de tela. Tudo que este documento afirma vem de geometria e de
+estilo computado, e há coisas que só o olho pega:
+
+- Se o rail com símbolo no topo e duas ou três ações no pé **parece** equilibrado.
+- Se o contraste entre o painel branco e a página `#F5F6F8` no tema claro é
+  suficiente, ou se a borda é a única coisa separando os dois.
+- Se a linha de tarefa a 1596px **incomoda** na prática — é a D9, e é a decisão
+  mais fácil de reverter.
+- O arraste de verdade, com o ponteiro: a auto-rolagem foi verificada no *alvo e
+  no retângulo*, não arrastando.
+
+Isto entra em [pendencias.md](pendencias.md).
 
 ## O que fica fora
 
