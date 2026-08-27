@@ -418,6 +418,50 @@ rodadas de medição passaram e o olho pegou de primeira. O que falta é barato:
 abrir em 1440px e olhar o espaçamento dos três ícones, o peso do indicador de
 3px e o alinhamento do rail com a `brand-bar`.
 
+## Painéis em largura total: medido, não visto (de novo)
+
+Terceira ocorrência da mesma dívida, e vale dizer sem rodeio: **o shell de
+painéis foi verificado inteiramente por medição, sem uma única captura de tela.**
+O pane do navegador ficou oculto a sessão inteira. Ver
+[conteudo-em-largura-total.md](conteudo-em-largura-total.md#o-que-não-foi-verificado).
+
+O que a medição cobriu está listado lá e é bastante: geometria nas seis larguras,
+`elementFromPoint` nos cinco botões do rail, `overflow` computado nas quatro
+travas de modal, alvo e retângulo da auto-rolagem nas três visões do calendário,
+mobile e tablet inalterados, e os dois temas.
+
+O que só o olho pega, e continua em aberto:
+
+- Se o rail equilibra símbolo no topo com duas ou três ações no pé — o "Enviar
+  agora" é intermitente, então o pé tem duas formas.
+- Se no tema claro o painel branco se separa o bastante da página `#F5F6F8`, ou
+  se a borda de `#E3E6EA` está fazendo esse trabalho sozinha.
+- Se a linha de tarefa a 1596px incomoda de fato. É a **D9**, escolhida com o
+  custo à vista, e a reversão é de uma linha.
+- O arraste com o ponteiro de verdade. A auto-rolagem foi verificada no alvo e no
+  retângulo; ninguém arrastou nada.
+
+## Rail do desktop: as ações agora divergem entre tela e DOM
+
+Consequência nova do `display: contents` na `brand-bar`. As três ações (Enviar
+agora, Sincronização, tema) aparecem no **pé do rail, embaixo à esquerda**, e
+continuam sendo dos **primeiros elementos do HTML** — vinham da barra do topo, que
+foi dissolvida sem mover nenhum nó.
+
+**Medido** a 1920x1000, com o modo de sincronização em cache: a ordem de foco
+começa em `Sincronização` (10, 890) e no botão de tema (10, 940) — os dois no pé
+da tela — e só então chega em "Hoje" (76, 20). Com o Drive conectado, "Enviar
+agora" entra antes desses dois. Antes não havia divergência: a barra era
+visualmente no topo e primeira no DOM.
+
+É a **mesma causa** da pendência de ordem de `Tab` do rail, logo acima, e tem a
+mesma cura: um container comum onde a ordem visual seja dada por `order`, em vez
+de por `fixed` sobre um nó que ficou onde estava. As duas devem ser resolvidas
+juntas, não uma de cada vez.
+
+O que segura por enquanto é que os três botões têm `title` e `aria-label`, e que
+a região é alcançável por landmark.
+
 ## Cosmético, pré-existente
 
 `.context-selector` usa `grid-template-columns: repeat(3, 1fr)`, mas o modal de
