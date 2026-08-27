@@ -26,6 +26,7 @@ o *porquê* delas.
 | [instalacao-android.md](instalacao-android.md) | Por que o atalho não abria, e o que instalar como app custou à arquitetura |
 | [enviar-agora-e-o-descarte-silencioso.md](enviar-agora-e-o-descarte-silencioso.md) | Com que frequência o Drive recebe upload, o bug que descarta gravações, e o botão manual |
 | [sessao-do-google-expirando.md](sessao-do-google-expirando.md) | Por que todo envio ao Drive dizia "sessão expirada", e as três causas encadeadas |
+| [menu-lateral-no-desktop.md](menu-lateral-no-desktop.md) | **Plano, não implementado.** A navbar inferior virando coluna fixa à esquerda no desktop, e por que o mobile não é tocado |
 | [pendencias.md](pendencias.md) | Ressalvas conhecidas, incluindo o que foi para `main` sem verificação visual |
 
 ## Estado atual
