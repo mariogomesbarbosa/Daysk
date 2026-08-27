@@ -1333,6 +1333,92 @@
     }
   }
 
+  /* No desktop a navegação deixa de flutuar no rodapé e vira COLUNA FIXA à
+     esquerda — o rail do TickTick.
+
+     As duas colunas laterais não competem, elas empilham: o rail responde "em
+     que parte do app eu estou" e o .sidebar responde "que recorte de tarefas
+     eu estou vendo".
+
+     O corte é 1025px e NÃO os 860px que o resto da folha usa. Aquela fronteira
+     separa telefone de tudo mais, e entre 861px e 1024px a navegação já é a
+     pílula — que é justamente o que um tablet vê hoje. iPad em retrato tem
+     1024px CSS e fica de fora de propósito.
+
+     Nada acima daqui foi editado para isto funcionar: o estilo da pílula é o
+     estilo BASE, sem media query, e todo o mobile vive em blocos de 860px que
+     nunca casam junto com este. Ver docs/menu-lateral-no-desktop.md. */
+  @media (min-width: 1025px) {
+    :root {
+      --rail: 64px;
+      /* Os 96px existiam só para a pílula não cobrir o fim da página. Sem
+         pílula viram espaço morto. Aqui o único consumidor de --rodape é o
+         padding do body — os outros três estão em blocos de 860px. */
+      --rodape: 2rem;
+    }
+
+    /* O espaço do rail é aberto com padding, não com grid: assim a matemática
+       de todo elemento `fixed` continua valendo, inclusive a do .cal-ghost, que
+       é posicionado pelas coordenadas do ponteiro durante o arraste.
+       O 1rem é a mesma goteira que o padding lateral do body já pratica. */
+    body { padding-left: calc(var(--rail) + 1rem); }
+
+    .app-nav {
+      left: 0;
+      top: 0;
+      bottom: auto;
+      height: 100vh;
+      width: var(--rail);
+      transform: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      padding: 20px 8px;
+      /* Raio e sombra existem porque a pílula flutua. Uma coluna fixa é
+         estrutura, não objeto solto sobre o conteúdo. */
+      border-radius: 0;
+      border: none;
+      border-right: 1px solid var(--border);
+      box-shadow: none;
+    }
+
+    .nav-item {
+      position: relative;
+      justify-content: center;
+      width: 44px;
+      height: 44px;
+      padding: 0;
+      border-radius: var(--radius-sm);
+    }
+
+    /* Só ícone. Os três botões já têm title e aria-label, então o tooltip e o
+       leitor de tela continuam servidos. A 64px não há largura para o rótulo,
+       e alargar o rail para caber "Calendário" custaria ~200px que somariam
+       460px de colunas laterais com o sidebar. */
+    .nav-label { display: none; }
+
+    /* O ativo NÃO pode ser o bloco sólido da pílula. Colado ao .sidebar, "qual
+       área do app" ficaria visualmente mais selecionado que "qual lista" —
+       hierarquia invertida. Reusa a linguagem do .sidebar-item.active e marca a
+       escolha com uma barra na borda, que é vocabulário de coluna. */
+    .nav-item.active {
+      background: var(--surface2);
+      color: var(--text);
+    }
+
+    .nav-item.active::before {
+      content: '';
+      position: absolute;
+      left: -8px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 3px;
+      height: 20px;
+      border-radius: 0 2px 2px 0;
+      background: var(--accent);
+    }
+  }
+
   /* No mobile a coluna vira BANDEJA INFERIOR.
 
      Antes ela "ia para baixo" — e ia mesmo: medido a 375x812, o <aside> caía a
