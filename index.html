@@ -195,16 +195,27 @@
   }
 
   .brand-logo { display: block; height: 26px; width: auto; }
-  .brand-logo .brand-dark { fill: #394149; }
-  .brand-logo .brand-light { fill: #FFFFFF; }
+
+  /* As quatro regras de preenchimento valem para os DOIS desenhos da marca: o
+     logotipo da brand-bar e o símbolo do rail. Estavam presas a .brand-logo, e
+     a .rail-mark reusa as mesmas classes internas — sem incluí-la aqui o
+     símbolo cairia no preto padrão do SVG e inverteria errado no tema escuro. */
+  .brand-logo .brand-dark,
+  .rail-mark .brand-dark { fill: #394149; }
+  .brand-logo .brand-light,
+  .rail-mark .brand-light { fill: #FFFFFF; }
 
   @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) .brand-logo .brand-dark { fill: #FFFFFF; }
-    :root:not([data-theme="light"]) .brand-logo .brand-light { fill: #394149; }
+    :root:not([data-theme="light"]) .brand-logo .brand-dark,
+    :root:not([data-theme="light"]) .rail-mark .brand-dark { fill: #FFFFFF; }
+    :root:not([data-theme="light"]) .brand-logo .brand-light,
+    :root:not([data-theme="light"]) .rail-mark .brand-light { fill: #394149; }
   }
 
-  [data-theme="dark"] .brand-logo .brand-dark { fill: #FFFFFF; }
-  [data-theme="dark"] .brand-logo .brand-light { fill: #394149; }
+  [data-theme="dark"] .brand-logo .brand-dark,
+  [data-theme="dark"] .rail-mark .brand-dark { fill: #FFFFFF; }
+  [data-theme="dark"] .brand-logo .brand-light,
+  [data-theme="dark"] .rail-mark .brand-light { fill: #394149; }
 
   /* Header */
   .page-header {
@@ -299,6 +310,14 @@
   .nav-item.active { background: var(--accent); color: var(--on-accent); }
 
   .nav-item:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* Só o símbolo da marca, no topo do rail. Existe como elemento próprio porque
+     CSS não recorta viewBox: o logotipo da brand-bar tem viewBox de 190x50 e
+     inclui as letras "Daysk", que a 64px não cabem. O símbolo é autocontido nos
+     primeiros 50x50 daquele desenho, então este SVG é o mesmo traçado com
+     viewBox="0 0 50 50" — não é geometria nova.
+     Fora do rail não tem função: só aparece no bloco de 1025px. */
+  .rail-mark { display: none; }
 
   /* Sidebar */
   .sidebar {
@@ -1352,16 +1371,187 @@
     :root {
       --rail: 64px;
       /* Os 96px existiam só para a pílula não cobrir o fim da página. Sem
-         pílula viram espaço morto. Aqui o único consumidor de --rodape é o
-         padding do body — os outros três estão em blocos de 860px. */
+         pílula viram espaço morto.
+         Desde os painéis, --rodape não governa mais nada NO DESKTOP: o padding
+         do body era seu último consumidor aqui e foi a zero, e o respiro do fim
+         da lista virou o padding-bottom do .content. A declaração fica porque a
+         variável carrega o mobile, onde é a altura que a barra inferior
+         reserva. */
       --rodape: 2rem;
     }
 
-    /* O espaço do rail é aberto com padding, não com grid: assim a matemática
-       de todo elemento `fixed` continua valendo, inclusive a do .cal-ghost, que
-       é posicionado pelas coordenadas do ponteiro durante o arraste.
-       O 1rem é a mesma goteira que o padding lateral do body já pratica. */
-    body { padding-left: calc(var(--rail) + 1rem); }
+    /* O <body> deixa de rolar, e a rolagem passa a ser de cada painel. É a
+       decisão de fundo do shell de três colunas, e é de onde saem as três
+       correções de JS que vieram com ela — switchTab(), travarRolagem() e a
+       auto-rolagem do arraste no mês. Ver docs/conteudo-em-largura-total.md.
+
+       O padding continua abrindo o espaço do rail por padding e não por grid,
+       para a matemática de todo elemento `fixed` seguir valendo — em especial a
+       do .cal-ghost, posicionado pelas coordenadas do ponteiro durante o
+       arraste. O que morreu foi a goteira de 1rem: ela ERA o vão entre o rail e
+       o sidebar, e "colado" significa exatamente não ter esse vão. */
+    body {
+      padding: 0 0 0 var(--rail);
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* O teto centralizado de 1180px era o vão. Medido antes, a 1920x1000: o
+       rail terminava em 64 e o sidebar só começava em 402, e o conteúdo parava
+       em 1570 numa tela de 1920 — 688px, 36% da tela, sem uso.
+       O teto só mordia acima de 1276px de janela, então nenhuma regra abaixo de
+       1025px dependia dele. */
+    .container {
+      max-width: none;
+      margin: 0;
+      height: 100%;
+    }
+
+    /* gap: 0 no lugar dos 28px — a separação passa a ser a borda do painel e
+       não espaço vazio.
+       min-height: 0 nos dois painéis não é enfeite: item de grid tem mínimo
+       automático de min-content, e sem ele o painel cresce além da célula em vez
+       de rolar dentro dela. */
+    .app-shell {
+      grid-template-columns: 260px minmax(0, 1fr);
+      gap: 0;
+      height: 100%;
+    }
+
+    /* Calendário e Relatórios: uma coluna, a largura inteira. As duas variantes
+       base convergem aqui — sem sidebar não há o que dividir, e o teto de 880px
+       que uma delas ainda impunha deixa de existir. */
+    body.no-sidebar .app-shell,
+    body.no-sidebar.wide-content .app-shell {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    /* O sidebar vira PAINEL, e nenhuma linguagem visual nova é inventada:
+       --surface + border-right é literalmente o que a gaveta do mobile já usa.
+       A gaveta já era este painel; o desktop passa a mostrá-la aberta e fixa.
+
+       O position: static anula o `sticky; top: 2rem` da regra base — num painel
+       de altura total não há o que grudar. O padding interno é obrigatório e não
+       estético: sem ele os itens encostariam na borda do rail e no divisor, e
+       "colado" viraria "grudado". */
+    .sidebar {
+      position: static;
+      align-self: stretch;
+      min-height: 0;
+      overflow-y: auto;
+      scrollbar-gutter: stable;
+      padding: 20px 12px;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+    }
+
+    .content {
+      min-height: 0;
+      overflow-y: auto;
+      /* Reserva a calha da barra de rolagem. Sem isto, travar a rolagem ao abrir
+         um modal some com a barra e o conteúdo salta na horizontal. */
+      scrollbar-gutter: stable;
+      /* Sem padding EM CIMA de propósito: o respiro do topo é do .page-header, e
+         mora nele. Com padding-top aqui, o cabeçalho grudava a 24px em vez de 0 —
+         medido — porque o `top: 0` do sticky se resolve contra a área de conteúdo
+         do painel, e não contra a borda dele. Empurrar com `top: -24px` mascararia
+         o sintoma; mover o respiro resolve a causa. */
+      padding: 0 24px 32px;
+    }
+
+    /* O cabeçalho fixo do painel. Ele já servia às três telas por viver fora dos
+       #view-* no HTML, então não precisou sair do lugar.
+       O fundo opaco é obrigatório: sem ele o conteúdo rolaria visível por baixo.
+       As margens negativas laterais sangram até as bordas do painel — sem elas
+       sobrariam duas frestas de 24px por onde o conteúdo apareceria ao rolar.
+       A margem e o padding de baixo repetem os da regra base: quem muda de valor
+       aqui é só o topo e as laterais. */
+    .page-header {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      margin: 0 -24px 1.5rem;
+      padding: 24px 24px 1.25rem;
+      background: var(--bg);
+    }
+
+    /* Com o <body> sem rolagem, esconder o overflow DELE não diz nada aos
+       painéis, que são outros contêineres roláveis — medido: o painel rolava
+       600px com a trava ativa. A trava passa a alcançá-los por esta classe, que
+       travarRolagem() põe no <body>. */
+    body.rolagem-travada .sidebar,
+    body.rolagem-travada .content { overflow: hidden; }
+
+    /* A brand-bar morre aqui — mas sem sair do lugar no HTML. `display:
+       contents` dissolve a barra e deixa .brand-actions escapar para ser fixada
+       no pé do rail. Isso importa por três razões concretas:
+
+       1. Os botões guardam seus id, e os handlers que os leem (updateSyncUI e o
+          toggle de tema) continuam achando o que buscam.
+       2. Não há duplicata. Duplicar os botões no rail significaria id repetido,
+          que é bug garantido nesses dois pontos.
+       3. O mobile fica intacto POR CONSTRUÇÃO: a barra só se dissolve dentro
+          deste bloco, e abaixo dele segue a mesma, com o menu-btn da gaveta.
+
+       Fecha a D2 do PR #36, que registrou isto como "um segundo PR isolado". */
+    .brand-bar { display: contents; }
+
+    /* O logotipo com as letras tem viewBox de 190x50 e não cabe a 64px, e o
+       menu-btn é da gaveta do mobile. Quem representa a marca aqui é a
+       .rail-mark, que é só o símbolo. */
+    .brand-left { display: none; }
+
+    .brand-actions {
+      position: fixed;
+      left: 0;
+      bottom: 0;
+      width: var(--rail);
+      flex-direction: column;
+      gap: 6px;
+      padding: 8px 0 16px;
+      /* Acima do .app-nav (90), que cobre o rail inteiro com height: 100vh. */
+      z-index: 91;
+    }
+
+    /* As ações viram a mesma caixa do .nav-item: 44x44, sem borda e sem fundo.
+       No rail elas são estrutura, não botões soltos sobre conteúdo. */
+    .brand-actions .btn-add,
+    .brand-actions .theme-toggle {
+      justify-content: center;
+      width: 44px;
+      height: 44px;
+      padding: 0;
+      color: var(--text2);
+      background: none;
+      border: none;
+      border-radius: var(--radius-sm);
+    }
+
+    .brand-actions .btn-add:hover,
+    .brand-actions .theme-toggle:hover {
+      color: var(--text);
+      background: var(--surface2);
+    }
+
+    /* Os rótulos não cabem. O title de cada botão continua servindo o tooltip —
+       e no "Enviar agora" ele é dinâmico e carrega "último envio há X" ou a
+       falha, então ícone sem rótulo não perde informação aqui. */
+    .brand-actions .btn-enviar-txt,
+    .brand-actions .btn-label { display: none; }
+
+    /* O erro do envio era uma borda vermelha, e no rail não há borda. Passa a se
+       expressar no ícone. */
+    .brand-actions .btn-enviar.erro {
+      color: var(--red);
+      border: none;
+    }
+
+    .rail-mark {
+      display: block;
+      width: 30px;
+      height: 30px;
+      margin-bottom: 12px;
+    }
 
     .app-nav {
       left: 0;
@@ -2852,7 +3042,10 @@
       </button>
       <button class="btn-add btn-secondary" onclick="openSyncManager()" title="Modo de Sincronização">
         <svg class="icon" width="14" height="14" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M224,48V96a8,8,0,0,1-8,8H168a8,8,0,0,1,0-16h28.69L182.06,73.37a79.56,79.56,0,0,0-56.13-23.43h-.45A79.52,79.52,0,0,0,69.59,72.71,8,8,0,0,1,58.41,61.27a96,96,0,0,1,135,.79L208,76.69V48a8,8,0,0,1,16,0ZM186.41,183.29a80,80,0,0,1-112.47-.66L59.31,168H88a8,8,0,0,0,0-16H40a8,8,0,0,0-8,8v48a8,8,0,0,0,16,0V179.31l14.63,14.63A95.43,95.43,0,0,0,130,222.06h.53a95.36,95.36,0,0,0,67.07-27.33,8,8,0,0,0-11.18-11.44Z"/></svg>
-        Sincronização
+        <!-- O rótulo precisa de elemento próprio porque CSS não esconde nó de
+             texto solto, e no rail ele não cabe. Mesmo padrão do
+             .btn-enviar-txt, que já existia para isto no botão ao lado. -->
+        <span class="btn-label">Sincronização</span>
       </button>
       <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" title="Alternar tema" aria-label="Alternar tema claro/escuro"></button>
     </div>
@@ -3198,6 +3391,13 @@
 </div>
 
 <nav class="app-nav" aria-label="Navegação principal">
+  <!-- Decoração, não navegação: aria-hidden de propósito. O nome do app já é
+       anunciado pelo <title> e pelo logotipo da brand-bar no mobile. -->
+  <svg class="rail-mark" viewBox="0 0 50 50" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+    <rect class="brand-dark" width="50" height="50" rx="10"/>
+    <path class="brand-light" d="M39 25L21 39L11 39L11 31.72L18.3333 31.72L31 21.6704L31 18.28L11 18.28L11 11L39 11L39 25Z"/>
+    <rect class="brand-light" x="39" y="31.1599" width="7.84" height="7.84" transform="rotate(90 39 31.1599)"/>
+  </svg>
   <button class="nav-item active" data-tab="today" onclick="switchTab('today')" aria-current="page" aria-label="Tasks" title="Tasks">
     <svg class="icon" width="18" height="18" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M224,128a8,8,0,0,1-8,8H128a8,8,0,0,1,0-16h88A8,8,0,0,1,224,128ZM128,72h88a8,8,0,0,0,0-16H128a8,8,0,0,0,0,16Zm88,112H128a8,8,0,0,0,0,16h88a8,8,0,0,0,0-16ZM82.34,42.34,56,68.69,45.66,58.34A8,8,0,0,0,34.34,69.66l16,16a8,8,0,0,0,11.32,0l32-32A8,8,0,0,0,82.34,42.34Zm0,64L56,132.69,45.66,122.34a8,8,0,0,0-11.32,11.32l16,16a8,8,0,0,0,11.32,0l32-32a8,8,0,0,0-11.32-11.32Zm0,64L56,196.69,45.66,186.34a8,8,0,0,0-11.32,11.32l16,16a8,8,0,0,0,11.32,0l32-32a8,8,0,0,0-11.32-11.32Z"/></svg>
     <span class="nav-label">Tasks</span>
@@ -4448,13 +4648,13 @@
     syncManagerOpen = true;
     updateSyncUI();
     document.getElementById('sync-overlay').classList.add('open');
-    document.body.style.overflow = 'hidden';
+    travarRolagem(true);
   }
 
   function closeSyncManager() {
     syncManagerOpen = false;
     document.getElementById('sync-overlay').classList.remove('open');
-    document.body.style.overflow = '';
+    travarRolagem(false);
   }
 
   function toDateStr(d) {
@@ -4868,14 +5068,14 @@
     renderProjectsManager();
     document.getElementById('new-proj-name').value = '';
     document.getElementById('projects-overlay').classList.add('open');
-    document.body.style.overflow = 'hidden';
+    travarRolagem(true);
   }
 
   function closeProjectsManager() {
     projectsManagerOpen = false;
     editingProjectId = null;
     document.getElementById('projects-overlay').classList.remove('open');
-    document.body.style.overflow = '';
+    travarRolagem(false);
   }
 
   /* ---------- form / tabs ---------- */
@@ -4883,14 +5083,14 @@
   function openFormPanel() {
     formOpen = true;
     document.getElementById('form-overlay').classList.add('open');
-    document.body.style.overflow = 'hidden';
+    travarRolagem(true);
     setTimeout(() => document.getElementById('f-name').focus(), 50);
   }
 
   function closeForm() {
     formOpen = false;
     document.getElementById('form-overlay').classList.remove('open');
-    document.body.style.overflow = '';
+    travarRolagem(false);
     toggleNewProject(false);
     editingId = null;
   }
@@ -4937,6 +5137,47 @@
     render();
   }
 
+  /* ---------- rolagem ---------- */
+
+  /* Quem rola depende da largura, e desde os painéis do desktop isso deixou de
+     ser detalhe. Abaixo de 1025px rola a página; acima, rolam o .sidebar e o
+     .content, cada um por conta própria. Estas duas funções existem para que
+     nenhum ponto do app precise saber em qual dos dois mundos está.
+
+     Ver docs/conteudo-em-largura-total.md — as três consequências foram medidas
+     antes de serem corrigidas, e esta é a resposta a duas delas. */
+
+  /* O mesmo 1025px do CSS, e não uma inferência a partir de scrollHeight: a
+     pergunta é "o shell de painéis está ativo?", e quem responde isso é o
+     breakpoint. Medir o transbordo daria falso negativo quando o conteúdo cabe
+     na tela, e falso positivo por arredondamento de subpixel. */
+  const ehPainel = () => matchMedia('(min-width: 1025px)').matches;
+
+  const painelDeRolagem = () => (ehPainel() ? document.querySelector('.content') : null);
+
+  /* Volta ao topo. `window.scrollTo` sozinho não serve no desktop: medido, o
+     painel ficava onde estava (900px) porque o <body> não é mais quem rola. E
+     zerar só o painel não serve no mobile, onde é a página que rola. Faz os
+     dois — cada um é inócuo no mundo do outro. */
+  function voltarAoTopo() {
+    const painel = painelDeRolagem();
+    if (painel) painel.scrollTop = 0;
+    window.scrollTo({ top: 0 });
+  }
+
+  /* Trava a rolagem sob um modal. `body.style.overflow = 'hidden'` sozinho não
+     serve no desktop: medido, o painel atrás do modal rolava 600px, porque
+     esconder o overflow do <body> não diz nada a um contêiner que tem rolagem
+     própria. A classe alcança os painéis pelo CSS do bloco de 1025px.
+
+     Um mecanismo só, usado pelos cinco pontos que abrem sobreposição — inclusive
+     a gaveta do mobile, que não precisaria da classe. Uniformizar custa nada e
+     evita a pergunta "por que este é diferente". */
+  function travarRolagem(travar) {
+    document.body.style.overflow = travar ? 'hidden' : '';
+    document.body.classList.toggle('rolagem-travada', travar);
+  }
+
   /* ---------- sidebar (gaveta no mobile) ---------- */
 
   let sidebarOpen = false;
@@ -4946,7 +5187,7 @@
     document.getElementById('sidebar').classList.add('open');
     document.getElementById('sidebar-backdrop').classList.add('open');
     document.getElementById('menu-btn').setAttribute('aria-expanded', 'true');
-    document.body.style.overflow = 'hidden';
+    travarRolagem(true);
   }
 
   function closeSidebar() {
@@ -4955,7 +5196,7 @@
     document.getElementById('sidebar').classList.remove('open');
     document.getElementById('sidebar-backdrop').classList.remove('open');
     document.getElementById('menu-btn').setAttribute('aria-expanded', 'false');
-    document.body.style.overflow = '';
+    travarRolagem(false);
   }
 
   /* Os presets escrevem no campo de data; o estado ativo é derivado dele,
@@ -5074,13 +5315,13 @@
     syncDurHint('sched-time', 'sched-end', 'sched-hint');
     syncSchedPresetButtons();
     document.getElementById('schedule-overlay').classList.add('open');
-    document.body.style.overflow = 'hidden';
+    travarRolagem(true);
   }
 
   function closeScheduleModal() {
     schedulingTaskId = null;
     document.getElementById('schedule-overlay').classList.remove('open');
-    document.body.style.overflow = '';
+    travarRolagem(false);
   }
 
   function setSchedDatePreset(preset) {
@@ -5134,7 +5375,7 @@
     sincronizarBandeja();
     sincronizarFaixaDeToque();
     updateHeader();
-    window.scrollTo({ top: 0 });
+    voltarAoTopo();
     if (tab === 'report') renderReport(); else render();
   }
 
@@ -6181,12 +6422,25 @@
     const passo = () => {
       const pos = lerPonteiro();
       if (!pos) { autoRolagem = null; return; }
-      // Na grade de horas rola o contêiner; na visão de mês, a página.
+      /* Na grade de horas rola o contêiner da grade; na visão de mês, quem
+         rola por fora.
+
+         E "quem rola por fora" mudou com os painéis do desktop: era
+         `document.scrollingElement`, e no desktop ele está travado em 0 desde
+         que o <body> ganhou `overflow: hidden` — medido, arrastar até a borda
+         no mês parou de rolar. Agora o alvo é o painel .content quando ele é
+         quem rola, e a página quando não é (mobile e tablet).
+
+         O retângulo acompanha o alvo. Com o painel, ele é o retângulo DELE e
+         não o da viewport: no desktop o painel começa depois do rail e do
+         sidebar, e usar a viewport punha a zona de auto-rolagem 324px fora de
+         lugar na esquerda. */
       const box = document.getElementById('cal-scroll');
       const usaCaixa = box && calendarView !== 'month' && box.offsetParent !== null;
-      const alvo = usaCaixa ? box : document.scrollingElement;
-      const r = usaCaixa
-        ? box.getBoundingClientRect()
+      const painel = painelDeRolagem();
+      const alvo = usaCaixa ? box : (painel || document.scrollingElement);
+      const r = usaCaixa || painel
+        ? alvo.getBoundingClientRect()
         : { left: 0, top: 0, right: innerWidth, bottom: innerHeight };
       const { dx, dy } = calcularAutoRolagem(pos.x, pos.y, r);
       if (dx) alvo.scrollLeft += dx;

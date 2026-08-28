@@ -2,8 +2,13 @@
 
 **Plano, não implementado.**
 
-> Referências a linhas valem para `ce1e9fb` (`main` no momento em que este plano
-> foi escrito). Se não baterem mais, busque pelo nome da função ou da classe.
+> Referências a linhas valem para `207369c` (`main` depois do PR #38). Se não
+> baterem mais, busque pelo nome da função ou da classe.
+>
+> O plano foi escrito contra `ce1e9fb` e reconferido contra `207369c` antes de
+> ser mergeado, porque o shell de painéis de
+> [conteudo-em-largura-total.md](conteudo-em-largura-total.md) entrou no meio.
+> Nenhuma decisão caiu; o que mudou está em **D11**, **D13** e **D21**.
 >
 > Este documento é o plano. Quando a implementação desmentir alguma decisão, a
 > correção entra **em citação dentro da própria decisão**, e o resumo vai para
@@ -36,23 +41,25 @@ Tudo verificado no fonte, não suposto.
 
 | Peça | Onde | O que significa para este plano |
 |---|---|---|
-| `fecharSessao(t, agora)` | [l. 4599](../index.html:4599) | **O único lugar do arquivo** que soma em `elapsed` e grava sessão. É o ponto único de mudança do registro |
-| `effectiveElapsed(t)` | [l. 4579](../index.html:4579) | Soma `elapsed` + o trecho aberto quando `active` |
-| `sessoesDe(t, agora)` / `msPorDia(sessoes)` | [l. 4615](../index.html:4615) e [l. 4635](../index.html:4635) | Os leitores do recorte por dia. `msPorDia` reparte trechos que atravessam a meia-noite |
-| `startTask` / `pauseTask` / `completeTask` | [l. 5156](../index.html:5156) | O ciclo manual. `startTask` já garante **uma tarefa ativa por vez** |
-| `actionButtons(t)` | [l. 5203](../index.html:5203) | Monta os botões da linha por `status`. É onde o `play` vira cronômetro |
-| `tick()` | [l. 7238](../index.html:7238) | `setInterval` de 1s que atualiza **só nós pontuais**. Nunca re-renderiza — a disciplina a manter |
-| `render()` | [l. 5451](../index.html:5451) | Roda a cada 60s (`setInterval(render, 60000)`) |
-| `VIEWS` / `switchTab` | [l. 5112](../index.html:5112) e [l. 5114](../index.html:5114) | Três abas hoje; alterna `.nav-item`, `no-sidebar` e `wide-content` |
-| `<nav class="app-nav">` | [l. 3200](../index.html:3200) | Rail no desktop (PR #36), barra de borda a borda abaixo de 860px, `z-index: 93` |
-| `ICON_PATHS` / `icon(name, size)` | [l. 3424](../index.html:3424) | Sete ícones hoje. Novos entram aqui |
-| `.form-overlay` | [l. 1625](../index.html:1625), usos em [3215](../index.html:3215), [3266](../index.html:3266), [3301](../index.html:3301), [3319](../index.html:3319) | O padrão de modal do app. O de Configurações de foco é o quinto |
-| `startDrag(id, ev, origem)` | [l. 6234](../index.html:6234) | O arraste do Calendário: pointer capture, auto-rolagem, engolir o clique seguinte. **Referência de padrão, não de reuso** |
-| `renderTimeGrid` / `CAL_HOUR_H` | [l. 5801](../index.html:5801) e [l. 5510](../index.html:5510) | A grade de horas do Calendário, com ids fixos (`cal-cols`, `cal-ruler`, `cal-allday`) |
-| `mergeSyncData(tasksJson, projectsJson)` | [l. 3630](../index.html:3630) | Dois arquivos, fusão por id, **remoto vence menos em `sessions`** |
-| `writeToFolder` / `loadFromFolder` | [l. 3610](../index.html:3610) e [l. 3684](../index.html:3684) | Gravam e leem `tasks.json` e `projects.json` |
-| `writeToGoogleDrive` / `loadFromGoogleDrive` | [l. 3989](../index.html:3989) e [l. 4087](../index.html:4087) | Idem, via `writeGDriveFile` / `readGDriveFile` |
-| `migrate()` | [l. 4666](../index.html:4666) | Cria sessões **sintéticas** (`sintetica: true`) ancoradas ao meio-dia para tarefas antigas |
+| `fecharSessao(t, agora)` | [l. 4799](../index.html:4799) | **O único lugar do arquivo** que soma em `elapsed` e grava sessão. É o ponto único de mudança do registro |
+| `effectiveElapsed(t)` | [l. 4779](../index.html:4779) | Soma `elapsed` + o trecho aberto quando `active` |
+| `sessoesDe(t, agora)` / `msPorDia(sessoes)` | [l. 4815](../index.html:4815) e [l. 4835](../index.html:4835) | Os leitores do recorte por dia. `msPorDia` reparte trechos que atravessam a meia-noite |
+| `startTask` / `pauseTask` / `completeTask` | [l. 5397](../index.html:5397) | O ciclo manual. `startTask` já garante **uma tarefa ativa por vez** |
+| `actionButtons(t)` | [l. 5444](../index.html:5444) | Monta os botões da linha por `status`. É onde o `play` vira cronômetro |
+| `tick()` | [l. 7492](../index.html:7492) | `setInterval` de 1s que atualiza **só nós pontuais**. Nunca re-renderiza — a disciplina a manter |
+| `render()` | [l. 5692](../index.html:5692) | Roda a cada 60s (`setInterval(render, 60000)`) |
+| `VIEWS` / `switchTab` | [l. 5353](../index.html:5353) e [l. 5355](../index.html:5355) | Três abas hoje; alterna `.nav-item`, `no-sidebar` e `wide-content`, e chama `voltarAoTopo()` |
+| `voltarAoTopo()` / `travarRolagem(travar)` | [l. 5162](../index.html:5162) e [l. 5176](../index.html:5176) | **Vieram com o PR #38.** No desktop quem rola é o painel, não o `<body>` — ver **D21** |
+| `<nav class="app-nav">` | [l. 3393](../index.html:3393) | Rail no desktop (PR #36), barra de borda a borda abaixo de 860px, `z-index: 93` ([l. 1333](../index.html:1333)) |
+| `ICON_PATHS` / `icon(name, size)` | [l. 3624](../index.html:3624) | Sete ícones hoje. Novos entram aqui |
+| `.form-overlay` | [l. 1815](../index.html:1815), usos em [3415](../index.html:3415), [3466](../index.html:3466), [3501](../index.html:3501), [3519](../index.html:3519) | O padrão de modal do app, `z-index: 100`. O de Configurações de foco é o quinto |
+| `startDrag(id, ev, origem)` | [l. 6488](../index.html:6488) | O arraste do Calendário: pointer capture, auto-rolagem, engolir o clique seguinte. **Referência de padrão, não de reuso** |
+| `renderTimeGrid` / `CAL_HOUR_H` | [l. 6042](../index.html:6042) e [l. 5751](../index.html:5751) | A grade de horas do Calendário, com ids fixos (`cal-cols`, `cal-ruler`, `cal-allday`) |
+| `mergeSyncData(tasksJson, projectsJson)` | [l. 3830](../index.html:3830) | Dois arquivos, fusão por id, **remoto vence menos em `sessions`** |
+| `writeToFolder` / `loadFromFolder` | [l. 3810](../index.html:3810) e [l. 3884](../index.html:3884) | Gravam e leem `tasks.json` e `projects.json` |
+| `writeToGoogleDrive` / `loadFromGoogleDrive` / `enviarAgora` | [l. 4189](../index.html:4189), [l. 4287](../index.html:4287), [l. 4224](../index.html:4224) | Idem, via `writeGDriveFile` / `readGDriveFile` |
+| `migrate()` | [l. 4866](../index.html:4866) | Cria sessões **sintéticas** (`sintetica: true`) ancoradas ao meio-dia para tarefas antigas |
+| Shell de painéis, ≥1025px | [l. 1370](../index.html:1370) em diante | `<body>` com `height: 100vh; overflow: hidden`; quem rola é `.sidebar` e `.content`. `.page-header` é `sticky` dentro do painel, `z-index: 10` |
 
 ### A consequência boa disso
 
@@ -246,9 +253,17 @@ em **B5**; até lá é uma ressalva conhecida.
 A ordem espelha o rail do TickTick (tarefas → calendário → foco → estatísticas) e
 põe o Pomodoro adjacente ao Calendário, que é o que a tela em execução mostra.
 
-`switchTab` liga `no-sidebar` (a aba não usa os baldes) e `wide-content` (é uma
-tela de duas colunas, como o Calendário). `updateHeader()` ganha o ramo
-`'pomodoro'`.
+`switchTab` liga `no-sidebar` (a aba não usa os baldes) e `wide-content`, os
+mesmos dois que o Calendário e os Relatórios já ligam. `updateHeader()`
+([l. 5488](../index.html:5488)) ganha o ramo `'pomodoro'`.
+
+> Desde o PR #38, `wide-content` **não faz mais diferença no desktop**:
+> `body.no-sidebar .app-shell` e `body.no-sidebar.wide-content .app-shell`
+> convergem para uma coluna ([l. 1424](../index.html:1424)). A classe continua
+> valendo abaixo de 1025px, e ligá-la mantém a aba coerente com as outras duas —
+> mas não espere efeito visual no desktop ao ligá-la.
+
+E `voltarAoTopo()`, não `window.scrollTo` — ver **D21**.
 
 ### D12 — A grade do dia é nova, não é `renderTimeGrid` parametrizada
 
@@ -285,6 +300,25 @@ a `.cal-tap-bar` na menor tela é onde os bugs de `z-index` moram — e
 vazando para caixa `fixed`.
 
 Clique no widget leva para a aba Pomodoro.
+
+**A faixa de `z-index` está ocupada, e o inventário é este:**
+
+| Valor | Quem |
+|---|---|
+| 200 | `.cal-ghost` ([l. 1248](../index.html:1248)) |
+| 100 | `.form-overlay` ([l. 1822](../index.html:1822)) |
+| 95, 94, 93, 92, 91 | Caixas `fixed` do mobile — a `.app-nav` de borda a borda é a 93 |
+| 90 | `.app-nav` base, o rail |
+| 10 | `.page-header` sticky dentro do painel |
+
+O widget fica **acima de 90** (senão o rail o encobre) e **abaixo de 100** (um
+modal aberto tem prioridade sobre o cronômetro). No mobile ele encosta acima da
+barra e não precisa disputar nada.
+
+O `<body>` com `overflow: hidden` do shell de painéis não afeta o widget:
+`position: fixed` se resolve contra a viewport, não contra o contêiner de
+rolagem. Vale confirmar na verificação mesmo assim — foi medindo que as duas
+suspeitas anteriores de `z-index` caíram.
 
 ### D14 — `touch-action: none` só na alça de arraste
 
@@ -363,6 +397,22 @@ como o código já faz com `bar-${id}` e `barlbl-${id}`.
 
 O comentário que já está lá vale palavra por palavra: chamar `renderReport()`
 destruiria e recriaria cinco gráficos por segundo. Vale igual para `render()`.
+
+### D21 — No desktop quem rola é o painel: usar `travarRolagem()` e `voltarAoTopo()`
+
+Trazido pelo PR #38, e é a única coisa que este plano teria errado se não fosse
+reconferido. Desde os painéis, o `<body>` no desktop é
+`height: 100vh; overflow: hidden` ([l. 1393](../index.html:1393)), e quem rola é
+`.sidebar` e `.content`.
+
+Duas consequências diretas:
+
+- **O modal de Configurações de foco chama `travarRolagem(true)` ao abrir e
+  `travarRolagem(false)` ao fechar** ([l. 5176](../index.html:5176)), como os
+  quatro modais existentes já fazem. Esconder o `overflow` do `<body>` não diz
+  nada aos painéis — foi medido: o painel rolava 600px com a trava ativa.
+- **A entrada na aba usa `voltarAoTopo()`** ([l. 5162](../index.html:5162)), não
+  `window.scrollTo`, que no desktop rolaria um elemento que não rola.
 
 ## A divisão em blocos
 
@@ -457,10 +507,9 @@ deixar passar em silêncio.
 lá, e continua gravando em `t.sessions`. A união de **D2** cobre isso: o que ele
 gravar aparece como legado. Nada se perde, e nada precisa ser feito.
 
-**`z-index` do widget.** Referências úteis: `.app-nav` é 93 abaixo de 860px,
-`.cal-ghost` é o outro `fixed` que vale no desktop, `.form-overlay` é `inset: 0`
-e modal. O widget precisa ficar **abaixo** do `.form-overlay` — um modal aberto
-tem prioridade sobre o cronômetro.
+**`z-index` do widget.** O inventário completo está em **D13**: acima de 90,
+abaixo de 100. E `position: fixed` continua se resolvendo contra a viewport
+mesmo com o `<body>` sem rolagem do shell de painéis.
 
 **`min`/`max` no HTML não validam nada.** Valor colado passa. Ver **D9**.
 

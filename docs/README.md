@@ -26,8 +26,9 @@ o *porquê* delas.
 | [instalacao-android.md](instalacao-android.md) | Por que o atalho não abria, e o que instalar como app custou à arquitetura |
 | [enviar-agora-e-o-descarte-silencioso.md](enviar-agora-e-o-descarte-silencioso.md) | Com que frequência o Drive recebe upload, o bug que descarta gravações, e o botão manual |
 | [sessao-do-google-expirando.md](sessao-do-google-expirando.md) | Por que todo envio ao Drive dizia "sessão expirada", e as três causas encadeadas |
-| [menu-lateral-no-desktop.md](menu-lateral-no-desktop.md) | A navbar inferior virando coluna fixa à esquerda no desktop, e por que o mobile não é tocado. Implementado no PR #36 |
-| [pomodoro.md](pomodoro.md) | **Plano, não implementado.** O Pomodoro aposentando o cronômetro livre: 20 decisões, os cinco blocos e a armadilha da aba em segundo plano |
+| [menu-lateral-no-desktop.md](menu-lateral-no-desktop.md) | A navbar inferior virando coluna fixa à esquerda no desktop, e por que o mobile não é tocado — implementado no PR #36 |
+| [conteudo-em-largura-total.md](conteudo-em-largura-total.md) | Os 688px de vão morto a 1920px, o shell de painéis do TickTick, e as três coisas que quebram quando o `<body>` deixa de rolar — implementado, com cinco desvios |
+| [pomodoro.md](pomodoro.md) | **Plano, não implementado.** O Pomodoro aposentando o cronômetro livre: 21 decisões, os cinco blocos e a armadilha da aba em segundo plano |
 | [pendencias.md](pendencias.md) | Ressalvas conhecidas, incluindo o que foi para `main` sem verificação visual |
 
 ## Estado atual
