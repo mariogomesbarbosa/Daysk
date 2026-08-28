@@ -28,7 +28,7 @@ o *porquê* delas.
 | [sessao-do-google-expirando.md](sessao-do-google-expirando.md) | Por que todo envio ao Drive dizia "sessão expirada", e as três causas encadeadas |
 | [menu-lateral-no-desktop.md](menu-lateral-no-desktop.md) | A navbar inferior virando coluna fixa à esquerda no desktop, e por que o mobile não é tocado — implementado no PR #36 |
 | [conteudo-em-largura-total.md](conteudo-em-largura-total.md) | Os 688px de vão morto a 1920px, o shell de painéis do TickTick, e as três coisas que quebram quando o `<body>` deixa de rolar — implementado, com cinco desvios |
-| [pomodoro.md](pomodoro.md) | **Plano, não implementado.** O Pomodoro aposentando o cronômetro livre: 22 decisões, os cinco blocos e a armadilha da aba em segundo plano |
+| [pomodoro.md](pomodoro.md) | O Pomodoro aposentando o cronômetro livre: 22 decisões, os cinco blocos e a armadilha da aba em segundo plano. **B1 implementado, com dez desvios; B2 a B5 no papel** |
 | [pendencias.md](pendencias.md) | Ressalvas conhecidas, incluindo o que foi para `main` sem verificação visual |
 
 ## Estado atual

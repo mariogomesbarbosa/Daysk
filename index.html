@@ -3011,6 +3011,230 @@
   /* O bloco de 480px que escondia o rótulo e apertava o item saiu: as duas
      regras existiam para a pílula flutuante não crescer além da tela, e a
      pílula não existe mais abaixo de 860px. */
+
+  /* ---------- Pomodoro ---------- */
+
+  /* O widget vive ACIMA do rail (90) e ABAIXO do .form-overlay (100): um modal
+     aberto tem prioridade sobre o cronômetro. O inventário completo da faixa
+     está na D13 de docs/pomodoro.md.
+
+     Estas regras ficam no fim da folha de propósito. As media queries deste
+     arquivo são interleaved — há bloco base depois de bloco `min-width` — e o
+     projeto já pagou duas vezes por regra base vazando para caixa `fixed`. Sendo
+     as últimas, a ordem do cascade é a que se lê aqui. */
+  .pomo-mini {
+    position: fixed;
+    right: 24px;
+    bottom: 24px;
+    z-index: 92;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px 8px 8px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    box-shadow: var(--shadow-md);
+    animation: modalIn .18s ease;
+  }
+
+  /* Depois da regra de display, senão o `hidden` não esconde nada. */
+  .pomo-mini[hidden] { display: none; }
+
+  .pomo-mini-play {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    background: var(--accent);
+    color: var(--on-accent);
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: background .15s;
+  }
+
+  .pomo-mini-play:hover { background: var(--accent-hover); }
+
+  .pomo-mini-info {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    min-width: 0;
+  }
+
+  .pomo-mini-nome {
+    font-family: var(--sans);
+    font-size: 10.5px;
+    color: var(--text2);
+    max-width: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .pomo-mini-tempo {
+    font-family: var(--mono);
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    color: var(--text);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .pomo-mini.pausado .pomo-mini-tempo,
+  .pomo-mini.aguardando .pomo-mini-tempo { color: var(--text2); }
+
+  .pomo-mini-acoes { display: flex; gap: 2px; }
+
+  .pomo-mini-acao {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    padding: 0;
+    background: none;
+    border: none;
+    border-radius: var(--radius-sm);
+    color: var(--text3);
+    cursor: pointer;
+    transition: background .15s, color .15s;
+  }
+
+  .pomo-mini-acao:hover { background: var(--surface2); color: var(--text); }
+
+  /* Abaixo de 860px o widget encosta em vez de flutuar: um retângulo solto
+     disputando espaço com a .app-nav (93), a bandeja do Calendário e a
+     .cal-tap-bar é onde os bugs de z-index moram. Ver D13. */
+  @media (max-width: 860px) {
+    .pomo-mini {
+      right: 12px;
+      left: 12px;
+      bottom: calc(var(--rodape) + 8px);
+      border-radius: var(--radius-lg);
+      padding: 10px 12px;
+    }
+    .pomo-mini-info { flex: 1; }
+    .pomo-mini-nome { max-width: none; }
+  }
+
+  /* A brand-bar do mobile fechava EXATA: 343px de conteúdo em 343px de caixa.
+     Medido antes e depois — qualquer botão a mais transborda, e o "Foco" é o
+     primeiro a chegar. Duas defesas, porque só a primeira não bastava (com o
+     rótulo escondido ainda sobravam ~44px):
+
+     1. O botão vira só ícone, o mesmo tratamento que ele já recebe no rail.
+     2. As ações passam a poder quebrar linha, em vez de sangrar para fora.
+
+     O rótulo do "Sincronização" fica: escondê-lo resolveria também, mas é
+     mudança em algo que já existia e não é deste bloco. */
+  @media (max-width: 860px) {
+    .brand-actions { flex-wrap: wrap; justify-content: flex-end; }
+    .brand-actions .btn-foco .btn-label { display: none; }
+  }
+
+  /* ---------- Pomodoro: configurações de foco ---------- */
+
+  .pomo-cfg-grupo {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text2);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-top: 4px;
+  }
+
+  .pomo-cfg-linha {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .pomo-cfg-rotulo {
+    font-family: var(--sans);
+    font-size: 13px;
+    color: var(--text);
+  }
+
+  .pomo-cfg-campo {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+
+  .pomo-cfg-campo input {
+    font-family: var(--mono);
+    font-size: 13px;
+    width: 70px;
+    padding: 7px 8px;
+    text-align: right;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    outline: none;
+    transition: border-color .15s;
+  }
+
+  .pomo-cfg-campo input:focus { border-color: var(--accent); }
+  .pomo-cfg-campo input.invalido { border-color: var(--red); }
+
+  .pomo-cfg-unidade {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: var(--text3);
+    width: 42px;
+  }
+
+  /* Interruptor. Um <input type="checkbox"> de verdade por baixo: o app não tem
+     componente de switch, e reinventá-lo com <div> custaria o foco por teclado e
+     o estado para leitor de tela. */
+  .pomo-switch {
+    position: relative;
+    flex-shrink: 0;
+    width: 40px;
+    height: 22px;
+  }
+
+  .pomo-switch input {
+    position: absolute;
+    inset: 0;
+    margin: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+
+  .pomo-switch-trilho {
+    display: block;
+    width: 100%;
+    height: 100%;
+    background: var(--border2);
+    border-radius: 999px;
+    transition: background .15s;
+    pointer-events: none;
+  }
+
+  .pomo-switch-trilho::after {
+    content: '';
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 16px;
+    height: 16px;
+    background: var(--surface);
+    border-radius: 50%;
+    transition: transform .15s;
+  }
+
+  .pomo-switch input:checked + .pomo-switch-trilho { background: var(--accent); }
+  .pomo-switch input:checked + .pomo-switch-trilho::after { transform: translateX(18px); }
+  .pomo-switch input:focus-visible + .pomo-switch-trilho { outline: 2px solid var(--accent); outline-offset: 2px; }
 </style>
 </head>
 <body>
@@ -3039,6 +3263,10 @@
               style="display:none" title="Enviar agora para o Google Drive">
         <svg class="icon" width="16" height="16" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M240,56v48a8,8,0,0,1-8,8H184a8,8,0,0,1,0-16H211.4L184.81,71.64l-.25-.24a80,80,0,1,0-1.67,114.78,8,8,0,0,1,11,11.63A95.44,95.44,0,0,1,128,224h-1.32A96,96,0,1,1,195.75,60L224,85.8V56a8,8,0,1,1,16,0Z"/></svg>
         <span class="btn-enviar-txt">Enviar agora</span>
+      </button>
+      <button class="btn-add btn-secondary btn-foco" onclick="abrirConfigPomo()" title="Configurações de foco">
+        <svg class="icon" width="14" height="14" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M128,40a96,96,0,1,0,96,96A96.11,96.11,0,0,0,128,40Zm0,176a80,80,0,1,1,80-80A80.09,80.09,0,0,1,128,216ZM173.66,90.34a8,8,0,0,1,0,11.32l-40,40a8,8,0,0,1-11.32-11.32l40-40A8,8,0,0,1,173.66,90.34ZM96,16a8,8,0,0,1,8-8h48a8,8,0,0,1,0,16H104A8,8,0,0,1,96,16Z"/></svg>
+        <span class="btn-label">Foco</span>
       </button>
       <button class="btn-add btn-secondary" onclick="openSyncManager()" title="Modo de Sincronização">
         <svg class="icon" width="14" height="14" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M224,48V96a8,8,0,0,1-8,8H168a8,8,0,0,1,0-16h28.69L182.06,73.37a79.56,79.56,0,0,0-56.13-23.43h-.45A79.52,79.52,0,0,0,69.59,72.71,8,8,0,0,1,58.41,61.27a96,96,0,0,1,135,.79L208,76.69V48a8,8,0,0,1,16,0ZM186.41,183.29a80,80,0,0,1-112.47-.66L59.31,168H88a8,8,0,0,0,0-16H40a8,8,0,0,0-8,8v48a8,8,0,0,0,16,0V179.31l14.63,14.63A95.43,95.43,0,0,0,130,222.06h.53a95.36,95.36,0,0,0,67.07-27.33,8,8,0,0,0-11.18-11.44Z"/></svg>
@@ -3588,9 +3816,140 @@
   </div>
 </div>
 
+<div class="form-overlay" id="pomo-cfg-overlay" onclick="if(event.target===this) fecharConfigPomo()">
+  <div class="form-panel">
+    <div class="form-header">
+      <h2 class="form-title">Configurações de foco</h2>
+      <button class="form-close" onclick="fecharConfigPomo()" aria-label="Fechar"><svg class="icon" width="18" height="18" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M205.66,194.34a8,8,0,0,1-11.32,11.32L128,139.31,61.66,205.66a8,8,0,0,1-11.32-11.32L116.69,128,50.34,61.66A8,8,0,0,1,61.66,50.34L128,116.69l66.34-66.35a8,8,0,0,1,11.32,11.32L139.31,128Z"/></svg></button>
+    </div>
+    <div class="form-body">
+      <div class="pomo-cfg-grupo">Opção de temporizador</div>
+
+      <div class="pomo-cfg-linha">
+        <span class="pomo-cfg-rotulo">Duração do Pomo</span>
+        <span class="pomo-cfg-campo">
+          <input type="number" id="pomo-cfg-foco" min="1" max="180" step="1" inputmode="numeric">
+          <span class="pomo-cfg-unidade">mins</span>
+        </span>
+      </div>
+
+      <div class="pomo-cfg-linha">
+        <span class="pomo-cfg-rotulo">Duração da Pausa Curta</span>
+        <span class="pomo-cfg-campo">
+          <input type="number" id="pomo-cfg-pausa" min="1" max="180" step="1" inputmode="numeric">
+          <span class="pomo-cfg-unidade">mins</span>
+        </span>
+      </div>
+
+      <div class="pomo-cfg-linha">
+        <span class="pomo-cfg-rotulo">Duração da Pausa Longa</span>
+        <span class="pomo-cfg-campo">
+          <input type="number" id="pomo-cfg-pausa-longa" min="1" max="180" step="1" inputmode="numeric">
+          <span class="pomo-cfg-unidade">mins</span>
+        </span>
+      </div>
+
+      <div class="pomo-cfg-linha">
+        <span class="pomo-cfg-rotulo">Pomos para intervalo longo</span>
+        <span class="pomo-cfg-campo">
+          <input type="number" id="pomo-cfg-ciclo" min="1" max="12" step="1" inputmode="numeric">
+          <span class="pomo-cfg-unidade">pomos</span>
+        </span>
+      </div>
+
+      <p class="form-hint" id="pomo-cfg-aviso" hidden></p>
+
+      <div class="pomo-cfg-grupo">Automático</div>
+
+      <div class="pomo-cfg-linha">
+        <span class="pomo-cfg-rotulo">Início Automático do Próximo Pomo</span>
+        <label class="pomo-switch">
+          <input type="checkbox" id="pomo-cfg-auto-pomo" aria-label="Início automático do próximo pomo">
+          <span class="pomo-switch-trilho"></span>
+        </label>
+      </div>
+
+      <div class="pomo-cfg-linha">
+        <span class="pomo-cfg-rotulo">Começar automaticamente a pausa</span>
+        <label class="pomo-switch">
+          <input type="checkbox" id="pomo-cfg-auto-pausa" aria-label="Começar automaticamente a pausa">
+          <span class="pomo-switch-trilho"></span>
+        </label>
+      </div>
+
+      <div class="pomo-cfg-grupo">Aviso</div>
+
+      <div class="pomo-cfg-linha">
+        <span class="pomo-cfg-rotulo">Som ao terminar</span>
+        <label class="pomo-switch">
+          <input type="checkbox" id="pomo-cfg-som" aria-label="Som ao terminar">
+          <span class="pomo-switch-trilho"></span>
+        </label>
+      </div>
+    </div>
+    <div class="form-footer">
+      <button class="btn-save" onclick="fecharConfigPomo()">Concluído</button>
+    </div>
+  </div>
+</div>
+
+<!-- O widget do pomo. Fora do .container e sem alça de arraste: arrastar é o
+     B4. Ver docs/pomodoro.md. -->
+<div class="pomo-mini" id="pomo-mini" hidden role="status" aria-live="off">
+  <button class="pomo-mini-play" id="pomo-mini-play" onclick="alternarPomo()" title="Pausar" aria-label="Pausar"></button>
+  <div class="pomo-mini-info">
+    <span class="pomo-mini-nome" id="pomo-mini-nome"></span>
+    <span class="pomo-mini-tempo" id="pomo-mini-tempo">00:00</span>
+  </div>
+  <div class="pomo-mini-acoes">
+    <button class="pomo-mini-acao" onclick="pararPomo()" title="Parar" aria-label="Parar">
+      <svg class="icon" width="14" height="14" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M200,40H56A16,16,0,0,0,40,56V200a16,16,0,0,0,16,16H200a16,16,0,0,0,16-16V56A16,16,0,0,0,200,40Zm0,160H56V56H200V200Z"/></svg>
+    </button>
+    <button class="pomo-mini-acao" onclick="esconderMini()" title="Ocultar até a próxima fase" aria-label="Ocultar">
+      <svg class="icon" width="14" height="14" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M205.66,194.34a8,8,0,0,1-11.32,11.32L128,139.31,61.66,205.66a8,8,0,0,1-11.32-11.32L116.69,128,50.34,61.66A8,8,0,0,1,61.66,50.34L128,116.69l66.34-66.35a8,8,0,0,1,11.32,11.32L139.31,128Z"/></svg>
+    </button>
+  </div>
+</div>
+
 <script>
   let tasks = JSON.parse(localStorage.getItem('daily-tasks') || '[]');
   let projects = JSON.parse(localStorage.getItem('daily-projects') || '[]');
+
+  /* ---------- Pomodoro: constantes e estado ----------
+
+     Os defaults são os do print que originou a funcionalidade, não os 25/5/15/4
+     clássicos. Ver D9 em docs/pomodoro.md.
+
+     Estas declarações moram no topo porque `pomoConfig` é inicializada aqui e
+     const tem zona morta temporal: POMO_PADRAO declarado lá embaixo, junto das
+     funções, estouraria na carga. Funções são içadas; const não é. */
+  const POMO_PADRAO = {
+    foco: 30, pausa: 5, pausaLonga: 15, ciclo: 4,
+    autoPomo: false, autoPausa: false, som: true,
+  };
+  const POMO_LIMITES = { foco: [1, 180], pausa: [1, 180], pausaLonga: [1, 180], ciclo: [1, 12] };
+
+  /* Trecho abaixo disto não vira registro nem entra em elapsed: pomo iniciado
+     por engano não deixa rastro, e sem o piso a linha do tempo enche de
+     registros de quatro segundos. Ver D8. */
+  const PISO_FOCO_MS = 60000;
+
+  /* Quanto atraso ainda conta como "a aba só estava em segundo plano". Acima
+     disto a fase fecha e a corrente PARA, em vez de emendar fases que ninguém
+     trabalhou. Ver D5. */
+  const FOLGA_ENCADEAR_MS = 5 * 60000;
+
+  let pomos = lerJson('daysk-pomos', []);
+  let pomoAtual = lerJson('daysk-pomo-atual', null);
+  let pomoConfig = normalizarConfigPomo(lerJson('daysk-pomo-config', null));
+  let pomoCiclo = lerJson('daysk-pomo-ciclo', null);
+  /* Índice taskId -> registros, reconstruído sob demanda. focosDe() é chamada
+     dentro de um flatMap sobre todas as tarefas, uma vez por segundo pelo
+     tick(); varrer o array inteiro por tarefa seria O(tarefas × pomos). */
+  let indicePomos = null;
+  let miniOculto = false;
+  let pomoCfgAberto = false;
+
   let formOpen = false;
   let editingId = null;
   let currentTab = 'today';
@@ -3629,6 +3988,8 @@
     pencil: 'M227.31,73.37,182.63,28.68a16,16,0,0,0-22.63,0L36.69,152A15.86,15.86,0,0,0,32,163.31V208a16,16,0,0,0,16,16H92.69A15.86,15.86,0,0,0,104,219.31L227.31,96a16,16,0,0,0,0-22.63ZM92.69,208H48V163.31l88-88L180.69,120ZM192,108.68,147.31,64l24-24L216,84.68Z',
     sun: 'M120,40V16a8,8,0,0,1,16,0V40a8,8,0,0,1-16,0Zm72,88a64,64,0,1,1-64-64A64.07,64.07,0,0,1,192,128Zm-16,0a48,48,0,1,0-48,48A48.05,48.05,0,0,0,176,128ZM58.34,69.66A8,8,0,0,0,69.66,58.34l-16-16A8,8,0,0,0,42.34,53.66Zm0,116.68-16,16a8,8,0,0,0,11.32,11.32l16-16a8,8,0,0,0-11.32-11.32ZM192,72a8,8,0,0,0,5.66-2.34l16-16a8,8,0,0,0-11.32-11.32l-16,16A8,8,0,0,0,192,72Zm5.66,114.34a8,8,0,0,0-11.32,11.32l16,16a8,8,0,0,0,11.32-11.32ZM48,128a8,8,0,0,0-8-8H16a8,8,0,0,0,0,16H40A8,8,0,0,0,48,128Zm80,80a8,8,0,0,0-8,8v24a8,8,0,0,0,16,0V216A8,8,0,0,0,128,208Zm112-88H216a8,8,0,0,0,0,16h24a8,8,0,0,0,0-16Z',
     moon: 'M233.54,142.23a8,8,0,0,0-8-2,88.08,88.08,0,0,1-109.8-109.8,8,8,0,0,0-10-10,104.84,104.84,0,0,0-52.91,37A104,104,0,0,0,136,224a103.09,103.09,0,0,0,62.52-20.88,104.84,104.84,0,0,0,37-52.91A8,8,0,0,0,233.54,142.23ZM188.9,190.34A88,88,0,0,1,65.66,67.11a89,89,0,0,1,31.4-26A106,106,0,0,0,96,56,104.11,104.11,0,0,0,200,160a106,106,0,0,0,14.92-1.06A89,89,0,0,1,188.9,190.34Z',
+    timer: 'M128,40a96,96,0,1,0,96,96A96.11,96.11,0,0,0,128,40Zm0,176a80,80,0,1,1,80-80A80.09,80.09,0,0,1,128,216ZM173.66,90.34a8,8,0,0,1,0,11.32l-40,40a8,8,0,0,1-11.32-11.32l40-40A8,8,0,0,1,173.66,90.34ZM96,16a8,8,0,0,1,8-8h48a8,8,0,0,1,0,16H104A8,8,0,0,1,96,16Z',
+    stop: 'M200,40H56A16,16,0,0,0,40,56V200a16,16,0,0,0,16,16H200a16,16,0,0,0,16-16V56A16,16,0,0,0,200,40Zm0,160H56V56H200V200Z',
   };
 
   function icon(name, size) {
@@ -3816,6 +4177,7 @@
         pendenteNaPasta = false;
         await writeFolderFile('tasks.json', JSON.stringify(tasks, null, 2));
         await writeFolderFile('projects.json', JSON.stringify(projects, null, 2));
+        await writeFolderFile('pomos.json', JSON.stringify(pomos, null, 2));
       } while (pendenteNaPasta);
     } catch (e) {
       console.error('Falha ao gravar na pasta sincronizada', e);
@@ -3884,8 +4246,36 @@
   async function loadFromFolder() {
     const t = await readFolderFile('tasks.json');
     const p = await readFolderFile('projects.json');
+    const f = await readFolderFile('pomos.json');
     if (t !== null) { tasks = JSON.parse(t); localStorage.setItem('daily-tasks', t); }
     if (p !== null) { projects = JSON.parse(p); localStorage.setItem('daily-projects', p); }
+    fundirPomos(f);
+  }
+
+  /* União por id, não substituição.
+
+     Os outros dois arquivos são trocados inteiros na descida — é o contrato
+     antigo e este bloco não mexe nele. Registro de foco é log, e trocar inteiro
+     apagaria os pomos de um dos aparelhos sempre que dois trabalhassem offline.
+     Preservar é seguro por construção enquanto ninguém apaga registro; quando o
+     B5 trouxer apagar, um registro apagado num aparelho ressuscita vindo do
+     outro. Ver Riscos em docs/pomodoro.md. */
+  function fundirPomos(remotoJson) {
+    if (remotoJson === null || remotoJson === undefined) return;
+    let remoto;
+    try {
+      remoto = JSON.parse(remotoJson);
+    } catch (e) {
+      console.error('Erro ao ler pomos.json:', e);
+      return;
+    }
+    if (!Array.isArray(remoto)) return;
+    const mapa = new Map();
+    pomos.forEach(p => { if (p && p.id) mapa.set(p.id, p); });
+    remoto.forEach(p => { if (p && p.id) mapa.set(p.id, p); });
+    pomos = Array.from(mapa.values()).sort((a, b) => (a.ini || 0) - (b.ini || 0));
+    indicePomos = null;
+    localStorage.setItem('daysk-pomos', JSON.stringify(pomos));
   }
 
   /* ---------- Google Drive Sync ---------- */
@@ -4200,6 +4590,7 @@
         gdrivePendente = false;
         await writeGDriveFile('tasks.json', JSON.stringify(tasks, null, 2));
         await writeGDriveFile('projects.json', JSON.stringify(projects, null, 2));
+        await writeGDriveFile('pomos.json', JSON.stringify(pomos, null, 2));
       } while (gdrivePendente);
       // Relê o carimbo: sem isto o próximo envio manual acusaria conflito com a
       // gravação que este mesmo aparelho acabou de fazer.
@@ -4248,6 +4639,7 @@
 
       await writeGDriveFile('tasks.json', JSON.stringify(tasks, null, 2));
       await writeGDriveFile('projects.json', JSON.stringify(projects, null, 2));
+      await writeGDriveFile('pomos.json', JSON.stringify(pomos, null, 2));
 
       // Relê o carimbo depois de subir: é o do Drive que vale como referência.
       await findGDriveFileId('tasks.json');
@@ -4288,8 +4680,10 @@
     try {
       const t = await readGDriveFile('tasks.json');
       const p = await readGDriveFile('projects.json');
+      const f = await readGDriveFile('pomos.json');
       if (t !== null) { tasks = JSON.parse(t); localStorage.setItem('daily-tasks', t); }
       if (p !== null) { projects = JSON.parse(p); localStorage.setItem('daily-projects', p); }
+      fundirPomos(f);
     } catch (e) {
       console.error('Falha ao carregar dados do Google Drive:', e);
     }
@@ -4796,27 +5190,135 @@
      'active' com startedAt nulo fazia (Date.now() - null) contaminar elapsed
      para sempre. Não era alcançável pela interface, mas dado sincronizado de
      fora não passa por ela. */
-  function fecharSessao(t, agora) {
-    if (!t || !t.startedAt) return;
-    const dur = agora - t.startedAt;
-    // Duração não-positiva não vira nada: o relógio do sistema pode andar para
-    // trás, e uma sessão invertida envenenaria msPorDia() em silêncio.
-    if (dur > 0) {
-      t.elapsed = (t.elapsed || 0) + dur;
-      (t.sessions = t.sessions || []).push({ ini: t.startedAt, fim: agora });
+  /* Leitura tolerante do localStorage: chave ausente, JSON quebrado e valor
+     nulo caem todos no padrão. Nenhum dos três modos de sincronização valida
+     schema, então dado malformado chega aqui sem ninguém ter percebido. */
+  function lerJson(chave, padrao) {
+    try {
+      const bruto = localStorage.getItem(chave);
+      if (bruto === null) return padrao;
+      const v = JSON.parse(bruto);
+      return v === null || v === undefined ? padrao : v;
+    } catch (e) {
+      console.warn('Valor inválido em ' + chave + ', usando o padrão.', e);
+      return padrao;
     }
-    t.startedAt = null;
   }
 
-  /* As sessões fechadas mais a que está aberta agora. Sem a aberta, o dia de
-     hoje aparece menor do que é enquanto o cronômetro roda — é a mesma regra de
-     effectiveElapsed(), e por isso mora ao lado dela.
+  /* Toda configuração de pomo passa por aqui, na leitura e na gravação.
+     `min`/`max` no HTML não validam nada — valor colado passa, e teclado de
+     celular manda string. Ver D9. */
+  function normalizarConfigPomo(bruto) {
+    const cfg = Object.assign({}, POMO_PADRAO);
+    if (!bruto || typeof bruto !== 'object') return cfg;
+    Object.keys(POMO_LIMITES).forEach(k => {
+      const n = Math.round(Number(bruto[k]));
+      const [min, max] = POMO_LIMITES[k];
+      if (Number.isFinite(n) && n >= min && n <= max) cfg[k] = n;
+    });
+    ['autoPomo', 'autoPausa', 'som'].forEach(k => {
+      if (typeof bruto[k] === 'boolean') cfg[k] = bruto[k];
+    });
+    return cfg;
+  }
+
+  function salvarConfigPomo() {
+    localStorage.setItem('daysk-pomo-config', JSON.stringify(pomoConfig));
+  }
+
+  /* O estado corrente NÃO é sincronizado, de propósito: dois aparelhos com o
+     mesmo cronômetro correndo brigariam pelo mesmo `terminaEm`. O que viaja é o
+     registro do que já aconteceu. */
+  function salvarPomoAtual() {
+    if (pomoAtual) localStorage.setItem('daysk-pomo-atual', JSON.stringify(pomoAtual));
+    else localStorage.removeItem('daysk-pomo-atual');
+  }
+
+  function salvarPomos() {
+    localStorage.setItem('daysk-pomos', JSON.stringify(pomos));
+    indicePomos = null;
+    if (syncMode === 'local') writeToFolder();
+    else if (syncMode === 'gdrive') writeToGoogleDrive();
+  }
+
+  function pomosPorTarefa() {
+    if (!indicePomos) {
+      indicePomos = new Map();
+      pomos.forEach(p => {
+        if (!p || !p.taskId) return;
+        const lista = indicePomos.get(p.taskId);
+        if (lista) lista.push(p); else indicePomos.set(p.taskId, [p]);
+      });
+    }
+    return indicePomos;
+  }
+
+  /* O único ponto que acrescenta ao store. `completo` distingue o pomo que
+     chegou ao fim previsto do que foi interrompido: o tempo dos dois conta, só
+     o primeiro conta como pomo. Ver D7. */
+  function registrarFoco(reg) {
+    pomos.push(Object.assign({
+      id: Date.now().toString(36) + Math.round(performance.now() * 1000).toString(36),
+      taskId: null,
+      rotulo: null,
+      planejado: null,
+      completo: false,
+      nota: null,
+    }, reg));
+    salvarPomos();
+  }
+
+  /* Fecha o trecho de tempo em aberto e soma em t.elapsed. Único lugar do
+     arquivo que faz isso — antes desta extração a mesma dupla de linhas estava
+     copiada em startTask(), pauseTask() e completeTask().
+
+     Não é arrumação: o registro de foco grava uma entrada por trecho fechado, e
+     uma entrada gravada em dois dos três lugares seria um bug invisível — o
+     total continuaria certo, porque vem de elapsed, e só o recorte por dia
+     sairia errado.
+
+     Desde o Pomodoro o destino mudou: o trecho vai para o store `daysk-pomos`,
+     não mais para t.sessions, que virou legado somente-leitura. Ver D1 e D2 em
+     docs/pomodoro.md.
+
+     O guard é t.startedAt e não t.status: sem cronômetro aberto não há o que
+     fechar. Isso também elimina um NaN que o código antigo permitia — status
+     'active' com startedAt nulo fazia (Date.now() - null) contaminar elapsed
+     para sempre. Não era alcançável pela interface, mas dado sincronizado de
+     fora não passa por ela. */
+  function fecharSessao(t, agora, meta) {
+    if (!t || !t.startedAt) return 0;
+    const ini = t.startedAt;
+    const dur = agora - ini;
+    t.startedAt = null;
+    /* Abaixo do piso não vira nada. Cobre de uma vez o clique por engano (D8) e
+       o relógio do sistema andando para trás, que produziria um trecho
+       invertido e envenenaria msPorDia() em silêncio. */
+    if (!(dur >= PISO_FOCO_MS)) return 0;
+    t.elapsed = (t.elapsed || 0) + dur;
+    registrarFoco(Object.assign({ taskId: t.id, ini, fim: agora }, meta || {}));
+    return dur;
+  }
+
+  /* Os trechos de foco de uma tarefa: os do store, os do legado `t.sessions` e o
+     que está aberto agora. Sem o aberto, o dia de hoje aparece menor do que é
+     enquanto o cronômetro roda — é a mesma regra de effectiveElapsed(), e por
+     isso mora ao lado dela.
+
+     A união com o legado não é gentileza: nada mais escreve em t.sessions, e ler
+     só o store faria todo o histórico já gravado sumir da Curva de Desempenho na
+     primeira abertura depois do deploy. Os totais continuariam certos, porque
+     vêm de elapsed, e só o recorte por dia iria a zero — o modo de falha
+     silencioso de sempre. Ver D2.
+
      Recebe `agora` em vez de chamar Date.now() para poder ser testada. */
-  function sessoesDe(t, agora) {
-    const fechadas = t.sessions || [];
-    return (t.status === 'active' && t.startedAt)
-      ? fechadas.concat([{ ini: t.startedAt, fim: agora }])
-      : fechadas;
+  function focosDe(t, agora) {
+    const doStore = pomosPorTarefa().get(t.id) || [];
+    const legado = t.sessions || [];
+    const aberto = (t.status === 'active' && t.startedAt)
+      ? [{ ini: t.startedAt, fim: agora }]
+      : [];
+    return doStore.concat(legado, aberto);
   }
 
   /* Reparte sessões pelos dias que elas cobrem, devolvendo Map<'YYYY-MM-DD', ms>.
@@ -5423,11 +5925,20 @@
   function completeTask(id) {
     const t = tasks.find(x => x.id === id);
     if (!t) return;
-    if (t.status === 'active') fecharSessao(t, Date.now());
+    /* Concluir com o pomo correndo nesta tarefa encerra o pomo junto. Sem isso o
+       cronômetro continuaria apontando para uma tarefa concluída, e a fase
+       seguinte tentaria retomá-la. */
+    const doPomo = pomoAtual && pomoAtual.taskId === id;
+    const meta = doPomo
+      ? { planejado: pomoAtual.planejado, completo: false, nota: pomoAtual.nota || null }
+      : null;
+    if (t.status === 'active') fecharSessao(t, Date.now(), meta);
     t.status = 'done';
     t.completedAt = Date.now();
+    if (doPomo) descartarPomoAtual();
     save();
     render();
+    renderMini();
   }
 
   function reopenTask(id) {
@@ -5437,14 +5948,518 @@
 
   function del(id) {
     tasks = tasks.filter(x => x.id !== id);
+    if (pomoAtual && pomoAtual.taskId === id) descartarPomoAtual();
     save();
     render();
+    renderMini();
+  }
+
+  /* ---------- Pomodoro: motor ----------
+
+     O plano inteiro, com as decisões numeradas, está em docs/pomodoro.md.
+     As três coisas que não se pode desfazer sem reintroduzir um bug:
+
+     1. O tempo restante SEMPRE sai de `terminaEm - agora`, nunca de um contador
+        decrementado (D4).
+     2. Uma fase vencida fecha com carimbo `terminaEm`, nunca `Date.now()` (D5).
+     3. `fecharSessao()` continua sendo o único lugar que soma em elapsed (D1). */
+
+  const TITULO_BASE = document.title;
+
+  function duracaoDaFase(fase, cfg) {
+    if (fase === 'pausa') return cfg.pausa;
+    if (fase === 'pausaLonga') return cfg.pausaLonga;
+    return cfg.foco;
+  }
+
+  /* Milissegundos que faltam na fase. Sempre derivado do carimbo absoluto: o
+     Chrome estrangula setInterval em aba de fundo para uma vez por minuto, e um
+     contador decrementado faria um pomo de 30 minutos acabar depois de quase uma
+     hora de relógio. Assim o estrangulamento não afeta a correção — só atrasa a
+     detecção, que é o que a reconciliação resolve. Ver D4.
+
+     Pura, e é aqui que o harness aponta. */
+  function restanteDe(estado, agora, cfg) {
+    if (!estado) return 0;
+    if (estado.aguardando) return duracaoDaFase(estado.fase, cfg) * 60000;
+    if (estado.pausadoEm) return Math.max(0, estado.terminaEm - estado.pausadoEm);
+    return Math.max(0, estado.terminaEm - agora);
+  }
+
+  /* Foco vira pausa; a cada `ciclo` focos completos, pausa longa. Pausa de
+     qualquer tipo vira foco. Pura. */
+  function proximaFase(fase, cicloN, cfg) {
+    if (fase !== 'foco') return 'foco';
+    return (cicloN > 0 && cicloN % cfg.ciclo === 0) ? 'pausaLonga' : 'pausa';
+  }
+
+  /* O ciclo zera na virada do dia, ao disparar a pausa longa e ao parar a
+     sequência à mão. Sem a virada do dia, três pomos de ontem fariam o primeiro
+     de hoje disparar pausa longa. Ver D19.
+
+     Zera ao DISPARAR e não ao concluir a pausa longa de propósito: com o início
+     automático desligado ninguém é obrigado a fazer a pausa, e esperar a
+     conclusão deixaria o contador travado acima do limite para sempre. */
+  function cicloAtual() {
+    if (!pomoCiclo || pomoCiclo.dia !== todayStr()) ajustarCiclo(0);
+    return pomoCiclo.n;
+  }
+
+  function ajustarCiclo(n) {
+    pomoCiclo = { n, dia: todayStr() };
+    localStorage.setItem('daysk-pomo-ciclo', JSON.stringify(pomoCiclo));
+  }
+
+  function comecarFase(fase, taskId, agora) {
+    const dur = duracaoDaFase(fase, pomoConfig);
+    pomoAtual = {
+      fase,
+      taskId: taskId || null,
+      iniciadoEm: agora,
+      terminaEm: agora + dur * 60000,
+      pausadoEm: null,
+      aguardando: false,
+      planejado: dur,
+      msFeitos: 0,
+      nota: '',
+    };
+    // Uma fase nova é justamente quando vale reaparecer depois de um "ocultar".
+    miniOculto = false;
+    if (fase === 'foco' && pomoAtual.taskId) startTask(pomoAtual.taskId);
+    salvarPomoAtual();
+    render();
+    renderMini();
+  }
+
+  /* Fase escolhida mas não iniciada: é o estado em que o app fica quando o
+     início automático está desligado. Sem `terminaEm` — o relógio só começa a
+     correr quando alguém aperta o play. */
+  function aguardarFase(fase, taskId) {
+    pomoAtual = {
+      fase,
+      taskId: taskId || null,
+      iniciadoEm: null,
+      terminaEm: null,
+      pausadoEm: null,
+      aguardando: true,
+      planejado: duracaoDaFase(fase, pomoConfig),
+      msFeitos: 0,
+      nota: '',
+    };
+    miniOculto = false;
+    salvarPomoAtual();
+    render();
+    renderMini();
+  }
+
+  function descartarPomoAtual() {
+    pomoAtual = null;
+    ajustarCiclo(0);
+    salvarPomoAtual();
+  }
+
+  /* Fecha a fase corrente gravando o trecho de foco.
+
+     `fim` é o carimbo do fim de verdade: `terminaEm` quando a fase chegou ao
+     fim, `Date.now()` quando foi interrompida à mão. NUNCA `Date.now()` para uma
+     fase que já tinha vencido — um pomo de 30 minutos esquecido três horas numa
+     aba de fundo gravaria três horas de foco. Ver D5. */
+  function encerrarFase(fim, completo) {
+    const est = pomoAtual;
+    if (!est) return;
+    if (est.fase !== 'foco') return;
+    const t = est.taskId && tasks.find(x => x.id === est.taskId);
+    if (t) {
+      est.msFeitos += fecharSessao(t, fim, {
+        planejado: est.planejado,
+        completo: !!completo,
+        nota: est.nota || null,
+      });
+      if (t.status === 'active') t.status = 'paused';
+      save();
+    }
+    if (completo) ajustarCiclo(cicloAtual() + 1);
+  }
+
+  /* Chamada pelo pulso de um segundo e pela reconciliação. Devolve true quando
+     fechou algo — quem chama não precisa re-renderizar de novo. */
+  function encerrarFaseVencida(agora) {
+    const est = pomoAtual;
+    if (!est || est.aguardando || est.pausadoEm) return false;
+    if (agora < est.terminaEm) return false;
+
+    const atraso = agora - est.terminaEm;
+    const faseQueAcabou = est.fase;
+    const taskId = est.taskId;
+
+    encerrarFase(est.terminaEm, true);
+
+    const proxima = proximaFase(faseQueAcabou, cicloAtual(), pomoConfig);
+    if (proxima === 'pausaLonga') ajustarCiclo(0);
+
+    avisarFimDeFase(faseQueAcabou, proxima);
+
+    /* Emenda a fase seguinte só quando o atraso ainda cabe em "a aba estava em
+       segundo plano". Acima da folga, a próxima fica aguardando: reconstruir uma
+       corrente de fases que ninguém trabalhou seria pior que perder o
+       encadeamento.
+
+       E quando emenda, começa em `agora` — não em `terminaEm`. Partir do carimbo
+       vencido poderia nascer já vencido e girar em laço. O custo é a fase
+       seguinte atrasar pelo tanto que a aba ficou dormindo, que é o certo. */
+    const automatico = faseQueAcabou === 'foco' ? pomoConfig.autoPausa : pomoConfig.autoPomo;
+    if (automatico && atraso <= FOLGA_ENCADEAR_MS) comecarFase(proxima, taskId, agora);
+    else aguardarFase(proxima, taskId);
+    return true;
+  }
+
+  function iniciarPomo(id) {
+    const t = tasks.find(x => x.id === id);
+    if (!t) return;
+    // Dentro do gesto de clique, os dois: é a única janela em que valem.
+    garantirAudio();
+    pedirPermissaoNotificacao();
+    /* Começar um pomo com outro correndo fecha o anterior como interrompido, sem
+       perguntar — é o mesmo contrato que startTask() sempre teve. Ver D17. */
+    if (pomoAtual) encerrarFase(Date.now(), false);
+    comecarFase('foco', id, Date.now());
+  }
+
+  function alternarPomo() {
+    const est = pomoAtual;
+    if (!est) return;
+    garantirAudio();
+    if (est.aguardando) { comecarFase(est.fase, est.taskId, Date.now()); return; }
+    if (est.pausadoEm) retomarPomo(); else pausarPomo();
+  }
+
+  function pausarPomo() {
+    const est = pomoAtual;
+    if (!est || est.aguardando || est.pausadoEm) return;
+    const agora = Date.now();
+    est.pausadoEm = agora;
+    /* Pausar fecha o trecho: pausa não é tempo trabalhado. O pomo continua
+       existindo, e por isso um pomo com pausas deixa mais de um registro — só o
+       último leva `completo: true`, então a contagem de pomos segue certa. */
+    encerrarFase(agora, false);
+    salvarPomoAtual();
+    render();
+    renderMini();
+  }
+
+  function retomarPomo() {
+    const est = pomoAtual;
+    if (!est || !est.pausadoEm) return;
+    const agora = Date.now();
+    // Empurra o fim previsto pelo tempo parado: pausar não consome o pomo.
+    est.terminaEm += agora - est.pausadoEm;
+    est.pausadoEm = null;
+    if (est.fase === 'foco' && est.taskId) startTask(est.taskId);
+    salvarPomoAtual();
+    render();
+    renderMini();
+  }
+
+  function pararPomo() {
+    const est = pomoAtual;
+    if (!est) return;
+    const agora = Date.now();
+
+    if (est.fase === 'foco') {
+      const t = est.taskId && tasks.find(x => x.id === est.taskId);
+      const emAberto = (t && t.startedAt) ? agora - t.startedAt : 0;
+      const total = est.msFeitos + (emAberto >= PISO_FOCO_MS ? emAberto : 0);
+      /* Confirmação com o número na frente: descartar em silêncio é o defeito
+         que este repositório já pagou uma vez, em enviar-agora. */
+      const texto = total > 0
+        ? 'Descartar este pomo?\n\n' + minsToHm(Math.round(total / 60000)) +
+          ' de foco continuam registrados — só o bloco é que não conta como pomo.'
+        : 'Descartar este pomo?\n\nNada será registrado: menos de um minuto de foco.';
+      if (!confirm(texto)) return;
+      encerrarFase(agora, false);
+    }
+
+    descartarPomoAtual();
+    render();
+    renderMini();
+  }
+
+  /* Uma tarefa pode estar 'active' sem pomo nenhum — registro vindo de um
+     aparelho com versão anterior do app, que ainda tinha o cronômetro livre. Sem
+     este desvio o botão de pausa não faria nada e a tarefa contaria para
+     sempre. */
+  function pausarPomoDaTarefa(id) {
+    if (pomoAtual && pomoAtual.taskId === id && !pomoAtual.aguardando && !pomoAtual.pausadoEm) {
+      pausarPomo();
+      return;
+    }
+    pauseTask(id);
+  }
+
+  /* Chamada na carga e a cada volta do foco para a aba. Ver D5. */
+  function reconciliarPomo() {
+    if (!pomoAtual) return;
+    /* Estado sem fim previsto: corrompido, ou de um formato anterior. Descartar
+       é melhor que carregar um cronômetro que nunca termina. */
+    if (!pomoAtual.aguardando && !(pomoAtual.terminaEm > 0)) {
+      pomoAtual = null;
+      salvarPomoAtual();
+      return;
+    }
+    encerrarFaseVencida(Date.now());
+  }
+
+  /* Tarefa 'active' com startedAt e sem pomo correspondente: sobra do cronômetro
+     livre que este bloco aposentou, ou estado perdido. Fecha sem registrar nada.
+
+     Registrar o intervalo até agora seria pior: o app pode ter passado a noite
+     fechado, e essas horas iriam para elapsed sem ninguém as ter trabalhado.
+     Tempo desconhecido se perde uma vez; tempo inventado envenena o relatório
+     para sempre. */
+  function reconciliarTarefasOrfas() {
+    const doPomo = (pomoAtual && !pomoAtual.pausadoEm && !pomoAtual.aguardando)
+      ? pomoAtual.taskId : null;
+    let mudou = false;
+    tasks.forEach(t => {
+      if (t.status === 'active' && t.startedAt && t.id !== doPomo) {
+        console.warn('Tarefa em andamento sem pomo correspondente; fechada sem registro:', t.id, t.name);
+        t.startedAt = null;
+        t.status = 'paused';
+        mudou = true;
+      }
+    });
+    if (mudou) save();
+  }
+
+  /* ---------- Pomodoro: som, notificação e título ---------- */
+
+  let audioCtx = null;
+
+  /* O contexto precisa nascer DENTRO de um gesto: criado na carga ele vem
+     'suspended' e nunca toca. Som sintetizado em vez de arquivo — zero bytes,
+     nada a acrescentar no sw.js, funciona offline. Ver D15. */
+  function garantirAudio() {
+    try {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return;
+      if (!audioCtx) audioCtx = new AC();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+    } catch (e) {
+      audioCtx = null;
+    }
+  }
+
+  function tocarAviso() {
+    if (!pomoConfig.som || !audioCtx || audioCtx.state !== 'running') return;
+    try {
+      const t0 = audioCtx.currentTime;
+      [[880, 0], [1174.7, 0.18]].forEach(par => {
+        const hz = par[0], atraso = par[1];
+        const osc = audioCtx.createOscillator();
+        const ganho = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.value = hz;
+        // Rampa exponencial não aceita zero; 0.0001 é o silêncio na prática.
+        ganho.gain.setValueAtTime(0.0001, t0 + atraso);
+        ganho.gain.exponentialRampToValueAtTime(0.16, t0 + atraso + 0.02);
+        ganho.gain.exponentialRampToValueAtTime(0.0001, t0 + atraso + 0.16);
+        osc.connect(ganho).connect(audioCtx.destination);
+        osc.start(t0 + atraso);
+        osc.stop(t0 + atraso + 0.2);
+      });
+    } catch (e) {
+      console.warn('Não foi possível tocar o aviso sonoro.', e);
+    }
+  }
+
+  /* Pedida no primeiro "começar", nunca na carga: permissão pedida sem contexto
+     é negada por reflexo, e negada não tem segunda chance. Ver D16. */
+  function pedirPermissaoNotificacao() {
+    try {
+      if ('Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission();
+      }
+    } catch (e) {
+      // Safari antigo devolve callback em vez de Promise. Sem notificação, e é só.
+    }
+  }
+
+  function notificar(titulo, corpo) {
+    try {
+      if (!('Notification' in window) || Notification.permission !== 'granted') return;
+      /* No Android o construtor lança quando há service worker registrado — e
+         aqui sempre há, desde a instalação como app. O caminho é a registration. */
+      if (navigator.serviceWorker && navigator.serviceWorker.getRegistration) {
+        navigator.serviceWorker.getRegistration().then(reg => {
+          if (reg && reg.showNotification) reg.showNotification(titulo, { body: corpo, tag: 'daysk-pomo' });
+          else new Notification(titulo, { body: corpo, tag: 'daysk-pomo' });
+        }).catch(() => {});
+        return;
+      }
+      new Notification(titulo, { body: corpo, tag: 'daysk-pomo' });
+    } catch (e) {
+      console.warn('Notificação não pôde ser exibida.', e);
+    }
+  }
+
+  const NOME_DA_FASE = { foco: 'Pomo concluído', pausa: 'Pausa terminada', pausaLonga: 'Pausa longa terminada' };
+
+  function avisarFimDeFase(faseQueAcabou, proxima) {
+    tocarAviso();
+    notificar(
+      NOME_DA_FASE[faseQueAcabou] || 'Fase concluída',
+      proxima === 'foco' ? 'Hora de voltar ao foco.' : 'Hora da pausa.');
+  }
+
+  function mmss(ms) {
+    const s = Math.max(0, Math.ceil(ms / 1000));
+    return String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
+  }
+
+  /* O título mostra o restante enquanto corre. É o aviso mais barato que existe
+     para quem está em outra aba do mesmo navegador. */
+  function atualizarTitulo() {
+    const correndo = pomoAtual && !pomoAtual.aguardando && !pomoAtual.pausadoEm;
+    const novo = correndo
+      ? mmss(restanteDe(pomoAtual, Date.now(), pomoConfig)) + ' · ' + TITULO_BASE
+      : TITULO_BASE;
+    if (document.title !== novo) document.title = novo;
+  }
+
+  /* ---------- Pomodoro: widget ---------- */
+
+  function rotuloDaFase(est) {
+    if (est.fase === 'foco') {
+      const t = est.taskId && tasks.find(x => x.id === est.taskId);
+      return t ? t.name : 'Foco';
+    }
+    const nome = est.fase === 'pausaLonga' ? 'Pausa longa' : 'Pausa';
+    return est.aguardando ? nome + ' — pronta' : nome;
+  }
+
+  function renderMini() {
+    const caixa = document.getElementById('pomo-mini');
+    if (!caixa) return;
+    if (!pomoAtual || miniOculto) {
+      caixa.hidden = true;
+      atualizarTitulo();
+      return;
+    }
+    const est = pomoAtual;
+    const parado = !!est.pausadoEm || !!est.aguardando;
+    caixa.hidden = false;
+    caixa.classList.toggle('pausado', !!est.pausadoEm);
+    caixa.classList.toggle('aguardando', !!est.aguardando);
+    document.getElementById('pomo-mini-tempo').textContent = mmss(restanteDe(est, Date.now(), pomoConfig));
+    document.getElementById('pomo-mini-nome').textContent = rotuloDaFase(est);
+    const botao = document.getElementById('pomo-mini-play');
+    const titulo = est.aguardando ? 'Começar' : (est.pausadoEm ? 'Retomar' : 'Pausar');
+    botao.innerHTML = icon(parado ? 'play' : 'pause', 15);
+    botao.title = titulo;
+    botao.setAttribute('aria-label', titulo);
+    atualizarTitulo();
+  }
+
+  /* Some até a próxima troca de fase — comecarFase() e aguardarFase() zeram a
+     flag. Não é "desligar o pomo": para isso existe o botão de parar. */
+  function esconderMini() {
+    miniOculto = true;
+    renderMini();
+  }
+
+  /* Um pulso por segundo, chamado de dentro do tick() que já existe. Toca só os
+     nós do widget — a disciplina do arquivo é não re-renderizar aqui. Ver D20. */
+  function pulsoPomo() {
+    if (!pomoAtual) { atualizarTitulo(); return; }
+    if (encerrarFaseVencida(Date.now())) return;
+    renderMini();
+  }
+
+  /* ---------- Pomodoro: configurações ---------- */
+
+  const POMO_CAMPOS = {
+    foco: 'pomo-cfg-foco',
+    pausa: 'pomo-cfg-pausa',
+    pausaLonga: 'pomo-cfg-pausa-longa',
+    ciclo: 'pomo-cfg-ciclo',
+  };
+  const POMO_CHAVES = { autoPomo: 'pomo-cfg-auto-pomo', autoPausa: 'pomo-cfg-auto-pausa', som: 'pomo-cfg-som' };
+
+  function abrirConfigPomo() {
+    pomoCfgAberto = true;
+    preencherConfigPomo();
+    document.getElementById('pomo-cfg-aviso').hidden = true;
+    document.getElementById('pomo-cfg-overlay').classList.add('open');
+    // No desktop quem rola é o painel, não o <body>. Ver D21.
+    travarRolagem(true);
+  }
+
+  function fecharConfigPomo() {
+    pomoCfgAberto = false;
+    document.getElementById('pomo-cfg-overlay').classList.remove('open');
+    travarRolagem(false);
+  }
+
+  function preencherConfigPomo() {
+    Object.keys(POMO_CAMPOS).forEach(k => {
+      const el = document.getElementById(POMO_CAMPOS[k]);
+      if (el) { el.value = pomoConfig[k]; el.classList.remove('invalido'); }
+    });
+    Object.keys(POMO_CHAVES).forEach(k => {
+      const el = document.getElementById(POMO_CHAVES[k]);
+      if (el) el.checked = !!pomoConfig[k];
+    });
+  }
+
+  /* Roda no `change`, não no `input`: normalizar a cada tecla faria "3" virar
+     "3" e depois recusar o "0" de "30". */
+  function aplicarConfigPomo() {
+    const bruto = {};
+    Object.keys(POMO_CAMPOS).forEach(k => {
+      const el = document.getElementById(POMO_CAMPOS[k]);
+      bruto[k] = el ? el.value : pomoConfig[k];
+    });
+    Object.keys(POMO_CHAVES).forEach(k => {
+      const el = document.getElementById(POMO_CHAVES[k]);
+      bruto[k] = el ? el.checked : pomoConfig[k];
+    });
+
+    const normalizada = normalizarConfigPomo(bruto);
+    /* Diz o que foi corrigido. Sem o aviso o campo "volta sozinho" e ninguém
+       entende por quê — que é como validação silenciosa costuma se manifestar. */
+    const corrigidos = Object.keys(POMO_CAMPOS).filter(k => String(normalizada[k]) !== String(bruto[k]).trim());
+    pomoConfig = normalizada;
+    salvarConfigPomo();
+    preencherConfigPomo();
+
+    const aviso = document.getElementById('pomo-cfg-aviso');
+    if (corrigidos.length) {
+      corrigidos.forEach(k => {
+        const el = document.getElementById(POMO_CAMPOS[k]);
+        if (el) el.classList.add('invalido');
+      });
+      const limites = corrigidos
+        .map(k => POMO_LIMITES[k][0] + '–' + POMO_LIMITES[k][1])
+        .join(' e ');
+      aviso.textContent = corrigidos.length === 1
+        ? 'Valor fora do intervalo permitido (' + limites + '); ajustado.'
+        : 'Valores fora dos intervalos permitidos (' + limites + '); ajustados.';
+      aviso.classList.add('alerta');
+      aviso.hidden = false;
+    } else {
+      aviso.hidden = true;
+    }
+
+    // Uma fase aguardando adota a duração nova na hora; a que já corre, não.
+    renderMini();
   }
 
   function actionButtons(t) {
-    if (t.status === 'pending') return `<button class="btn-icon btn-start" onclick="startTask('${t.id}')" title="Iniciar">${icon('play')}</button>`;
-    if (t.status === 'active') return `<button class="btn-icon" onclick="pauseTask('${t.id}')" title="Pausar">${icon('pause')}</button><button class="btn-icon btn-complete" onclick="completeTask('${t.id}')" title="Concluir">${icon('check')}</button>`;
-    if (t.status === 'paused') return `<button class="btn-icon btn-start" onclick="startTask('${t.id}')" title="Retomar">${icon('play')}</button><button class="btn-icon btn-complete" onclick="completeTask('${t.id}')" title="Concluir">${icon('check')}</button>`;
+    if (t.status === 'pending') {
+      return `<button class="btn-icon btn-start" onclick="iniciarPomo('${t.id}')" title="Iniciar um pomo">${icon('timer')}</button>`;
+    }
+    if (t.status === 'active') return `<button class="btn-icon" onclick="pausarPomoDaTarefa('${t.id}')" title="Pausar">${icon('pause')}</button><button class="btn-icon btn-complete" onclick="completeTask('${t.id}')" title="Concluir">${icon('check')}</button>`;
+    if (t.status === 'paused') return `<button class="btn-icon btn-start" onclick="iniciarPomo('${t.id}')" title="Retomar em um pomo">${icon('timer')}</button><button class="btn-icon btn-complete" onclick="completeTask('${t.id}')" title="Concluir">${icon('check')}</button>`;
     if (t.status === 'done') return `<button class="btn-icon" onclick="reopenTask('${t.id}')" title="Reabrir">${icon('counterClockwise')}</button>`;
     return '';
   }
@@ -6964,7 +7979,7 @@
      Só afeta histórico anterior ao registro — ver modelo-de-dados.md. */
   function msNoPeriodo(t, agora) {
     let total = 0;
-    msPorDia(sessoesDe(t, agora)).forEach((ms, ds) => { if (inPeriod(ds)) total += ms; });
+    msPorDia(focosDe(t, agora)).forEach((ms, ds) => { if (inPeriod(ds)) total += ms; });
     return total;
   }
 
@@ -7054,7 +8069,7 @@
        jogava todas as horas na segunda. */
     const agoraMs = Date.now();
     const porDia = currentCurveMetric === 'time'
-      ? msPorDia(tasks.flatMap(t => sessoesDe(t, agoraMs)))
+      ? msPorDia(tasks.flatMap(t => focosDe(t, agoraMs)))
       : null;
     const curveData = timelineDays.map(ds => {
       if (currentCurveMetric === 'time') {
@@ -7353,7 +8368,7 @@
        Visão Geral e a Curva de Desempenho discordariam na mesma tela — a curva
        passou a ler sessões no PR anterior. */
     const agoraR = Date.now();
-    const porDiaR = msPorDia(tasks.flatMap(t => sessoesDe(t, agoraR)));
+    const porDiaR = msPorDia(tasks.flatMap(t => focosDe(t, agoraR)));
     let totalMs = 0, diasComTrabalho = 0;
     porDiaR.forEach((ms, ds) => { if (inPeriod(ds) && ms > 0) { totalMs += ms; diasComTrabalho++; } });
 
@@ -7490,6 +8505,7 @@
   /* ---------- live tick for the running task ---------- */
 
   function tick() {
+    pulsoPomo();
     const active = tasks.find(t => t.status === 'active');
     if (active) {
       const bar = document.getElementById('bar-' + active.id);
@@ -7508,7 +8524,7 @@
          de sessões, sobrescrevia os valores certos uma vez por segundo. */
       if (currentTab === 'report') {
         const agoraT = Date.now();
-        const porDiaT = msPorDia(tasks.flatMap(t => sessoesDe(t, agoraT)));
+        const porDiaT = msPorDia(tasks.flatMap(t => focosDe(t, agoraT)));
         let msT = 0, diasT = 0;
         porDiaT.forEach((ms, ds) => { if (inPeriod(ds) && ms > 0) { msT += ms; diasT++; } });
         const minT = Math.round(msT / 60000);
@@ -7541,13 +8557,36 @@
     if (formOpen) closeForm();
     if (projectsManagerOpen) closeProjectsManager();
     if (syncManagerOpen) closeSyncManager();
+    if (pomoCfgAberto) fecharConfigPomo();
     if (sidebarOpen) closeSidebar();
+  });
+
+  /* `change` e não `input`: normalizar a cada tecla faria o "3" de "30" ser
+     aceito e o "0" recusado. */
+  Object.keys(POMO_CAMPOS).concat(Object.keys(POMO_CHAVES)).forEach(k => {
+    const el = document.getElementById(POMO_CAMPOS[k] || POMO_CHAVES[k]);
+    if (el) el.addEventListener('change', aplicarConfigPomo);
+  });
+
+  /* A outra metade da D5. O setInterval em aba de fundo é estrangulado para uma
+     vez por minuto, então a volta do foco é o momento em que a fase vencida
+     precisa ser fechada — com o carimbo do fim previsto, não com o de agora. */
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState !== 'visible') return;
+    reconciliarPomo();
+    renderMini();
   });
 
   ensureDefaultProject();
   migrate();
   populateProjectSelect();
+  /* Nesta ordem: a reconciliação do pomo pode fechar uma fase e devolver a
+     tarefa para 'paused', e só o que sobrar depois disso é órfão de verdade.
+     Depois do populateProjectSelect() porque comecarFase() chama render(). */
+  reconciliarPomo();
+  reconciliarTarefasOrfas();
   render();
+  renderMini();
   setInterval(render, 60000);
   setInterval(tick, 1000);
   initSync();
