@@ -119,6 +119,14 @@ Um objeto, ou `null` quando não há nada correndo.
 { foco: 30, pausa: 5, pausaLonga: 15, ciclo: 4, autoPomo: false, autoPausa: false }
 ```
 
+### Campo novo na tarefa
+
+Um só, em `daily-tasks`:
+
+| Campo | Valores | Significado |
+|---|---|---|
+| `pomosEstimados` | inteiro ou `null` | Quantos pomos a tarefa deve levar. `null` = sem estimativa — ver **D22** |
+
 ### Posição do widget: `daysk-pomo-widget`
 
 `{ x, y }` em pixels a partir do canto inferior direito. Guardar a partir do
@@ -414,6 +422,24 @@ Duas consequências diretas:
 - **A entrada na aba usa `voltarAoTopo()`** ([l. 5162](../index.html:5162)), não
   `window.scrollTo`, que no desktop rolaria um elemento que não rola.
 
+### D22 — Estimativa de pomos: campo próprio, default derivado, e o caso sem duração
+
+A tarefa ganha `pomosEstimados` (inteiro ou `null`) e a linha mostra
+`2/4 pomos` — feitos sobre estimados.
+
+O default sai de graça de `t.dur`: `Math.ceil(dur / config.foco)`. É sugestão,
+não amarra — mudar a configuração depois **não** reescreve estimativas já
+gravadas, pela mesma razão que o registro guarda `planejado` (ver o modelo de
+dados). Por isso o campo é gravado, e não calculado na hora de exibir.
+
+**O caso que precisa de resposta explícita: `t.dur` é `null` na maioria das
+tarefas** — toda tarefa sem horário, que é o caso mais comum do app. Aí não há
+de onde derivar nada, e a regra é: sem estimativa, a linha mostra só os pomos
+feitos (`3 pomos`), nunca `3/0` nem `3/—`.
+
+O campo viaja em `tasks.json`, que já é sincronizado. Nenhum custo de
+transporte.
+
 ## A divisão em blocos
 
 Cada bloco é um PR e entrega algo utilizável e verificável sozinho.
@@ -445,6 +471,9 @@ funciona.
 - Widget flutuante **no canto inferior direito, posição fixa**: tempo restante,
   nome da tarefa, pausar/retomar, parar, silenciar, fechar.
 - Som (**D15**), notificação (**D16**), título da aba.
+- **Confirmação ao desistir**, com o tempo já registrado no texto: *"Descartar
+  este pomo? 12 min já registrados."* Abaixo do piso de **D8** o texto muda para
+  dizer que nada será registrado — é a mesma confirmação, não uma segunda.
 
 Verificável: iniciar um pomo pela lista, acompanhar no widget, **recarregar a
 página no meio** e ver o tempo continuar certo, deixar terminar e conferir que
@@ -460,6 +489,8 @@ histórico legado não podem mudar em nada.
   Foco de hoje, Pomos totais, Duração Total Focada) e **Foco em Registrar** —
   a timeline agrupada por dia, com hora de início, fim, duração e nome.
 - Pomo solto (**D10**) — depende do seletor de tarefa, por isso mora aqui.
+- **Estimativa de pomos por tarefa** (**D22**): o campo no formulário e o rótulo
+  `2/4 pomos` na linha da tarefa.
 
 Reuso: os cartões são o mesmo padrão de `.overview-stats` /
 `.report-card` que os Relatórios já usam; o agrupamento por dia é o mesmo
@@ -471,6 +502,14 @@ Reuso: os cartões são o mesmo padrão de `.overview-stats` /
   esquerda, focado à direita, linha do agora.
 - "Foco em Notas" abaixo, gravado em `nota` ao fechar o pomo.
 - A coluna esquerda passa a contagem regressiva, com Pausar e Parar.
+- **Modo foco**: uma classe no `<body>` que esconde tudo menos o mostrador.
+  Não é tela cheia do navegador — `requestFullscreen` exige gesto, some com a
+  barra do sistema e não volta sozinho ao trocar de aba.
+- **Atalhos**: Espaço pausa/retoma, Esc sai do modo foco. Entram no handler de
+  `keydown` que já existe. Duas ressalvas: Espaço **não** pode disparar com o
+  foco num campo de texto (o "Foco em Notas" está logo ali), e Esc já fecha
+  formulário, gerenciador de projetos, sincronização e gaveta — o modo foco
+  entra nessa cadeia, e sai **por último**.
 
 ### B4 — Arrastar o widget
 
@@ -540,22 +579,31 @@ Os dois tipos que o projeto já usa, e nesta ordem.
 7. Widget: arrastar para os quatro cantos, redimensionar a janela, recarregar.
 8. Abaixo de 860px: widget encostado, sem sobrepor a navbar nem a bandeja.
 9. Os dois temas, e os Relatórios com histórico legado — números inalterados.
+10. Estimativa (**D22**): tarefa com `dur`, tarefa **sem** `dur`, e mudar a
+    duração do pomo nas configurações depois de gravar uma estimativa.
+11. Modo foco e atalhos: Espaço com o cursor **dentro** do "Foco em Notas" tem
+    de digitar um espaço, não pausar. Esc com modal aberto fecha o modal, não o
+    modo foco.
+12. Desistir: confirmação com o tempo certo no texto, e o texto alternativo
+    abaixo do piso de 60s.
 
 Lembrando o aprendizado que já se repetiu duas vezes aqui: **medir em vez de
 julgar pela captura de tela** (`elementFromPoint` para sobreposição,
 `scrollWidth` contra `innerWidth` para transbordo).
 
-## Sugestões, para decidir
+## Sugestões: o que entrou e o que não
 
-Nenhuma está no pedido. Ordenadas por relação custo/benefício.
+Nenhuma delas estava no pedido original. Foram propostas, decididas, e as
+aceitas **estão no escopo dos blocos acima** — não são opcionais de
+implementação.
 
-| Ideia | O que é | Custo | Recomendação |
+| Ideia | O que é | Custo | Decisão |
 |---|---|---|---|
-| **Estimativa de pomos** | A tarefa mostra `2/4 pomos`. O default sai de graça de `dur`: `Math.ceil(dur / config.foco)` | Baixo — um campo e um rótulo | **Incluir**, em B2 |
-| **Confirmar ao desistir** | "Descartar este pomo? 12 min já registrados" | Baixo | **Incluir**, em B1 |
-| **Modo foco** | Esconde tudo menos o mostrador | Baixo — uma classe no `<body>` | **Incluir**, em B3 |
-| **Atalhos** | Espaço pausa/retoma, Esc sai do modo foco | Baixo — já existe handler de Escape | **Incluir**, em B3 |
-| **Meta diária** | Anel "5/8 pomos" na Visão geral | Médio | Opcional, B5 |
+| **Estimativa de pomos** | A tarefa mostra `2/4 pomos`. O default sai de graça de `dur`: `Math.ceil(dur / config.foco)` | Baixo — um campo e um rótulo | **Entra no B2** — ver **D22** |
+| **Confirmar ao desistir** | "Descartar este pomo? 12 min já registrados" | Baixo | **Entra no B1** |
+| **Modo foco** | Esconde tudo menos o mostrador | Baixo — uma classe no `<body>` | **Entra no B3** |
+| **Atalhos** | Espaço pausa/retoma, Esc sai do modo foco | Baixo — já existe handler de Escape | **Entra no B3** |
+| **Meta diária** | Anel "5/8 pomos" na Visão geral | Médio | Em aberto. Não está em bloco nenhum; se entrar, é no B5 |
 | **Sons de fundo** | Chuva, ruído branco | Alto — assets de áudio, cache no `sw.js`, licença | **Fora** |
 | **Contagem no favicon** | Desenhar o favicon por `canvas` a cada segundo | Médio, e o título já resolve | **Fora** |
 
@@ -563,6 +611,7 @@ Nenhuma está no pedido. Ordenadas por relação custo/benefício.
 
 - Cronômetro livre como segundo modo (a aba "Cronômetro" do TickTick).
 - Sons de fundo.
+- Contagem regressiva no favicon — o título da aba já resolve.
 - Configuração de pomodoro por tarefa.
 - Picture-in-Picture — o widget flutua dentro da página, não sobre outras
   janelas. É o limite do navegador, e vale dizer em voz alta para não virar
