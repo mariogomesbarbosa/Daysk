@@ -1,6 +1,6 @@
 # Pomodoro
 
-**Plano. O bloco B1 está implementado; B2 a B5 continuam no papel.**
+**Plano. Os blocos B1 e B2 estão implementados; B3 a B5 continuam no papel.**
 
 > Referências a linhas valem para `207369c` (`main` depois do PR #38). Se não
 > baterem mais, busque pelo nome da função ou da classe.
@@ -521,6 +521,8 @@ histórico legado não podem mudar em nada.
 
 ### B2 — Tela do Pomodoro, estado ocioso
 
+**Implementado.** Ver [Desvios do B2](#desvios-do-b2).
+
 - Quarta aba no rail (**D11**), `VIEWS`, `switchTab`, `updateHeader`.
 - Coluna esquerda: mostrador com a duração configurada, seletor de tarefa,
   botão **Começar**, acesso a Configurações.
@@ -711,6 +713,22 @@ em algo que já existia e não é deste bloco.
 **Este botão é provisório.** Em B2 as Configurações de foco passam a ser
 alcançadas pelo "..." da tela do Pomodoro, como no print, e ele sai da
 `brand-bar`.
+
+## Desvios do B2
+
+| # | O quê | Por quê |
+|---|---|---|
+| 1 | O painel esquerdo já trata o **estado em execução** — contagem regressiva, Pausar/Parar | Era do B3. Sem isso a aba ficaria quebrada durante um pomo, e o B2 não fecharia sozinho. O que continua sendo do B3 é a **coluna direita** virar grade do dia |
+| 2 | O seletor de alvo é um **modal**, não um `<select>` | Cada opção mostra horário, pomos e projeto. `<option>` só aceita texto |
+| 3 | O pomo solto **não passa por `fecharSessao()`** | Aquela função existe para somar em `elapsed`, que é campo de tarefa. Sem tarefa não há onde somar, então o registro é gravado direto — com o mesmo piso da **D8** |
+| 4 | `trechoIni` e `rotulo` entraram no estado corrente | O pomo com tarefa usa `t.startedAt` como início do trecho; o solto não tem tarefa, e precisava de onde guardar |
+| 5 | `wide-content` passou a ser `tab !== 'today'` | Era a lista das duas abas largas. Com a terceira, enumerar já não se paga |
+| 6 | A linha do tempo mostra o trecho **em curso** | O print não tem, mas sem ele a lista fica parada enquanto o pomo roda, e parece quebrada |
+
+**O que continua faltando, e é esperado:** pomo solto não aparece nos
+Relatórios. Verificado nesta rodada — 30 min de foco livre ficaram fora das
+Horas Trabalhadas. É a ressalva já registrada na **D10**, e o conserto (a linha
+"Sem atividade") é do **B5**.
 
 ## O que fica de fora
 

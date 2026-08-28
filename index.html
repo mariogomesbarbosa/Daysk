@@ -3137,6 +3137,325 @@
     .brand-actions .btn-foco .btn-label { display: none; }
   }
 
+  /* ---------- Pomodoro: a tela ---------- */
+
+  /* Duas colunas: o mostrador à esquerda, métricas e histórico à direita. A
+     coluna do mostrador é fixa porque um relógio que muda de largura conforme a
+     janela não tem por que existir — o que se quer maior é o histórico. */
+  .pomo-layout {
+    display: grid;
+    grid-template-columns: 340px minmax(0, 1fr);
+    gap: 20px;
+    align-items: start;
+  }
+
+  @media (max-width: 900px) {
+    .pomo-layout { grid-template-columns: minmax(0, 1fr); }
+  }
+
+  .pomo-painel {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    padding: 28px 20px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+  }
+
+  /* O seletor de alvo. É um botão e não um <select> porque a lista precisa
+     mostrar projeto e horário de cada tarefa, e <option> só aceita texto. */
+  .pomo-alvo {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    max-width: 100%;
+    padding: 6px 10px;
+    background: none;
+    border: none;
+    border-radius: var(--radius-sm);
+    color: var(--text2);
+    font-family: var(--sans);
+    font-size: 13px;
+    cursor: pointer;
+    transition: background .15s, color .15s;
+  }
+
+  .pomo-alvo:hover { background: var(--surface2); color: var(--text); }
+
+  .pomo-alvo-txt {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .pomo-mostrador {
+    position: relative;
+    width: 240px;
+    height: 240px;
+  }
+
+  .pomo-anel { width: 100%; height: 100%; transform: rotate(-90deg); }
+  .pomo-anel-trilho { fill: none; stroke: var(--border); stroke-width: 4; }
+
+  .pomo-anel-arco {
+    fill: none;
+    stroke: var(--accent);
+    stroke-width: 4;
+    stroke-linecap: round;
+    /* Sem transição: o arco anda uma vez por segundo e uma animação de 1s
+       encavalaria com a seguinte, ficando sempre atrás do número. */
+  }
+
+  .pomo-mostrador-centro {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+  }
+
+  .pomo-tempo {
+    font-family: var(--mono);
+    font-size: 44px;
+    font-weight: 600;
+    letter-spacing: -0.04em;
+    color: var(--text);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .pomo-fase {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text3);
+  }
+
+  .pomo-botoes { display: flex; gap: 8px; }
+
+  .pomo-comecar {
+    min-width: 132px;
+    justify-content: center;
+    border-radius: 999px;
+  }
+
+  .pomo-dica {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: var(--text3);
+    text-align: center;
+    margin: -8px 0 0;
+    min-height: 14px;
+  }
+
+  /* Os quatro números do print. Grid de 2x2 que vira 4x1 quando cabe. */
+  .pomo-metricas {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    margin-bottom: 1.5rem;
+  }
+
+  @media (min-width: 1240px) {
+    .pomo-metricas { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  }
+
+  .pomo-metrica {
+    padding: 14px 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+  }
+
+  .pomo-metrica-lbl {
+    font-family: var(--sans);
+    font-size: 11.5px;
+    color: var(--text2);
+    margin-bottom: 6px;
+  }
+
+  .pomo-metrica-val {
+    font-family: var(--mono);
+    font-size: 26px;
+    font-weight: 600;
+    letter-spacing: -0.03em;
+    color: var(--text);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .pomo-metrica-val .un {
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--text3);
+    margin-left: 1px;
+  }
+
+  .pomo-secao {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.75rem;
+  }
+
+  .pomo-secao-titulo {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+    margin: 0;
+  }
+
+  .pomo-dia {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text3);
+    margin: 1.25rem 0 0.5rem;
+  }
+
+  .pomo-dia:first-child { margin-top: 0; }
+
+  /* A linha do registro. O ponto e o fio à esquerda são a linha do tempo; o fio
+     é ::after no ponto para não precisar de elemento vazio. */
+  .pomo-reg {
+    display: grid;
+    grid-template-columns: 16px minmax(0, 1fr) auto;
+    gap: 10px;
+    align-items: start;
+    padding: 8px 0;
+  }
+
+  .pomo-reg-marca {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    padding-top: 5px;
+  }
+
+  .pomo-reg-ponto {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+    flex-shrink: 0;
+  }
+
+  .pomo-reg.parcial .pomo-reg-ponto {
+    background: none;
+    border: 1.5px solid var(--border2);
+  }
+
+  .pomo-reg.emcurso .pomo-reg-ponto { background: var(--green); }
+
+  /* O fio desce até a próxima linha. Na última ele sobraria, então o :last-child
+     do grupo o corta. */
+  .pomo-reg-marca::after {
+    content: '';
+    position: absolute;
+    top: 17px;
+    bottom: -14px;
+    width: 1px;
+    background: var(--border);
+  }
+
+  .pomo-reg:last-child .pomo-reg-marca::after { display: none; }
+
+  .pomo-reg-horas {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text2);
+  }
+
+  .pomo-reg-nome {
+    font-family: var(--sans);
+    font-size: 13px;
+    color: var(--text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .pomo-reg.parcial .pomo-reg-nome { color: var(--text2); }
+
+  .pomo-reg-dur {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--text2);
+    white-space: nowrap;
+    padding-top: 2px;
+  }
+
+  /* "interrompido" na linha do fragmento. Sem isto a contagem de pomos e a
+     linha do tempo pareceriam brigar: um pomo pausado uma vez aparece como duas
+     linhas mas conta como um. Ver o desvio 8 em docs/pomodoro.md. */
+  .pomo-reg-selo {
+    font-family: var(--mono);
+    font-size: 9.5px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--text3);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1px 5px;
+    margin-left: 6px;
+    white-space: nowrap;
+  }
+
+  .pomo-vazio {
+    font-family: var(--sans);
+    font-size: 13px;
+    color: var(--text2);
+    padding: 24px 0;
+    text-align: center;
+  }
+
+  /* Lista do seletor de alvo. */
+  .pomo-opcao {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    width: 100%;
+    padding: 10px 12px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 13px;
+    text-align: left;
+    cursor: pointer;
+    transition: border-color .15s, background .15s;
+  }
+
+  .pomo-opcao:hover { border-color: var(--border2); background: var(--surface2); }
+  .pomo-opcao.ativa { border-color: var(--accent); }
+
+  .pomo-opcao-meta {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: var(--text3);
+    white-space: nowrap;
+  }
+
+  .pomo-opcoes { display: flex; flex-direction: column; gap: 6px; }
+
+  /* Selo de estimativa na linha da tarefa (D22). */
+  .pomo-badge {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text2);
+    background: var(--surface2);
+    border-radius: 4px;
+    padding: 2px 6px;
+    white-space: nowrap;
+  }
+
   /* ---------- Pomodoro: configurações de foco ---------- */
 
   .pomo-cfg-grupo {
@@ -3473,6 +3792,63 @@
 
    </div>
   </div>
+  <div id="view-pomodoro" style="display:none">
+    <div class="pomo-layout">
+
+      <div class="pomo-painel">
+        <button class="pomo-alvo" id="pomo-alvo" onclick="abrirSeletorDeAlvo()" title="Escolher o que focar">
+          <span class="pomo-alvo-txt" id="pomo-alvo-txt">Foco</span>
+          <svg class="icon" width="13" height="13" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M181.66,133.66l-80,80a8,8,0,0,1-11.32-11.32L164.69,128,90.34,53.66a8,8,0,0,1,11.32-11.32l80,80A8,8,0,0,1,181.66,133.66Z"/></svg>
+        </button>
+
+        <div class="pomo-mostrador">
+          <!-- r=112 num viewBox de 240: 240/2 - 4/2 (metade do traço) - 4 de folga. -->
+          <svg class="pomo-anel" viewBox="0 0 240 240" aria-hidden="true">
+            <circle class="pomo-anel-trilho" cx="120" cy="120" r="112"></circle>
+            <circle class="pomo-anel-arco" id="pomo-arco" cx="120" cy="120" r="112"></circle>
+          </svg>
+          <div class="pomo-mostrador-centro">
+            <span class="pomo-tempo" id="pomo-tempo">30:00</span>
+            <span class="pomo-fase" id="pomo-fase">pomo</span>
+          </div>
+        </div>
+
+        <div class="pomo-botoes" id="pomo-botoes"></div>
+        <p class="pomo-dica" id="pomo-dica"></p>
+      </div>
+
+      <div class="pomo-lado">
+        <div class="pomo-secao">
+          <h2 class="pomo-secao-titulo">Visão geral</h2>
+        </div>
+        <div class="pomo-metricas">
+          <div class="pomo-metrica">
+            <div class="pomo-metrica-lbl">Pomos de hoje</div>
+            <div class="pomo-metrica-val" id="pomo-m-hoje">0</div>
+          </div>
+          <div class="pomo-metrica">
+            <div class="pomo-metrica-lbl">Foco de hoje</div>
+            <div class="pomo-metrica-val" id="pomo-m-foco-hoje">0<span class="un">m</span></div>
+          </div>
+          <div class="pomo-metrica">
+            <div class="pomo-metrica-lbl">Pomos totais</div>
+            <div class="pomo-metrica-val" id="pomo-m-total">0</div>
+          </div>
+          <div class="pomo-metrica">
+            <div class="pomo-metrica-lbl">Duração total focada</div>
+            <div class="pomo-metrica-val" id="pomo-m-foco-total">0<span class="un">m</span></div>
+          </div>
+        </div>
+
+        <div class="pomo-secao">
+          <h2 class="pomo-secao-titulo">Foco em Registrar</h2>
+        </div>
+        <div id="pomo-registro"></div>
+      </div>
+
+    </div>
+  </div>
+
   <div id="view-report" style="display:none">
 
     <div class="period-btns">
@@ -3634,6 +4010,10 @@
     <svg class="icon" width="18" height="18" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M208,32H184V24a8,8,0,0,0-16,0v8H88V24a8,8,0,0,0-16,0v8H48A16,16,0,0,0,32,48V208a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V48A16,16,0,0,0,208,32ZM72,48v8a8,8,0,0,0,16,0V48h80v8a8,8,0,0,0,16,0V48h24V80H48V48ZM208,208H48V96H208V208Z"/></svg>
     <span class="nav-label">Calendário</span>
   </button>
+  <button class="nav-item" data-tab="pomodoro" onclick="switchTab('pomodoro')" aria-label="Pomodoro" title="Pomodoro">
+    <svg class="icon" width="18" height="18" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M128,40a96,96,0,1,0,96,96A96.11,96.11,0,0,0,128,40Zm0,176a80,80,0,1,1,80-80A80.09,80.09,0,0,1,128,216ZM173.66,90.34a8,8,0,0,1,0,11.32l-40,40a8,8,0,0,1-11.32-11.32l40-40A8,8,0,0,1,173.66,90.34ZM96,16a8,8,0,0,1,8-8h48a8,8,0,0,1,0,16H104A8,8,0,0,1,96,16Z"/></svg>
+    <span class="nav-label">Pomodoro</span>
+  </button>
   <button class="nav-item" data-tab="report" onclick="switchTab('report')" aria-label="Relatórios" title="Relatórios">
     <svg class="icon" width="18" height="18" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M224,200h-8V40a8,8,0,0,0-8-8H152a8,8,0,0,0-8,8V80H96a8,8,0,0,0-8,8v40H48a8,8,0,0,0-8,8v64H32a8,8,0,0,0,0,16H224a8,8,0,0,0,0-16ZM160,48h40V200H160ZM104,96h40V200H104ZM56,144H88v56H56Z"/></svg>
     <span class="nav-label">Relatórios</span>
@@ -3663,14 +4043,18 @@
       <div class="form-row-2">
         <div class="form-field-v">
           <label class="form-label">Início (opcional)</label>
-          <input type="time" id="f-time" onchange="syncDurHint('f-time','f-end','f-hint')">
+          <input type="time" id="f-time" onchange="syncDurHint('f-time','f-end','f-hint'); sincronizarSugestaoDePomos()">
         </div>
         <div class="form-field-v">
           <label class="form-label">Final (opcional)</label>
-          <input type="time" id="f-end" onchange="syncDurHint('f-time','f-end','f-hint')" disabled>
+          <input type="time" id="f-end" onchange="syncDurHint('f-time','f-end','f-hint'); sincronizarSugestaoDePomos()" disabled>
         </div>
       </div>
       <p class="form-hint" id="f-hint"></p>
+      <div class="form-field-v">
+        <label class="form-label" for="f-pomos">Pomos estimados (opcional)</label>
+        <input type="number" id="f-pomos" min="1" max="99" step="1" inputmode="numeric" placeholder="sugerido pela duração">
+      </div>
       <div class="form-field-v">
         <label class="form-label">Projeto/Demanda</label>
         <div class="project-select-row">
@@ -3816,6 +4200,18 @@
   </div>
 </div>
 
+<div class="form-overlay" id="pomo-alvo-overlay" onclick="if(event.target===this) fecharSeletorDeAlvo()">
+  <div class="form-panel">
+    <div class="form-header">
+      <h2 class="form-title">Focar em</h2>
+      <button class="form-close" onclick="fecharSeletorDeAlvo()" aria-label="Fechar"><svg class="icon" width="18" height="18" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M205.66,194.34a8,8,0,0,1-11.32,11.32L128,139.31,61.66,205.66a8,8,0,0,1-11.32-11.32L116.69,128,50.34,61.66A8,8,0,0,1,61.66,50.34L128,116.69l66.34-66.35a8,8,0,0,1,11.32,11.32L139.31,128Z"/></svg></button>
+    </div>
+    <div class="form-body">
+      <div class="pomo-opcoes" id="pomo-opcoes"></div>
+    </div>
+  </div>
+</div>
+
 <div class="form-overlay" id="pomo-cfg-overlay" onclick="if(event.target===this) fecharConfigPomo()">
   <div class="form-panel">
     <div class="form-header">
@@ -3939,6 +4335,10 @@
      trabalhou. Ver D5. */
   const FOLGA_ENCADEAR_MS = 5 * 60000;
 
+  /* Nome do pomo sem tarefa. Guardado no registro para a linha do tempo ter o
+     que mostrar — um registro sem taskId e sem rótulo seria uma linha anônima. */
+  const ROTULO_SOLTO = 'Foco livre';
+
   let pomos = lerJson('daysk-pomos', []);
   let pomoAtual = lerJson('daysk-pomo-atual', null);
   let pomoConfig = normalizarConfigPomo(lerJson('daysk-pomo-config', null));
@@ -3949,6 +4349,11 @@
   let indicePomos = null;
   let miniOculto = false;
   let pomoCfgAberto = false;
+  let pomoAlvoAberto = false;
+  /* Id da tarefa escolhida na tela do Pomodoro, ou null para foco livre. Não é
+     persistido: é uma escolha da sessão, e ressuscitá-la apontando para uma
+     tarefa já concluída confundiria mais do que ajuda. */
+  let pomoAlvo = null;
 
   let formOpen = false;
   let editingId = null;
@@ -5738,7 +6143,9 @@
     document.getElementById('f-date').value = dateStr || defaultDateForView();
     document.getElementById('f-time').value = timeStr || '';
     document.getElementById('f-end').value = '';
+    document.getElementById('f-pomos').value = '';
     syncDurHint('f-time', 'f-end', 'f-hint');
+    sincronizarSugestaoDePomos();
     populateProjectSelect();
     // Criar uma tarefa vendo um projeto põe a tarefa naquele projeto.
     const viewProj = currentProject();
@@ -5758,7 +6165,9 @@
     document.getElementById('f-date').value = t.date || '';
     document.getElementById('f-time').value = t.time || '';
     document.getElementById('f-end').value = endFromDur(t.time, t.dur);
+    document.getElementById('f-pomos').value = estimativaDe(t) || '';
     syncDurHint('f-time', 'f-end', 'f-hint');
+    sincronizarSugestaoDePomos();
     populateProjectSelect();
     document.getElementById('f-project').value = t.projectId;
     syncFormPresetButtons();
@@ -5774,6 +6183,7 @@
     let date = document.getElementById('f-date').value || null;
     const time = document.getElementById('f-time').value || null;
     const dur = durFromEnd(time, document.getElementById('f-end').value || null);
+    const pomosEstimados = lerEstimativaDoFormulario();
 
     // Horário sem dia não significa nada: assume hoje.
     if (time && !date) date = todayStr();
@@ -5786,6 +6196,7 @@
         t.dur = dur;
         t.projectId = projectId;
         t.date = date;
+        t.pomosEstimados = pomosEstimados;
       }
     } else {
       tasks.push({
@@ -5793,6 +6204,7 @@
         name,
         time,
         dur,
+        pomosEstimados,
         projectId,
         status: 'pending',
         elapsed: 0,
@@ -5852,7 +6264,7 @@
     render();
   }
 
-  const VIEWS = ['today', 'calendar', 'report'];
+  const VIEWS = ['today', 'calendar', 'pomodoro', 'report'];
 
   function switchTab(tab) {
     currentTab = tab;
@@ -5869,7 +6281,10 @@
     document.body.classList.toggle('no-sidebar', tab !== 'today');
     // Calendário e Relatórios abrem mão do teto de 880px. A aba Tasks não:
     // lá a coluna de conteúdo divide o espaço com o sidebar de 260px.
-    document.body.classList.toggle('wide-content', tab === 'calendar' || tab === 'report');
+    /* Desde o shell de painéis (PR #38) `wide-content` não muda nada no
+       desktop — as duas variantes de .app-shell convergem para uma coluna. Vale
+       abaixo de 1025px, e ligá-la mantém a aba coerente com as outras duas. */
+    document.body.classList.toggle('wide-content', tab !== 'today');
     closeSidebar();
     // A bandeja e a "tarefa na mão" são do Calendário e não sobrevivem a ele.
     bandejaAberta = false;
@@ -5878,7 +6293,9 @@
     sincronizarFaixaDeToque();
     updateHeader();
     voltarAoTopo();
-    if (tab === 'report') renderReport(); else render();
+    if (tab === 'report') renderReport();
+    else if (tab === 'pomodoro') renderPomodoro();
+    else render();
   }
 
   function setPeriod(p) {
@@ -6010,17 +6427,22 @@
     localStorage.setItem('daysk-pomo-ciclo', JSON.stringify(pomoCiclo));
   }
 
-  function comecarFase(fase, taskId, agora) {
+  function comecarFase(fase, taskId, agora, rotulo) {
     const dur = duracaoDaFase(fase, pomoConfig);
     pomoAtual = {
       fase,
       taskId: taskId || null,
+      rotulo: taskId ? null : (rotulo || ROTULO_SOLTO),
       iniciadoEm: agora,
       terminaEm: agora + dur * 60000,
       pausadoEm: null,
       aguardando: false,
       planejado: dur,
       msFeitos: 0,
+      /* Início do trecho corrente. Para pomo COM tarefa quem manda é
+         t.startedAt, que effectiveElapsed() também lê; para o pomo solto não há
+         tarefa onde guardar, e é este campo que sustenta o registro. */
+      trechoIni: fase === 'foco' ? agora : null,
       nota: '',
     };
     // Uma fase nova é justamente quando vale reaparecer depois de um "ocultar".
@@ -6029,21 +6451,24 @@
     salvarPomoAtual();
     render();
     renderMini();
+    if (currentTab === 'pomodoro') renderPomodoro();
   }
 
   /* Fase escolhida mas não iniciada: é o estado em que o app fica quando o
      início automático está desligado. Sem `terminaEm` — o relógio só começa a
      correr quando alguém aperta o play. */
-  function aguardarFase(fase, taskId) {
+  function aguardarFase(fase, taskId, rotulo) {
     pomoAtual = {
       fase,
       taskId: taskId || null,
+      rotulo: taskId ? null : (rotulo || ROTULO_SOLTO),
       iniciadoEm: null,
       terminaEm: null,
       pausadoEm: null,
       aguardando: true,
       planejado: duracaoDaFase(fase, pomoConfig),
       msFeitos: 0,
+      trechoIni: null,
       nota: '',
     };
     miniOculto = false;
@@ -6068,16 +6493,31 @@
     const est = pomoAtual;
     if (!est) return;
     if (est.fase !== 'foco') return;
-    const t = est.taskId && tasks.find(x => x.id === est.taskId);
-    if (t) {
-      est.msFeitos += fecharSessao(t, fim, {
-        planejado: est.planejado,
-        completo: !!completo,
-        nota: est.nota || null,
-      });
-      if (t.status === 'active') t.status = 'paused';
-      save();
+    const meta = { planejado: est.planejado, completo: !!completo, nota: est.nota || null };
+
+    if (est.taskId) {
+      const t = tasks.find(x => x.id === est.taskId);
+      if (t) {
+        est.msFeitos += fecharSessao(t, fim, meta);
+        if (t.status === 'active') t.status = 'paused';
+        save();
+      }
+    } else if (est.trechoIni) {
+      /* Pomo solto (D10). É o único caminho que não passa por fecharSessao() — e
+         não passa porque fecharSessao existe para somar em `elapsed`, que é
+         campo de tarefa, e aqui não há tarefa. O piso da D8 vale igual. */
+      const dur = fim - est.trechoIni;
+      if (dur >= PISO_FOCO_MS) {
+        registrarFoco(Object.assign({
+          taskId: null,
+          rotulo: est.rotulo || ROTULO_SOLTO,
+          ini: est.trechoIni,
+          fim,
+        }, meta));
+        est.msFeitos += dur;
+      }
     }
+    est.trechoIni = null;
     if (completo) ajustarCiclo(cicloAtual() + 1);
   }
 
@@ -6125,11 +6565,21 @@
     comecarFase('foco', id, Date.now());
   }
 
+  /* O "Começar" da tela do Pomodoro: usa o alvo escolhido, que pode ser
+     nenhum. Ver D10. */
+  function iniciarPomoNoAlvo() {
+    garantirAudio();
+    pedirPermissaoNotificacao();
+    if (pomoAtual) encerrarFase(Date.now(), false);
+    if (pomoAlvo) comecarFase('foco', pomoAlvo, Date.now());
+    else comecarFase('foco', null, Date.now(), ROTULO_SOLTO);
+  }
+
   function alternarPomo() {
     const est = pomoAtual;
     if (!est) return;
     garantirAudio();
-    if (est.aguardando) { comecarFase(est.fase, est.taskId, Date.now()); return; }
+    if (est.aguardando) { comecarFase(est.fase, est.taskId, Date.now(), est.rotulo); return; }
     if (est.pausadoEm) retomarPomo(); else pausarPomo();
   }
 
@@ -6154,7 +6604,10 @@
     // Empurra o fim previsto pelo tempo parado: pausar não consome o pomo.
     est.terminaEm += agora - est.pausadoEm;
     est.pausadoEm = null;
-    if (est.fase === 'foco' && est.taskId) startTask(est.taskId);
+    if (est.fase === 'foco') {
+      if (est.taskId) startTask(est.taskId);
+      else est.trechoIni = agora;
+    }
     salvarPomoAtual();
     render();
     renderMini();
@@ -6167,7 +6620,8 @@
 
     if (est.fase === 'foco') {
       const t = est.taskId && tasks.find(x => x.id === est.taskId);
-      const emAberto = (t && t.startedAt) ? agora - t.startedAt : 0;
+      const inicioDoTrecho = est.taskId ? (t && t.startedAt) : est.trechoIni;
+      const emAberto = inicioDoTrecho ? agora - inicioDoTrecho : 0;
       const total = est.msFeitos + (emAberto >= PISO_FOCO_MS ? emAberto : 0);
       /* Confirmação com o número na frente: descartar em silêncio é o defeito
          que este repositório já pagou uma vez, em enviar-agora. */
@@ -6331,7 +6785,7 @@
   function rotuloDaFase(est) {
     if (est.fase === 'foco') {
       const t = est.taskId && tasks.find(x => x.id === est.taskId);
-      return t ? t.name : 'Foco';
+      return t ? t.name : (est.rotulo || ROTULO_SOLTO);
     }
     const nome = est.fase === 'pausaLonga' ? 'Pausa longa' : 'Pausa';
     return est.aguardando ? nome + ' — pronta' : nome;
@@ -6371,8 +6825,312 @@
      nós do widget — a disciplina do arquivo é não re-renderizar aqui. Ver D20. */
   function pulsoPomo() {
     if (!pomoAtual) { atualizarTitulo(); return; }
-    if (encerrarFaseVencida(Date.now())) return;
+    const agora = Date.now();
+    if (encerrarFaseVencida(agora)) return;
     renderMini();
+    /* Na aba do Pomodoro, o mostrador e os números de hoje também andam. A lista
+       de registros NÃO é refeita aqui: ela só muda quando um trecho fecha, e
+       remontá-la por segundo seria o mesmo erro dos cinco gráficos. Ver D20. */
+    if (currentTab === 'pomodoro') {
+      atualizarMostradorPomo(agora);
+      renderMetricasPomo(agora);
+    }
+  }
+
+
+  /* ---------- Pomodoro: a tela ---------- */
+
+  /* Perímetro do anel: r=112 no viewBox de 240. Constante para o arco não ter
+     de recalcular getTotalLength() a cada segundo. */
+  const POMO_PERIMETRO = 2 * Math.PI * 112;
+
+  /* O trecho de foco ainda aberto, no formato dos registros do store. Existe
+     para os números de hoje andarem enquanto o pomo roda, em vez de só pularem
+     quando ele fecha. */
+  function trechoAbertoDoPomo(agora) {
+    const est = pomoAtual;
+    if (!est || est.fase !== 'foco' || est.aguardando || est.pausadoEm) return [];
+    const t = est.taskId && tasks.find(x => x.id === est.taskId);
+    const ini = est.taskId ? (t && t.startedAt) : est.trechoIni;
+    if (!ini) return [];
+    return [{ ini, fim: agora, taskId: est.taskId || null, rotulo: est.rotulo || null, aberto: true }];
+  }
+
+  /* Os quatro números do print.
+
+     Leem SÓ o store, nunca o legado de t.sessions — ver D18. O corolário é que
+     "Pomos totais" começa do zero e não bate com as Horas Trabalhadas dos
+     Relatórios enquanto houver histórico antigo. Está certo assim: uma tela mede
+     foco em pomos, a outra mede tempo trabalhado de qualquer origem. */
+  function metricasPomo(agora) {
+    const hoje = todayStr();
+    const trechos = pomos.concat(trechoAbertoDoPomo(agora));
+    const porDia = msPorDia(trechos);
+
+    let msTotal = 0;
+    trechos.forEach(x => { if (x.fim > x.ini) msTotal += x.fim - x.ini; });
+
+    /* O pomo é contado no dia em que COMEÇOU, enquanto os minutos dele se
+       repartem por dia em msPorDia(). Um pomo das 23:40 conta como pomo de
+       ontem e como 20min de ontem + 10min de hoje. É a leitura natural dos dois
+       números, e vale saber que eles não derivam um do outro. */
+    const completos = pomos.filter(x => x.completo);
+    return {
+      pomosHoje: completos.filter(x => toDateStr(new Date(x.ini)) === hoje).length,
+      focoHoje: Math.round((porDia.get(hoje) || 0) / 60000),
+      pomosTotal: completos.length,
+      focoTotal: Math.round(msTotal / 60000),
+    };
+  }
+
+  /* "3h30" vira "3<un>h</un>30<un>m</un>" — o print separa número de unidade,
+     e sem isso o 26px do número engole o "min". */
+  function numeroComUnidade(min) {
+    const h = Math.floor(Math.abs(min) / 60);
+    const m = Math.abs(min) % 60;
+    if (!h) return m + '<span class="un">m</span>';
+    return h + '<span class="un">h</span>' + (m ? String(m).padStart(2, '0') + '<span class="un">m</span>' : '');
+  }
+
+  function rotuloDoAlvo() {
+    if (!pomoAlvo) return ROTULO_SOLTO;
+    const t = tasks.find(x => x.id === pomoAlvo);
+    return t ? t.name : ROTULO_SOLTO;
+  }
+
+  const NOME_CURTO_DA_FASE = { foco: 'pomo', pausa: 'pausa', pausaLonga: 'pausa longa' };
+
+  function renderPainelPomo(agora) {
+    const est = pomoAtual;
+    const alvoTxt = document.getElementById('pomo-alvo-txt');
+    const botoes = document.getElementById('pomo-botoes');
+    const dica = document.getElementById('pomo-dica');
+    const seletor = document.getElementById('pomo-alvo');
+    if (!alvoTxt || !botoes) return;
+
+    // Com um pomo em andamento o alvo é o dele, e trocar no meio não faz sentido.
+    const emAndamento = !!est && !est.aguardando;
+    alvoTxt.textContent = est ? rotuloDaFase(est) : rotuloDoAlvo();
+    seletor.disabled = emAndamento;
+    seletor.style.visibility = (est && est.fase !== 'foco') ? 'hidden' : '';
+
+    document.getElementById('pomo-fase').textContent = est ? NOME_CURTO_DA_FASE[est.fase] : 'pomo';
+
+    if (!est) {
+      botoes.innerHTML = `<button class="btn-save pomo-comecar" onclick="iniciarPomoNoAlvo()">Começar</button>`;
+      dica.textContent = 'Pausa longa a cada ' + pomoConfig.ciclo + ' pomos · ' +
+        cicloAtual() + ' concluído(s) na sequência';
+    } else if (est.aguardando) {
+      const rotulo = est.fase === 'foco' ? 'Começar pomo' : 'Começar pausa';
+      botoes.innerHTML =
+        `<button class="btn-save pomo-comecar" onclick="alternarPomo()">${rotulo}</button>` +
+        `<button class="btn-cancel-form" onclick="pararPomo()">Encerrar</button>`;
+      dica.textContent = est.fase === 'foco'
+        ? 'Pronto para o próximo pomo.'
+        : 'Pausa pronta — comece quando quiser.';
+    } else {
+      const rotulo = est.pausadoEm ? 'Retomar' : 'Pausar';
+      botoes.innerHTML =
+        `<button class="btn-save pomo-comecar" onclick="alternarPomo()">${rotulo}</button>` +
+        `<button class="btn-cancel-form" onclick="pararPomo()">Parar</button>`;
+      dica.textContent = est.pausadoEm ? 'Pausado — o pomo não está correndo.' : '';
+    }
+
+    atualizarMostradorPomo(agora);
+  }
+
+  /* Só o número e o arco. Chamada uma vez por segundo pelo pulso, então não
+     pode tocar em mais nada — ver D20. */
+  function atualizarMostradorPomo(agora) {
+    const alvo = document.getElementById('pomo-tempo');
+    if (!alvo) return;
+    const est = pomoAtual;
+    const totalMs = (est ? est.planejado : pomoConfig.foco) * 60000;
+    const restante = est ? restanteDe(est, agora, pomoConfig) : totalMs;
+    alvo.textContent = mmss(restante);
+
+    const arco = document.getElementById('pomo-arco');
+    if (!arco) return;
+    const decorrido = totalMs > 0 ? Math.min(1, Math.max(0, 1 - restante / totalMs)) : 0;
+    arco.style.strokeDasharray = POMO_PERIMETRO;
+    arco.style.strokeDashoffset = POMO_PERIMETRO * (1 - decorrido);
+  }
+
+  function renderMetricasPomo(agora) {
+    const m = metricasPomo(agora);
+    const poe = (id, html) => { const el = document.getElementById(id); if (el) el.innerHTML = html; };
+    poe('pomo-m-hoje', String(m.pomosHoje));
+    poe('pomo-m-foco-hoje', numeroComUnidade(m.focoHoje));
+    poe('pomo-m-total', String(m.pomosTotal));
+    poe('pomo-m-foco-total', numeroComUnidade(m.focoTotal));
+  }
+
+  function nomeDoRegistro(reg) {
+    if (reg.taskId) {
+      const t = tasks.find(x => x.id === reg.taskId);
+      if (t) return t.name;
+      // Tarefa apagada depois do pomo: o registro fica, e diz isso.
+      return 'atividade removida';
+    }
+    return reg.rotulo || ROTULO_SOLTO;
+  }
+
+  function hhmm(ts) {
+    const d = new Date(ts);
+    return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+  }
+
+  /* A linha do tempo do print: agrupada por dia, mais recente primeiro.
+
+     Um pomo pausado uma vez aparece como DUAS linhas, porque pausar fecha o
+     trecho. As parciais levam o selo "interrompido" — sem ele a contagem de
+     pomos e a lista pareceriam brigar. Ver o desvio 8 em docs/pomodoro.md. */
+  function renderRegistroPomo(agora) {
+    const alvo = document.getElementById('pomo-registro');
+    if (!alvo) return;
+
+    const lista = pomos.concat(trechoAbertoDoPomo(agora))
+      .filter(r => r && r.fim > r.ini)
+      .sort((a, b) => b.ini - a.ini);
+
+    if (!lista.length) {
+      alvo.innerHTML = '<p class="pomo-vazio">Nenhum foco registrado ainda. ' +
+        'O primeiro pomo aparece aqui.</p>';
+      return;
+    }
+
+    const grupos = [];
+    lista.forEach(r => {
+      const ds = toDateStr(new Date(r.ini));
+      let g = grupos.find(x => x.date === ds);
+      if (!g) { g = { date: ds, itens: [] }; grupos.push(g); }
+      g.itens.push(r);
+    });
+
+    alvo.innerHTML = grupos.map(g => {
+      const linhas = g.itens.map(r => {
+        const dur = Math.round((r.fim - r.ini) / 60000);
+        const classes = ['pomo-reg'];
+        if (r.aberto) classes.push('emcurso');
+        else if (!r.completo) classes.push('parcial');
+        const selo = r.aberto
+          ? '<span class="pomo-reg-selo">em curso</span>'
+          : (r.completo ? '' : '<span class="pomo-reg-selo">interrompido</span>');
+        return `<div class="${classes.join(' ')}">
+          <div class="pomo-reg-marca"><span class="pomo-reg-ponto"></span></div>
+          <div>
+            <div class="pomo-reg-horas">${hhmm(r.ini)} - ${hhmm(r.fim)}${selo}</div>
+            <div class="pomo-reg-nome">${esc(nomeDoRegistro(r))}</div>
+          </div>
+          <div class="pomo-reg-dur">${dur}min</div>
+        </div>`;
+      }).join('');
+      return `<p class="pomo-dia">${formatDayHeader(g.date)}</p>${linhas}`;
+    }).join('');
+  }
+
+  function renderPomodoro() {
+    const agora = Date.now();
+    renderPainelPomo(agora);
+    renderMetricasPomo(agora);
+    renderRegistroPomo(agora);
+  }
+
+  /* ---------- Pomodoro: seletor de alvo ---------- */
+
+  function abrirSeletorDeAlvo() {
+    if (pomoAtual && !pomoAtual.aguardando) return;
+    pomoAlvoAberto = true;
+    const abertas = tasks
+      .filter(t => t.status !== 'done')
+      .sort((a, b) => taskSortKey(a).localeCompare(taskSortKey(b)));
+
+    const opcao = (id, nome, meta, ativa) =>
+      `<button type="button" class="pomo-opcao${ativa ? ' ativa' : ''}" onclick="escolherAlvo(${id ? "'" + id + "'" : 'null'})">
+        <span class="pomo-reg-nome">${esc(nome)}</span>
+        <span class="pomo-opcao-meta">${meta}</span>
+      </button>`;
+
+    const html = [opcao(null, ROTULO_SOLTO, 'sem atividade', !pomoAlvo)]
+      .concat(abertas.map(t => {
+        const proj = projects.find(p => p.id === t.projectId);
+        const feitos = pomosFeitosDe(t.id);
+        const est = estimativaDe(t);
+        const meta = [t.time || null, est ? feitos + '/' + est + ' pomos' : (feitos ? feitos + ' pomos' : null), proj ? proj.name : null]
+          .filter(Boolean).join(' · ');
+        return opcao(t.id, t.name, esc(meta), pomoAlvo === t.id);
+      }));
+
+    document.getElementById('pomo-opcoes').innerHTML = html.join('');
+    document.getElementById('pomo-alvo-overlay').classList.add('open');
+    travarRolagem(true);
+  }
+
+  function fecharSeletorDeAlvo() {
+    pomoAlvoAberto = false;
+    document.getElementById('pomo-alvo-overlay').classList.remove('open');
+    travarRolagem(false);
+  }
+
+  function escolherAlvo(id) {
+    pomoAlvo = id || null;
+    fecharSeletorDeAlvo();
+    renderPainelPomo(Date.now());
+  }
+
+  /* ---------- Pomodoro: estimativa por tarefa (D22) ---------- */
+
+  function pomosFeitosDe(taskId) {
+    return (pomosPorTarefa().get(taskId) || []).filter(p => p.completo).length;
+  }
+
+  /* Gravada, não calculada na exibição: mudar a duração do pomo depois não pode
+     reescrever estimativa que já existe — mesma razão pela qual o registro
+     guarda `planejado`.
+
+     O default sai de t.dur, e `dur` é null na maioria das tarefas — toda tarefa
+     sem horário, que é o caso comum do app. Sem duração não há de onde derivar
+     nada, e aí não há estimativa. */
+  function estimativaDe(t) {
+    return Number.isFinite(t.pomosEstimados) && t.pomosEstimados > 0 ? t.pomosEstimados : null;
+  }
+
+  function estimativaSugerida(dur) {
+    return dur > 0 ? Math.max(1, Math.ceil(dur / pomoConfig.foco)) : null;
+  }
+
+  /* O campo aceita vazio (= sem estimativa) e valida como o resto: `min`/`max`
+     do HTML não barram valor colado. Fora do intervalo vira "sem estimativa" em
+     vez de um número inventado. */
+  function lerEstimativaDoFormulario() {
+    const bruto = document.getElementById('f-pomos').value;
+    if (bruto === null || String(bruto).trim() === '') return null;
+    const n = Math.round(Number(bruto));
+    return Number.isFinite(n) && n >= 1 && n <= 99 ? n : null;
+  }
+
+  /* A sugestão aparece como placeholder, não como valor: preencher o campo
+     sozinho faria a estimativa parecer escolhida por quem não a escolheu, e
+     depois ela ficaria congelada mesmo se a duração mudasse. */
+  function sincronizarSugestaoDePomos() {
+    const campo = document.getElementById('f-pomos');
+    if (!campo) return;
+    const dur = durFromEnd(
+      document.getElementById('f-time').value || null,
+      document.getElementById('f-end').value || null);
+    const sugerido = estimativaSugerida(dur);
+    campo.placeholder = sugerido
+      ? sugerido + ' pela duração (' + minsToHm(dur) + ')'
+      : 'sem estimativa';
+  }
+
+  /* Sem estimativa mostra só os pomos feitos — nunca "3/0" nem "3/—". */
+  function badgeDePomos(t) {
+    const feitos = pomosFeitosDe(t.id);
+    const est = estimativaDe(t);
+    if (!est && !feitos) return '';
+    const txt = est ? feitos + '/' + est + ' pomos' : feitos + (feitos === 1 ? ' pomo' : ' pomos');
+    return `<span class="pomo-badge" title="Pomos concluídos${est ? ' de ' + est + ' estimados' : ''}">${txt}</span>`;
   }
 
   /* ---------- Pomodoro: configurações ---------- */
@@ -6509,6 +7267,9 @@
     } else if (currentTab === 'calendar') {
       document.getElementById('day-label').textContent = 'calendário';
       document.getElementById('date-label').textContent = calendarHeaderLabel();
+    } else if (currentTab === 'pomodoro') {
+      document.getElementById('day-label').textContent = 'pomodoro';
+      document.getElementById('date-label').textContent = 'foco';
     } else if (currentProject()) {
       // Esta ramificação tem de morar aqui, nunca no handler de clique:
       // render() roda a cada 60s e sobrescreveria o título pela data de hoje.
@@ -6539,6 +7300,7 @@
             <div class="task-top">
               <span class="task-name">${t.name}</span>
               ${showTag ? projectTagHtml(t) : ''}
+              ${badgeDePomos(t)}
             </div>
             <div class="progress-row">
               <span class="bar-label">${t.date ? 'Sem horário definido' : 'Sem prazo definido'}</span>
@@ -6568,6 +7330,7 @@
           <div class="task-top">
             <span class="task-name">${t.name}</span>
             ${showTag ? projectTagHtml(t) : ''}
+            ${badgeDePomos(t)}
           </div>
           <div class="progress-row">
             <div class="bar-track"><div class="bar-fill ${p.cls}" id="bar-${t.id}" style="width:${p.pct}%"></div></div>
@@ -6756,6 +7519,7 @@
 
     if (currentTab === 'report') renderReport();
     if (currentTab === 'calendar') renderCalendar();
+    if (currentTab === 'pomodoro') renderPomodoro();
   }
 
   /* ---------- render: calendário ---------- */
@@ -8558,6 +9322,7 @@
     if (projectsManagerOpen) closeProjectsManager();
     if (syncManagerOpen) closeSyncManager();
     if (pomoCfgAberto) fecharConfigPomo();
+    if (pomoAlvoAberto) fecharSeletorDeAlvo();
     if (sidebarOpen) closeSidebar();
   });
 
