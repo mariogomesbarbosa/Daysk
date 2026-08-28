@@ -1,6 +1,6 @@
 # Pomodoro
 
-**Plano, não implementado.**
+**Plano. O bloco B1 está implementado; B2 a B5 continuam no papel.**
 
 > Referências a linhas valem para `207369c` (`main` depois do PR #38). Se não
 > baterem mais, busque pelo nome da função ou da classe.
@@ -110,14 +110,28 @@ Um objeto, ou `null` quando não há nada correndo.
 | `iniciadoEm` | timestamp do início da fase |
 | `terminaEm` | **timestamp absoluto do fim previsto** — ver **D4** |
 | `pausadoEm` | timestamp, ou `null` quando correndo |
-| `ciclo` | Pomos completos desde a última pausa longa |
+| `aguardando` | Fase escolhida e ainda não iniciada — o estado em que o app fica com o início automático desligado |
+| `planejado` | A duração desta fase, congelada no início |
+| `msFeitos` | Tempo já registrado neste pomo, somando os fragmentos. É o número que a confirmação de descarte mostra |
 | `nota` | Texto em edição, salvo no registro ao fechar |
+
+> **`ciclo` saiu daqui.** Ele precisa sobreviver ao intervalo entre um pomo e o
+> seguinte, e `daysk-pomo-atual` é `null` nesse intervalo. Foi para um store
+> próprio, `daysk-pomo-ciclo`, como `{ n, dia }` — o `dia` é o que dá a virada de
+> meia-noite da **D19** de graça.
+>
+> **`aguardando`, `planejado` e `msFeitos` entraram.** Os três nasceram de casos
+> que o plano não tinha resolvido: onde o app fica quando o automático está
+> desligado, que duração gravar no registro quando a configuração muda no meio, e
+> de onde sai o número da confirmação de descarte.
 
 ### Configuração: `daysk-pomo-config`
 
 ```
-{ foco: 30, pausa: 5, pausaLonga: 15, ciclo: 4, autoPomo: false, autoPausa: false }
+{ foco: 30, pausa: 5, pausaLonga: 15, ciclo: 4, autoPomo: false, autoPausa: false, som: true }
 ```
+
+`som` não estava no plano: é o silenciar da **D15**, que acabou morando aqui.
 
 ### Campo novo na tarefa
 
@@ -179,6 +193,13 @@ Alcance da mudança: `writeToFolder`, `loadFromFolder`, `writeToGoogleDrive`,
 `loadFromGoogleDrive`, `enviarAgora` e `mergeSyncData` (que ganha um terceiro
 parâmetro).
 
+> **Na implementação: `mergeSyncData` é código morto.** Está definida e não é
+> chamada de lugar nenhum — o caminho vivo (`loadFromFolder` /
+> `loadFromGoogleDrive`) substitui `tasks` e `projects` inteiros, sem fundir.
+> A união por id foi então para uma função nova e pequena, `fundirPomos()`,
+> chamada nos dois pontos de descida. `mergeSyncData` ficou como estava:
+> apagá-la é decisão separada, e não é deste bloco.
+
 **Fusão por união de `id`.** Registros de pomo são append-only enquanto não
 existir edição — mesmo raciocínio que já protege `sessions` hoje: preservar é
 seguro por construção. Quando o bloco B5 trouxer apagar um registro, essa
@@ -234,6 +255,12 @@ a timeline enche de registros de 4 segundos.
 Ao parar abaixo do piso, o app avisa que nada foi registrado — descarte
 silencioso é o defeito que [enviar-agora-e-o-descarte-silencioso.md](enviar-agora-e-o-descarte-silencioso.md)
 já custou uma vez.
+
+> **Na implementação o piso vale para todo trecho fechado, não só para o
+> abandono.** Pausar vinte segundos depois de retomar perde esses vinte
+> segundos. A alternativa — piso só no descarte — exigia dois caminhos dentro de
+> `fecharSessao()` e enchia a linha do tempo de registros de oito segundos. Uma
+> regra só, e ela também cobre o relógio do sistema andando para trás.
 
 ### D9 — Configuração é global, com os defaults do print
 
@@ -350,6 +377,10 @@ guardar não funciona; ele nasce `suspended`.
 
 Silenciar é um botão no widget e na tela, guardado em `daysk-pomo-config`.
 
+> **Na implementação silenciar mora só nas Configurações de foco**, como "Som ao
+> terminar". Quatro botões num widget de 266px viram tarja de ícones, e o mini do
+> TickTick que originou o pedido tem três: play/pause, parar e fechar.
+
 ### D16 — Permissão de notificação é pedida no primeiro "Começar"
 
 Nunca no load da página. Pedir permissão sem contexto é o padrão que os
@@ -396,6 +427,12 @@ tempo trabalhado, de qualquer origem.
 Ao completar uma pausa longa, ao parar manualmente a sequência, e na virada do
 dia. Sem a virada do dia, três pomos de ontem fazem o primeiro de hoje disparar
 pausa longa.
+
+> **Corrigido na implementação: zera ao DISPARAR a pausa longa, não ao
+> concluí-la.** Com o início automático desligado ninguém é obrigado a fazer a
+> pausa — e esperando a conclusão o contador ficava travado em 4, fazendo o
+> quinto foco cair em `5 % 4 = 1` e nunca mais disparar pausa longa na hora
+> certa.
 
 ### D20 — Nada disso re-renderiza
 
@@ -455,6 +492,8 @@ Cada bloco é um PR e entrega algo utilizável e verificável sozinho.
 B4 é paralelo a B2/B3 — toca só o widget.
 
 ### B1 — Motor, configurações e widget fixo
+
+**Implementado.** Ver [Desvios](#desvios).
 
 O bloco grande, e o único que não dá para fatiar mais sem entregar algo que não
 funciona.
@@ -606,6 +645,72 @@ implementação.
 | **Meta diária** | Anel "5/8 pomos" na Visão geral | Médio | Em aberto. Não está em bloco nenhum; se entrar, é no B5 |
 | **Sons de fundo** | Chuva, ruído branco | Alto — assets de áudio, cache no `sw.js`, licença | **Fora** |
 | **Contagem no favicon** | Desenhar o favicon por `canvas` a cada segundo | Médio, e o título já resolve | **Fora** |
+
+## Desvios
+
+O que a implementação do **B1** desmentiu ou teve de acrescentar. Cada item já
+está corrigido em citação dentro da decisão correspondente; aqui é o resumo.
+
+| # | O quê | Onde |
+|---|---|---|
+| 1 | `mergeSyncData` é código morto — a união por id foi para uma `fundirPomos()` nova | **D3** |
+| 2 | O piso de 60s vale para todo trecho fechado, não só para o abandono | **D8** |
+| 3 | Silenciar mora nas Configurações, não no widget | **D15** |
+| 4 | O ciclo zera ao **disparar** a pausa longa, não ao concluí-la | **D19** |
+| 5 | `ciclo` saiu de `daysk-pomo-atual` para um store próprio | Modelo de dados |
+| 6 | `aguardando`, `planejado` e `msFeitos` entraram no estado corrente | Modelo de dados |
+| 7 | `sessoesDe()` virou `focosDe()`, com quatro pontos de chamada renomeados | **D2** |
+| 8 | Um pomo com pausas deixa **mais de um registro** | Abaixo |
+| 9 | Tarefa órfã do cronômetro livre é fechada **sem registrar nada** | Abaixo |
+| 10 | O botão "Foco" estourou a `brand-bar` do mobile | Abaixo |
+
+### 8 — Um pomo com pausas deixa mais de um registro
+
+Pausar fecha o trecho, porque pausa não é tempo trabalhado. O pomo continua
+existindo, então um pomo pausado uma vez grava dois registros: o fragmento
+(`completo: false`) e o restante (`completo: true`).
+
+A contagem de pomos segue certa, porque só conta `completo`. O que muda é a
+linha do tempo do **B2**: ela vai mostrar dois blocos onde houve uma pausa. É
+verdade — houve mesmo —, mas o print do TickTick mostra um só, e o B2 vai
+precisar decidir se agrupa na exibição.
+
+A alternativa era acumular o tempo no estado e gravar um registro no fim, com
+`ini` do primeiro início e `fim` do último. Isso faria `msPorDia()` contar o
+intervalo pausado como trabalhado, que é o erro que o recorte por dia existe
+para não cometer.
+
+### 9 — Tarefa órfã do cronômetro livre
+
+Uma tarefa pode chegar `active` com `startedAt` e sem pomo nenhum: é o que
+sobrou de quem estava com o cronômetro livre correndo quando o app atualizou, e
+é também o que um aparelho com versão anterior sincroniza.
+
+`reconciliarTarefasOrfas()` fecha essas tarefas **sem registrar tempo algum**, e
+avisa no console. Registrar o intervalo até agora seria pior: o app pode ter
+passado a noite fechado, e essas horas iriam para `elapsed` sem ninguém as ter
+trabalhado. Tempo desconhecido se perde uma vez; tempo inventado envenena o
+relatório para sempre.
+
+**Isto perde tempo real** de quem estava no meio de uma sessão na hora da
+atualização. É uma vez só, na primeira abertura, e é o lado certo do erro.
+
+### 10 — O botão "Foco" estourou a `brand-bar` do mobile
+
+Medido antes e depois: a barra fechava **exata** a 375px — 343px de conteúdo em
+343px de caixa. Qualquer botão a mais transborda, e o "Foco" foi o primeiro a
+chegar.
+
+Duas defesas, porque só a primeira não bastava — com o rótulo escondido ainda
+sobravam ~44px: o botão vira só ícone abaixo de 860px (o mesmo tratamento que já
+recebe no rail), e `.brand-actions` passa a poder quebrar linha.
+
+O rótulo do "Sincronização" ficou. Escondê-lo também resolveria, mas é mudança
+em algo que já existia e não é deste bloco.
+
+**Este botão é provisório.** Em B2 as Configurações de foco passam a ser
+alcançadas pelo "..." da tela do Pomodoro, como no print, e ele sai da
+`brand-bar`.
 
 ## O que fica de fora
 
