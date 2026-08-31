@@ -529,6 +529,11 @@ funciona.
   este pomo? 12 min já registrados."* Abaixo do piso de **D8** o texto muda para
   dizer que nada será registrado — é a mesma confirmação, não uma segunda.
 
+  > **Corrigido no B3: ela era um `confirm()` nativo, e virou o modal do app.**
+  > Um `confirm()` suprimido devolve `false` sem abrir diálogo, e `false` é
+  > indistinguível de "a pessoa cancelou" — o botão "Parar" virava um botão que
+  > não faz nada, sem aviso nenhum. Ver o desvio 11.
+
 Verificável: iniciar um pomo pela lista, acompanhar no widget, **recarregar a
 página no meio** e ver o tempo continuar certo, deixar terminar e conferir que
 `elapsed` cresceu exatamente a duração do pomo. Nos Relatórios, os números do
@@ -770,6 +775,9 @@ Horas Trabalhadas. É a ressalva já registrada na **D10**, e o conserto (a linh
 | 6 | A faixa esquerda não empilha sobreposição; o recorte por dia virou `faixaNoDia()`; a rolagem é posta uma vez por entrada | **D12** |
 | 7 | O widget cobria o "Foco em Notas" | Abaixo |
 | 8 | O nome do foco fica visível no modo foco | Abaixo |
+| 9 | A faixa esquerda não empilha sobreposição em colunas | **D12** |
+| 10 | A rolagem da grade é posta uma vez por entrada | **D12** |
+| 11 | O `confirm()` nativo do "Parar" virou o modal do app — era um botão que não fazia nada | Abaixo |
 
 ### 1 — Dois `style` no mesmo bloco
 
@@ -843,6 +851,42 @@ O nome fica, centrado sobre o mostrador, e só perde a cara de botão — durant
 pomo o seletor de alvo já está desabilitado, e trocar de alvo no meio não faz
 sentido. O botão de sair fica pelo mesmo tipo de razão: tela cheia sem saída
 visível é armadilha, e o Esc sozinho não é saída visível.
+
+### 11 — O "Parar" era um botão que não fazia nada
+
+**Relatado no uso, não pelo código.** Clicar em "Parar" não encerrava o pomo nem
+zerava o cronômetro. Diagnóstico, medindo:
+
+- O clique **chegava** em `pararPomo()`.
+- O `confirm()` **era chamado**, com o texto certo.
+- E devolvia `false`. A função saía pelo `return` e nada acontecia.
+
+Um `confirm()` suprimido devolve `false` **sem abrir diálogo nenhum**, e `false`
+é exatamente o mesmo valor de "a pessoa clicou em Cancelar". O caminho mais
+comum para isso é o *"impedir que esta página crie diálogos adicionais"* do
+Chrome, que aparece depois de alguns diálogos e, marcado, mata em silêncio todo
+`confirm()` seguinte daquela página. Contextos de PWA e WebView têm o mesmo
+efeito.
+
+A pergunta passou a ser o modal do app — `.form-overlay`, o padrão que os outros
+seis modais já usam. Não depende de diálogo do navegador, aceita duas linhas de
+texto formatado, entra na cadeia do Escape (Escape ali é *não descartar*), e o
+Espaço fica bloqueado enquanto ela está aberta.
+
+Três coisas que apareceram no caminho:
+
+- **Parar uma fase de PAUSA não pergunta mais nada.** Não há foco a descartar, e
+  a versão anterior já não perguntava — mas por acidente, porque caía fora do
+  `if (est.fase === 'foco')`. Agora é explícito.
+- **O pomo pode vencer enquanto a pergunta está na tela**, porque o pulso de um
+  segundo continua correndo. `confirmarParada()` reconfere a fase antes de
+  fechá-la: se venceu, a reconciliação já gravou o trecho com o carimbo certo, e
+  fechar de novo somaria duas vezes.
+- **Os outros quatro `confirm()` do arquivo ficaram.** Ali `false` significa
+  "mantenha o lado seguro" — não trocar os dados, não apagar o projeto —, que é o
+  que se quer quando o diálogo não aparece. Aqui `false` significava "o pomo
+  continua correndo", que se lê como defeito. Trocar os quatro é decisão
+  separada, e não é deste bloco.
 
 ## O que fica de fora
 

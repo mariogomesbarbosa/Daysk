@@ -3667,6 +3667,16 @@
   .pomo-nota:focus { outline: none; border-color: var(--accent); }
   .pomo-nota:disabled { background: var(--surface2); color: var(--text3); cursor: not-allowed; }
 
+  /* O texto da confirmação de descarte. A .form-hint tem margin-top negativa
+     porque nasceu grudada num campo; aqui é o corpo do modal. */
+  .pomo-parar-texto {
+    font-family: var(--sans);
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--text2);
+    margin: 0;
+  }
+
   /* Folga no pé: enquanto a grade está na tela o widget também está, encostado no
      canto inferior direito, e sem esta reserva ele fica sobre o "Foco em Notas".
      Medido a 1440x900 — o widget cobria 60px do campo. As duas coisas sempre
@@ -4610,6 +4620,25 @@
   </div>
 </div>
 
+<!-- A confirmação de descarte. Era um confirm() nativo, e um confirm() suprimido
+     devolve false sem abrir diálogo — o botão "Parar" virava um botão que não faz
+     nada. Ver o desvio 11 em docs/pomodoro.md. -->
+<div class="form-overlay" id="pomo-parar-overlay" onclick="if(event.target===this) fecharConfirmacaoDeParada()">
+  <div class="form-panel" style="max-width:380px;">
+    <div class="form-header">
+      <h2 class="form-title">Descartar este pomo?</h2>
+      <button class="form-close" onclick="fecharConfirmacaoDeParada()" aria-label="Fechar"><svg class="icon" width="18" height="18" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M205.66,194.34a8,8,0,0,1-11.32,11.32L128,139.31,61.66,205.66a8,8,0,0,1-11.32-11.32L116.69,128,50.34,61.66A8,8,0,0,1,61.66,50.34L128,116.69l66.34-66.35a8,8,0,0,1,11.32,11.32L139.31,128Z"/></svg></button>
+    </div>
+    <div class="form-body">
+      <p class="pomo-parar-texto" id="pomo-parar-texto"></p>
+    </div>
+    <div class="form-footer">
+      <button class="btn-cancel-form" onclick="fecharConfirmacaoDeParada()">continuar o pomo</button>
+      <button class="btn-save" onclick="confirmarParada()">descartar</button>
+    </div>
+  </div>
+</div>
+
 <!-- O widget do pomo. Fora do .container e sem alça de arraste: arrastar é o
      B4. Ver docs/pomodoro.md. -->
 <div class="pomo-mini" id="pomo-mini" hidden role="status" aria-live="off">
@@ -4671,6 +4700,7 @@
   let miniOculto = false;
   let pomoCfgAberto = false;
   let pomoAlvoAberto = false;
+  let pomoPararAberto = false;
   /* Id da tarefa escolhida na tela do Pomodoro, ou null para foco livre. Não é
      persistido: é uma escolha da sessão, e ressuscitá-la apontando para uma
      tarefa já concluída confundiria mais do que ajuda. */
@@ -6944,26 +6974,56 @@
     renderMini();
   }
 
+  /* O tempo já registrado neste pomo, que é o número que a confirmação mostra. */
+  function focoJaRegistrado(est, agora) {
+    const t = est.taskId && tasks.find(x => x.id === est.taskId);
+    const inicioDoTrecho = est.taskId ? (t && t.startedAt) : est.trechoIni;
+    const emAberto = inicioDoTrecho ? agora - inicioDoTrecho : 0;
+    return est.msFeitos + (emAberto >= PISO_FOCO_MS ? emAberto : 0);
+  }
+
+  /* Parar uma FASE DE PAUSA não pergunta nada: não há foco a descartar. Parar um
+     foco pergunta, com o número na frente — descartar em silêncio é o defeito
+     que este repositório já pagou uma vez, em enviar-agora.
+
+     A pergunta é o modal do app, e NÃO um confirm() nativo. Um confirm()
+     suprimido — o "impedir que esta página crie diálogos adicionais" do Chrome,
+     que fica marcado depois de alguns diálogos — devolve `false` sem abrir nada,
+     e `false` é indistinguível de "a pessoa clicou em Cancelar". O botão "Parar"
+     virava um botão que não faz nada, sem aviso nenhum. Ver o desvio 11. */
   function pararPomo() {
     const est = pomoAtual;
     if (!est) return;
-    const agora = Date.now();
 
-    if (est.fase === 'foco') {
-      const t = est.taskId && tasks.find(x => x.id === est.taskId);
-      const inicioDoTrecho = est.taskId ? (t && t.startedAt) : est.trechoIni;
-      const emAberto = inicioDoTrecho ? agora - inicioDoTrecho : 0;
-      const total = est.msFeitos + (emAberto >= PISO_FOCO_MS ? emAberto : 0);
-      /* Confirmação com o número na frente: descartar em silêncio é o defeito
-         que este repositório já pagou uma vez, em enviar-agora. */
-      const texto = total > 0
-        ? 'Descartar este pomo?\n\n' + minsToHm(Math.round(total / 60000)) +
-          ' de foco continuam registrados — só o bloco é que não conta como pomo.'
-        : 'Descartar este pomo?\n\nNada será registrado: menos de um minuto de foco.';
-      if (!confirm(texto)) return;
-      encerrarFase(agora, false);
-    }
+    if (est.fase !== 'foco') { descartarParada(); return; }
 
+    const total = focoJaRegistrado(est, Date.now());
+    document.getElementById('pomo-parar-texto').textContent = total > 0
+      ? minsToHm(Math.round(total / 60000)) +
+        ' de foco continuam registrados — só o bloco é que não conta como pomo.'
+      : 'Nada será registrado: menos de um minuto de foco.';
+    pomoPararAberto = true;
+    document.getElementById('pomo-parar-overlay').classList.add('open');
+    // No desktop quem rola é o painel, não o <body>. Ver D21.
+    travarRolagem(true);
+  }
+
+  function fecharConfirmacaoDeParada() {
+    pomoPararAberto = false;
+    document.getElementById('pomo-parar-overlay').classList.remove('open');
+    travarRolagem(false);
+  }
+
+  function confirmarParada() {
+    fecharConfirmacaoDeParada();
+    /* O pomo pode ter vencido enquanto a pergunta estava na tela — o pulso de um
+       segundo continua correndo. Se venceu, encerrarFaseVencida() já fechou a
+       fase com o carimbo certo e não há mais nada para descartar aqui. */
+    if (pomoAtual && pomoAtual.fase === 'foco') encerrarFase(Date.now(), false);
+    descartarParada();
+  }
+
+  function descartarParada() {
     descartarPomoAtual();
     render();
     renderMini();
@@ -9936,7 +9996,7 @@
      Pomodoro. */
   function algoAbertoPorCima() {
     return formOpen || projectsManagerOpen || syncManagerOpen ||
-           pomoCfgAberto || pomoAlvoAberto || sidebarOpen;
+           pomoCfgAberto || pomoAlvoAberto || pomoPararAberto || sidebarOpen;
   }
 
   document.addEventListener('keydown', e => {
@@ -9950,6 +10010,9 @@
     if (syncManagerOpen) closeSyncManager();
     if (pomoCfgAberto) fecharConfigPomo();
     if (pomoAlvoAberto) fecharSeletorDeAlvo();
+    /* Escape aqui é "não descartar": fecha a pergunta e o pomo segue correndo. É
+       o mesmo que os outros modais fazem — sair sem confirmar. */
+    if (pomoPararAberto) fecharConfirmacaoDeParada();
     if (sidebarOpen) closeSidebar();
     if (!havia) sairDoModoFoco();
   });
