@@ -656,7 +656,7 @@
 
      Tema claro: o par bg/fg da PALETTE ja e o certo. Medido nos dez projetos,
      borda em 5.02-7.58:1 sobre --surface. */
-  .cal-chip, .cal-block {
+  .cal-chip, .cal-block, .pomo-bloco {
     --fill: var(--bloco-bg, var(--surface2));
     --line: var(--bloco, var(--text2));
   }
@@ -670,14 +670,16 @@
      Escrito duas vezes de proposito — e a convencao de tema do arquivo. */
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) .cal-chip,
-    :root:not([data-theme="light"]) .cal-block {
+    :root:not([data-theme="light"]) .cal-block,
+    :root:not([data-theme="light"]) .pomo-bloco {
       --fill: color-mix(in srgb, var(--bloco, var(--text2)) 24%, var(--surface));
       --line: color-mix(in srgb, var(--bloco, var(--text2)) 55%, var(--text));
     }
   }
 
   [data-theme="dark"] .cal-chip,
-  [data-theme="dark"] .cal-block {
+  [data-theme="dark"] .cal-block,
+  [data-theme="dark"] .pomo-bloco {
     --fill: color-mix(in srgb, var(--bloco, var(--text2)) 24%, var(--surface));
     --line: color-mix(in srgb, var(--bloco, var(--text2)) 55%, var(--text));
   }
@@ -3123,18 +3125,12 @@
   }
 
   /* A brand-bar do mobile fechava EXATA: 343px de conteúdo em 343px de caixa.
-     Medido antes e depois — qualquer botão a mais transborda, e o "Foco" é o
-     primeiro a chegar. Duas defesas, porque só a primeira não bastava (com o
-     rótulo escondido ainda sobravam ~44px):
-
-     1. O botão vira só ícone, o mesmo tratamento que ele já recebe no rail.
-     2. As ações passam a poder quebrar linha, em vez de sangrar para fora.
-
-     O rótulo do "Sincronização" fica: escondê-lo resolveria também, mas é
-     mudança em algo que já existia e não é deste bloco. */
+     O botão "Foco" que estourou essa medida no B1 era provisório e saiu no B3 —
+     as Configurações de foco agora se alcançam pelo "..." da tela do Pomodoro,
+     como no print. A quebra de linha FICA: era a segunda defesa, custa nada, e
+     protege a barra do próximo botão que chegar. */
   @media (max-width: 860px) {
     .brand-actions { flex-wrap: wrap; justify-content: flex-end; }
-    .brand-actions .btn-foco .btn-label { display: none; }
   }
 
   /* ---------- Pomodoro: a tela ---------- */
@@ -3456,6 +3452,228 @@
     white-space: nowrap;
   }
 
+  /* ---------- Pomodoro: a tela em execução (B3) ---------- */
+
+  /* O seletor de alvo divide uma linha com o "...". O botão de configurações de
+     foco saiu da brand-bar para cá — era provisório desde o B1, e é aqui que o
+     print o põe. */
+  .pomo-painel-topo {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+  }
+
+  .pomo-painel-topo .pomo-alvo { flex: 1; min-width: 0; }
+
+  .pomo-icone-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 30px;
+    height: 30px;
+    background: none;
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm);
+    color: var(--text3);
+    cursor: pointer;
+    transition: background .15s, color .15s;
+  }
+
+  .pomo-icone-btn:hover { background: var(--surface2); color: var(--text); }
+  /* Depois da regra de display, senão o `hidden` não esconde nada. */
+  .pomo-icone-btn[hidden] { display: none; }
+
+  /* ---- a grade do dia ---- */
+
+  /* Grade PRÓPRIA, e não renderTimeGrid parametrizada: aquela escreve em ids
+     fixos e carrega arraste, redimensionamento, empacotamento de sobreposição e
+     auto-rolagem — e arrastar uma tarefa durante um pomo é o oposto de foco. O
+     que se reusa é a aritmética e o CAL_HOUR_H. Ver D12. */
+  .pomo-grade-cab {
+    display: flex;
+    gap: 4px;
+    padding: 0 0 6px 50px;
+  }
+
+  .pomo-grade-cab-lbl {
+    flex: 1;
+    min-width: 0;
+    font-family: var(--mono);
+    font-size: 9.5px;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--text3);
+  }
+
+  .pomo-grade-rolagem {
+    max-height: 420px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+  }
+
+  .pomo-grade-inner { display: flex; gap: 4px; }
+
+  .pomo-grade-ruler { flex-shrink: 0; width: 46px; }
+
+  .pomo-hora { position: relative; border-top: 1px solid var(--border); }
+  .pomo-hora:first-child { border-top: none; }
+
+  .pomo-hora span {
+    position: absolute;
+    top: -6px;
+    right: 6px;
+    font-family: var(--mono);
+    font-size: 9.5px;
+    color: var(--text2);
+    background: var(--surface);
+    padding: 0 2px;
+  }
+
+  /* A linha do "agora" atravessa as duas faixas, então mora no contêiner delas.
+     E é um nó ESTÁTICO: o pulso de um segundo só mexe no `top`, em vez de
+     remontar a grade. Ver D20. */
+  .pomo-faixas {
+    position: relative;
+    display: flex;
+    gap: 4px;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .pomo-faixa {
+    position: relative;
+    flex: 1;
+    min-width: 0;
+    border-left: 1px solid var(--border);
+  }
+
+  .pomo-vao { border-top: 1px solid var(--border); }
+  .pomo-vao:first-child { border-top: none; }
+
+  .pomo-bloco {
+    position: absolute;
+    left: 2px;
+    right: 2px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    padding: 0 4px;
+    border-radius: 3px;
+    font-family: var(--sans);
+  }
+
+  /* O planejado é esmaecido de propósito: é a intenção do dia, não o que
+     aconteceu. Quem tem de saltar aos olhos é a faixa da direita. */
+  /* Tracejado para o planejado, contínuo para o realizado: mesmo sem cor os dois
+     se distinguem. A borda esquerda leva a cor do projeto — é a única informação
+     de projeto que o bloco esmaecido carrega. */
+  .pomo-bloco.plan {
+    background: var(--surface2);
+    border: 1px dashed var(--border2);
+    border-left: 3px solid var(--line);
+  }
+
+  .pomo-bloco.plan .pomo-bloco-nome { color: var(--text2); }
+  .pomo-bloco.plan.feita .pomo-bloco-nome { text-decoration: line-through; }
+
+  /* --fill e --line vêm da mesma derivação por tema do .cal-block, que já foi
+     medida para contraste nos dois temas. Reusar a derivação em vez de escrever
+     outra é o que evita ter duas medições para manter. */
+  .pomo-bloco.real {
+    background: var(--fill);
+    border: 1px solid var(--line);
+    border-left-width: 3px;
+  }
+
+  /* Fragmento de pomo interrompido: mesmo bloco, menos peso. O selo da linha do
+     tempo não cabe aqui, e a opacidade diz a mesma coisa. */
+  .pomo-bloco.real.parcial { opacity: .6; }
+  .pomo-bloco.real.aberto { box-shadow: var(--shadow-sm); }
+
+  .pomo-bloco-hora {
+    font-family: var(--mono);
+    font-size: 8.5px;
+    line-height: 1.2;
+    color: var(--text3);
+    flex-shrink: 0;
+  }
+
+  .pomo-bloco-nome {
+    font-size: 10.5px;
+    line-height: 1.25;
+    color: var(--text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Abaixo do piso de desenho a hora cede e o nome fica: a posição vertical já
+     diz a hora. Mesmo raciocínio do .cal-block.narrow. */
+  .pomo-bloco.curto .pomo-bloco-hora { display: none; }
+
+  .pomo-agora {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 0;
+    border-top: 2px solid var(--red);
+    pointer-events: none;
+    z-index: 3;
+  }
+
+  .pomo-agora[hidden] { display: none; }
+
+  .pomo-agora::after {
+    content: '';
+    position: absolute;
+    left: -3px;
+    top: -4px;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--red);
+  }
+
+  .pomo-grade-vazia {
+    font-family: var(--sans);
+    font-size: 12px;
+    color: var(--text3);
+    padding: 10px 0 0;
+    margin: 0;
+  }
+
+  /* ---- Foco em Notas ---- */
+
+  .pomo-nota {
+    display: block;
+    width: 100%;
+    min-height: 76px;
+    resize: vertical;
+    padding: 10px 12px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  .pomo-nota:focus { outline: none; border-color: var(--accent); }
+  .pomo-nota:disabled { background: var(--surface2); color: var(--text3); cursor: not-allowed; }
+
+  /* Folga no pé: enquanto a grade está na tela o widget também está, encostado no
+     canto inferior direito, e sem esta reserva ele fica sobre o "Foco em Notas".
+     Medido a 1440x900 — o widget cobria 60px do campo. As duas coisas sempre
+     coexistem (a metade em curso só aparece com pomo em andamento), então a
+     reserva não sobra em estado nenhum. */
+  #pomo-emcurso { padding-bottom: 72px; }
+
   /* ---------- Pomodoro: configurações de foco ---------- */
 
   .pomo-cfg-grupo {
@@ -3554,6 +3772,65 @@
   .pomo-switch input:checked + .pomo-switch-trilho { background: var(--accent); }
   .pomo-switch input:checked + .pomo-switch-trilho::after { transform: translateX(18px); }
   .pomo-switch input:focus-visible + .pomo-switch-trilho { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* ---------- Pomodoro: modo foco (B3) ---------- */
+
+  /* NÃO é requestFullscreen: aquele exige gesto, engole a barra do sistema e não
+     volta sozinho ao trocar de aba. Aqui é uma classe no <body>, e o painel do
+     mostrador vira uma caixa `fixed` sobre a página inteira.
+
+     `fixed` se resolve contra a viewport, então o <body> com overflow: hidden do
+     shell de painéis não atrapalha — é a mesma razão pela qual o widget funciona
+     lá dentro.
+
+     z-index 99: acima do rail (90), acima das caixas fixed do mobile (91–95),
+     acima do próprio widget (92) e ABAIXO do .form-overlay (100) — um modal
+     aberto continua tendo prioridade sobre o cronômetro. Inventário na D13.
+
+     Estas regras são as ÚLTIMAS da folha, de propósito: as media queries deste
+     arquivo são interleaved, e o projeto já pagou duas vezes por regra base
+     vazando para caixa `fixed`. Sendo as últimas, a ordem do cascade é a que se
+     lê aqui. */
+  body.modo-foco .pomo-painel {
+    position: fixed;
+    inset: 0;
+    z-index: 99;
+    justify-content: center;
+    gap: 28px;
+    padding: 24px;
+    background: var(--bg);
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  body.modo-foco .pomo-mostrador { width: 300px; height: 300px; }
+  body.modo-foco .pomo-tempo { font-size: 64px; }
+
+  /* Sobram o nome do foco, o mostrador, os botões e a saída.
+
+     O nome FICA porque uma tela cheia com um número e nada mais não diz no que se
+     está focando. Só perde a cara de botão: durante um pomo o seletor já está
+     desabilitado, e trocar de alvo no meio não faz sentido.
+
+     O botão de sair também FICA: sem ele a única saída seria o Esc, e tela cheia
+     sem saída visível é armadilha. */
+  /* Centrado, e não à esquerda: o nome tem de ler junto com o mostrador, que
+     está no meio. Os 30px do botão de sair desalinham o centro em 15px, que a
+     esta largura ninguém vê. */
+  body.modo-foco .pomo-alvo { justify-content: center; cursor: default; }
+  body.modo-foco .pomo-alvo:hover { background: none; color: var(--text2); }
+  body.modo-foco .pomo-alvo .icon { display: none; }
+
+  body.modo-foco .pomo-cfg,
+  body.modo-foco .pomo-dica,
+  body.modo-foco .pomo-lado,
+  body.modo-foco .pomo-mini { display: none; }
+
+  @media (max-width: 600px) {
+    body.modo-foco .pomo-mostrador { width: 240px; height: 240px; }
+    body.modo-foco .pomo-tempo { font-size: 48px; }
+  }
 </style>
 </head>
 <body>
@@ -3582,10 +3859,6 @@
               style="display:none" title="Enviar agora para o Google Drive">
         <svg class="icon" width="16" height="16" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M240,56v48a8,8,0,0,1-8,8H184a8,8,0,0,1,0-16H211.4L184.81,71.64l-.25-.24a80,80,0,1,0-1.67,114.78,8,8,0,0,1,11,11.63A95.44,95.44,0,0,1,128,224h-1.32A96,96,0,1,1,195.75,60L224,85.8V56a8,8,0,1,1,16,0Z"/></svg>
         <span class="btn-enviar-txt">Enviar agora</span>
-      </button>
-      <button class="btn-add btn-secondary btn-foco" onclick="abrirConfigPomo()" title="Configurações de foco">
-        <svg class="icon" width="14" height="14" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M128,40a96,96,0,1,0,96,96A96.11,96.11,0,0,0,128,40Zm0,176a80,80,0,1,1,80-80A80.09,80.09,0,0,1,128,216ZM173.66,90.34a8,8,0,0,1,0,11.32l-40,40a8,8,0,0,1-11.32-11.32l40-40A8,8,0,0,1,173.66,90.34ZM96,16a8,8,0,0,1,8-8h48a8,8,0,0,1,0,16H104A8,8,0,0,1,96,16Z"/></svg>
-        <span class="btn-label">Foco</span>
       </button>
       <button class="btn-add btn-secondary" onclick="openSyncManager()" title="Modo de Sincronização">
         <svg class="icon" width="14" height="14" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M224,48V96a8,8,0,0,1-8,8H168a8,8,0,0,1,0-16h28.69L182.06,73.37a79.56,79.56,0,0,0-56.13-23.43h-.45A79.52,79.52,0,0,0,69.59,72.71,8,8,0,0,1,58.41,61.27a96,96,0,0,1,135,.79L208,76.69V48a8,8,0,0,1,16,0ZM186.41,183.29a80,80,0,0,1-112.47-.66L59.31,168H88a8,8,0,0,0,0-16H40a8,8,0,0,0-8,8v48a8,8,0,0,0,16,0V179.31l14.63,14.63A95.43,95.43,0,0,0,130,222.06h.53a95.36,95.36,0,0,0,67.07-27.33,8,8,0,0,0-11.18-11.44Z"/></svg>
@@ -3796,10 +4069,20 @@
     <div class="pomo-layout">
 
       <div class="pomo-painel">
-        <button class="pomo-alvo" id="pomo-alvo" onclick="abrirSeletorDeAlvo()" title="Escolher o que focar">
-          <span class="pomo-alvo-txt" id="pomo-alvo-txt">Foco</span>
-          <svg class="icon" width="13" height="13" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M181.66,133.66l-80,80a8,8,0,0,1-11.32-11.32L164.69,128,90.34,53.66a8,8,0,0,1,11.32-11.32l80,80A8,8,0,0,1,181.66,133.66Z"/></svg>
-        </button>
+        <!-- O "..." é a porta das Configurações de foco desde o B3; o botão que
+             morava na brand-bar era provisório e saiu. O de modo foco só aparece
+             com um pomo em andamento — renderPainelPomo() cuida disso. -->
+        <div class="pomo-painel-topo">
+          <button class="pomo-alvo" id="pomo-alvo" onclick="abrirSeletorDeAlvo()" title="Escolher o que focar">
+            <span class="pomo-alvo-txt" id="pomo-alvo-txt">Foco</span>
+            <svg class="icon" width="13" height="13" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M181.66,133.66l-80,80a8,8,0,0,1-11.32-11.32L164.69,128,90.34,53.66a8,8,0,0,1,11.32-11.32l80,80A8,8,0,0,1,181.66,133.66Z"/></svg>
+          </button>
+          <button class="pomo-icone-btn" id="pomo-modo" hidden onclick="alternarModoFoco()"></button>
+          <button class="pomo-icone-btn pomo-cfg" onclick="abrirConfigPomo()"
+                  title="Configurações de foco" aria-label="Configurações de foco">
+            <svg class="icon" width="16" height="16" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M156,128a28,28,0,1,1-28-28A28,28,0,0,1,156,128ZM48,100a28,28,0,1,0,28,28A28,28,0,0,0,48,100Zm160,0a28,28,0,1,0,28,28A28,28,0,0,0,208,100Z"/></svg>
+          </button>
+        </div>
 
         <div class="pomo-mostrador">
           <!-- r=112 num viewBox de 240: 240/2 - 4/2 (metade do traço) - 4 de folga. -->
@@ -3817,33 +4100,71 @@
         <p class="pomo-dica" id="pomo-dica"></p>
       </div>
 
+      <!-- A coluna direita tem duas metades e só uma aparece por vez: métricas e
+           histórico quando não há nada correndo, grade do dia e notas durante um
+           pomo. Ver D12 e o B3 em docs/pomodoro.md. -->
       <div class="pomo-lado">
-        <div class="pomo-secao">
-          <h2 class="pomo-secao-titulo">Visão geral</h2>
-        </div>
-        <div class="pomo-metricas">
-          <div class="pomo-metrica">
-            <div class="pomo-metrica-lbl">Pomos de hoje</div>
-            <div class="pomo-metrica-val" id="pomo-m-hoje">0</div>
+
+        <div id="pomo-ocioso">
+          <div class="pomo-secao">
+            <h2 class="pomo-secao-titulo">Visão geral</h2>
           </div>
-          <div class="pomo-metrica">
-            <div class="pomo-metrica-lbl">Foco de hoje</div>
-            <div class="pomo-metrica-val" id="pomo-m-foco-hoje">0<span class="un">m</span></div>
+          <div class="pomo-metricas">
+            <div class="pomo-metrica">
+              <div class="pomo-metrica-lbl">Pomos de hoje</div>
+              <div class="pomo-metrica-val" id="pomo-m-hoje">0</div>
+            </div>
+            <div class="pomo-metrica">
+              <div class="pomo-metrica-lbl">Foco de hoje</div>
+              <div class="pomo-metrica-val" id="pomo-m-foco-hoje">0<span class="un">m</span></div>
+            </div>
+            <div class="pomo-metrica">
+              <div class="pomo-metrica-lbl">Pomos totais</div>
+              <div class="pomo-metrica-val" id="pomo-m-total">0</div>
+            </div>
+            <div class="pomo-metrica">
+              <div class="pomo-metrica-lbl">Duração total focada</div>
+              <div class="pomo-metrica-val" id="pomo-m-foco-total">0<span class="un">m</span></div>
+            </div>
           </div>
-          <div class="pomo-metrica">
-            <div class="pomo-metrica-lbl">Pomos totais</div>
-            <div class="pomo-metrica-val" id="pomo-m-total">0</div>
+
+          <div class="pomo-secao">
+            <h2 class="pomo-secao-titulo">Foco em Registrar</h2>
           </div>
-          <div class="pomo-metrica">
-            <div class="pomo-metrica-lbl">Duração total focada</div>
-            <div class="pomo-metrica-val" id="pomo-m-foco-total">0<span class="un">m</span></div>
-          </div>
+          <div id="pomo-registro"></div>
         </div>
 
-        <div class="pomo-secao">
-          <h2 class="pomo-secao-titulo">Foco em Registrar</h2>
+        <div id="pomo-emcurso" hidden>
+          <div class="pomo-secao">
+            <h2 class="pomo-secao-titulo">Hoje</h2>
+          </div>
+          <div class="pomo-grade-cab">
+            <span class="pomo-grade-cab-lbl">planejado</span>
+            <span class="pomo-grade-cab-lbl">focado</span>
+          </div>
+          <div class="pomo-grade-rolagem" id="pomo-grade-rolagem">
+            <div class="pomo-grade-inner">
+              <div class="pomo-grade-ruler" id="pomo-grade-ruler"></div>
+              <div class="pomo-faixas">
+                <div class="pomo-faixa" id="pomo-faixa-plan"></div>
+                <div class="pomo-faixa" id="pomo-faixa-real"></div>
+                <!-- Estático: o pulso de um segundo só mexe no `top`. Ver D20. -->
+                <div class="pomo-agora" id="pomo-agora" hidden></div>
+              </div>
+            </div>
+          </div>
+          <p class="pomo-grade-vazia" id="pomo-grade-vazia" hidden></p>
+
+          <div class="pomo-secao">
+            <h2 class="pomo-secao-titulo">Foco em Notas</h2>
+          </div>
+          <!-- Gravada em `nota` quando o trecho fecha. O Espaço NÃO pode pausar
+               o pomo com o cursor aqui dentro — a guarda está no handler. -->
+          <textarea class="pomo-nota" id="pomo-nota" rows="3"
+                    placeholder="O que está sendo feito neste pomo?"
+                    oninput="anotarPomo(this.value)" onblur="salvarNotaAgora()"></textarea>
         </div>
-        <div id="pomo-registro"></div>
+
       </div>
 
     </div>
@@ -4395,6 +4716,13 @@
     moon: 'M233.54,142.23a8,8,0,0,0-8-2,88.08,88.08,0,0,1-109.8-109.8,8,8,0,0,0-10-10,104.84,104.84,0,0,0-52.91,37A104,104,0,0,0,136,224a103.09,103.09,0,0,0,62.52-20.88,104.84,104.84,0,0,0,37-52.91A8,8,0,0,0,233.54,142.23ZM188.9,190.34A88,88,0,0,1,65.66,67.11a89,89,0,0,1,31.4-26A106,106,0,0,0,96,56,104.11,104.11,0,0,0,200,160a106,106,0,0,0,14.92-1.06A89,89,0,0,1,188.9,190.34Z',
     timer: 'M128,40a96,96,0,1,0,96,96A96.11,96.11,0,0,0,128,40Zm0,176a80,80,0,1,1,80-80A80.09,80.09,0,0,1,128,216ZM173.66,90.34a8,8,0,0,1,0,11.32l-40,40a8,8,0,0,1-11.32-11.32l40-40A8,8,0,0,1,173.66,90.34ZM96,16a8,8,0,0,1,8-8h48a8,8,0,0,1,0,16H104A8,8,0,0,1,96,16Z',
     stop: 'M200,40H56A16,16,0,0,0,40,56V200a16,16,0,0,0,16,16H200a16,16,0,0,0,16-16V56A16,16,0,0,0,200,40Zm0,160H56V56H200V200Z',
+    /* Quatro cantoneiras apontando para fora: entrar no modo foco. Desenhadas
+       aqui em vez de vindas do Phosphor porque são quatro "L" de geometria
+       trivial, e um path errado só se descobre na tela. */
+    expandir: 'M40,40H96V54H54V96H40Z M216,40V96H202V54H160V40Z M40,216V160H54V202H96V216Z M216,216H160V202H202V160H216Z',
+    /* O mesmo X do .form-close. Sair do modo foco é fechar uma tela cheia, e o
+       gesto merece o ícone que o resto do app já usa para isso. */
+    x: 'M205.66,194.34a8,8,0,0,1-11.32,11.32L128,139.31,61.66,205.66a8,8,0,0,1-11.32-11.32L116.69,128,50.34,61.66A8,8,0,0,1,61.66,50.34L128,116.69l66.34-66.35a8,8,0,0,1,11.32,11.32L139.31,128Z',
   };
 
   function icon(name, size) {
@@ -6286,6 +6614,9 @@
        abaixo de 1025px, e ligá-la mantém a aba coerente com as outras duas. */
     document.body.classList.toggle('wide-content', tab !== 'today');
     closeSidebar();
+    /* O modo foco é da tela do Pomodoro e não a acompanha para fora: um painel
+       `fixed` cobrindo a página em outra aba seria uma tela sem saída. */
+    if (modoFoco) aplicarModoFoco(false);
     // A bandeja e a "tarefa na mão" são do Calendário e não sobrevivem a ele.
     bandejaAberta = false;
     tapSelected = null;
@@ -6828,12 +7159,15 @@
     const agora = Date.now();
     if (encerrarFaseVencida(agora)) return;
     renderMini();
-    /* Na aba do Pomodoro, o mostrador e os números de hoje também andam. A lista
-       de registros NÃO é refeita aqui: ela só muda quando um trecho fecha, e
-       remontá-la por segundo seria o mesmo erro dos cinco gráficos. Ver D20. */
+    /* Na aba do Pomodoro o mostrador também anda, e mais um nó conforme a metade
+       visível. Nada é REMONTADO aqui: a lista de registros só muda quando um
+       trecho fecha, e refazê-la por segundo seria o mesmo erro dos cinco
+       gráficos. Ver D20. */
     if (currentTab === 'pomodoro') {
       atualizarMostradorPomo(agora);
-      renderMetricasPomo(agora);
+      // Em execução quem anda é a grade: a linha do agora e o bloco em curso.
+      if (pomoEmAndamento()) atualizarGradePomo(agora);
+      else renderMetricasPomo(agora);
     }
   }
 
@@ -6915,6 +7249,35 @@
     seletor.style.visibility = (est && est.fase !== 'foco') ? 'hidden' : '';
 
     document.getElementById('pomo-fase').textContent = est ? NOME_CURTO_DA_FASE[est.fase] : 'pomo';
+
+    /* O modo foco cai sozinho quando o pomo acaba: uma tela cheia com um
+       mostrador parado é armadilha. aplicarModoFoco() é a versão burra de
+       propósito — chamar sairDoModoFoco() aqui faria laço com este render. */
+    if (modoFoco && !emAndamento) aplicarModoFoco(false);
+
+    const btnModo = document.getElementById('pomo-modo');
+    if (btnModo) {
+      btnModo.hidden = !emAndamento;
+      const titulo = modoFoco ? 'Sair do modo foco (Esc)' : 'Modo foco';
+      btnModo.innerHTML = icon(modoFoco ? 'x' : 'expandir', 16);
+      btnModo.title = titulo;
+      btnModo.setAttribute('aria-label', titulo);
+    }
+
+    /* A coluna direita troca de conteúdo, não de tela: as duas metades já estão
+       no DOM e só uma aparece. Ver D12. */
+    const ocioso = document.getElementById('pomo-ocioso');
+    const emcurso = document.getElementById('pomo-emcurso');
+    if (ocioso) ocioso.hidden = emAndamento;
+    if (emcurso) {
+      /* Entrar na grade limpa a marca da rolagem — é o único momento em que
+         posicioná-la não atrapalha ninguém. Ver posicionarGradePomo(). */
+      if (emcurso.hidden && emAndamento) {
+        const box = document.getElementById('pomo-grade-rolagem');
+        if (box) delete box.dataset.posicionado;
+      }
+      emcurso.hidden = !emAndamento;
+    }
 
     if (!est) {
       botoes.innerHTML = `<button class="btn-save pomo-comecar" onclick="iniciarPomoNoAlvo()">Começar</button>`;
@@ -7029,11 +7392,263 @@
     }).join('');
   }
 
+  /* ---------- Pomodoro: a grade do dia (B3, D12) ---------- */
+
+  /* O trecho recortado ao dia visível, em minutos desde a meia-noite local.
+
+     Um pomo das 23:40 às 00:10 aparece como 23:40–24:00 na grade de hoje e
+     00:00–00:10 na de amanhã: a grade mostra UM dia, e o que sai dele é aparado,
+     não escondido. Devolve null quando não há interseção nenhuma.
+
+     Minutos fracionários de propósito: o `top` em pixels sai de
+     ini / 60 * CAL_HOUR_H, e arredondar aqui empurraria o bloco meio pixel.
+
+     Pura, e é aqui que o harness aponta — virada de meia-noite não se confere no
+     olho. */
+  function faixaNoDia(ini, fim, diaIni, diaFim) {
+    const a = Math.max(ini, diaIni);
+    const b = Math.min(fim, diaFim);
+    if (!(b > a)) return null;
+    return { ini: (a - diaIni) / 60000, fim: (b - diaIni) / 60000 };
+  }
+
+  /* Meia-noite local do dia, por componentes. PARSEAR a string seria a armadilha
+     de fuso de modelo-de-dados.md; construir por componentes é o caminho seguro,
+     e atravessa mês, ano e ano bissexto de graça. */
+  function inicioDoDiaEm(ds) {
+    const p = String(ds).split('-').map(Number);
+    return new Date(p[0], (p[1] || 1) - 1, p[2] || 1).getTime();
+  }
+
+  /* Os registros de foco que tocam o dia, já recortados e em ordem de início. */
+  function focosNoDia(ds, agora) {
+    const diaIni = inicioDoDiaEm(ds);
+    const diaFim = diaIni + 86400000;
+    return pomos.concat(trechoAbertoDoPomo(agora))
+      .map(r => {
+        if (!r || !(r.fim > r.ini)) return null;
+        const f = faixaNoDia(r.ini, r.fim, diaIni, diaFim);
+        return f ? { reg: r, ini: f.ini, fim: f.fim } : null;
+      })
+      .filter(Boolean)
+      .sort((a, b) => a.ini - b.ini);
+  }
+
+  /* Um bloco da grade. `top` e altura em pixels pela mesma aritmética do
+     Calendário — é o que a D12 manda reusar, e são quinze linhas de conta em vez
+     de noventa de interação parametrizada.
+
+     `estilo` são DECLARAÇÕES, não um atributo: a cor do projeto entra no mesmo
+     style= da posição. Duas vezes `style` no mesmo elemento faz o navegador
+     honrar só a primeira, e a primeira versão disto perdia top e height sempre
+     que a tarefa tinha projeto — os blocos empilhavam todos no pé da faixa.
+     Medido, não julgado pela captura de tela. */
+  function blocoDaGradeHtml(classes, ini, fim, hora, nome, estilo, attrs) {
+    const fimApado = Math.min(fim, 1440);
+    const alt = Math.max(CAL_MIN_BLOCK_H, (fimApado - ini) / 60 * CAL_HOUR_H);
+    // Abaixo de 30px a hora não cabe junto do nome, e o nome é o que identifica.
+    const cls = classes.concat(alt < 30 ? ['curto'] : []).join(' ');
+    return `<div class="pomo-bloco ${cls}"${attrs || ''}
+      style="top:${ini / 60 * CAL_HOUR_H}px;height:${alt}px;${estilo || ''}">
+      <span class="pomo-bloco-hora">${hora}</span>
+      <span class="pomo-bloco-nome">${nome}</span>
+    </div>`;
+  }
+
+  /* Os vãos de hora das faixas. Função e não `const`, porque CAL_HOUR_H é
+     declarada mais abaixo no arquivo e um const avaliado aqui bate na zona morta
+     temporal — a mesma armadilha que POMO_PADRAO já documenta, e que o harness
+     não pega: new Function() PARSEIA o script, não o executa. Medido: a página
+     ficava em branco. Memoizado porque a string nunca muda. */
+  let pomoVaosCache = null;
+
+  function pomoGradeVaos() {
+    if (!pomoVaosCache) {
+      pomoVaosCache = Array.from({ length: 24 }, () =>
+        `<div class="pomo-vao" style="height:${CAL_HOUR_H}px"></div>`).join('');
+    }
+    return pomoVaosCache;
+  }
+
+  function renderGradePomo(agora) {
+    const faixaPlan = document.getElementById('pomo-faixa-plan');
+    const faixaReal = document.getElementById('pomo-faixa-real');
+    if (!faixaPlan || !faixaReal) return;
+
+    const hoje = todayStr();
+    const regua = document.getElementById('pomo-grade-ruler');
+    if (regua && !regua.childElementCount) {
+      regua.innerHTML = Array.from({ length: 24 }, (_, h) =>
+        `<div class="pomo-hora" style="height:${CAL_HOUR_H}px"><span>${String(h).padStart(2, '0')}:00</span></div>`
+      ).join('');
+    }
+
+    /* Planejado: as tarefas de hoje com horário. packOverlaps() já filtra as sem
+       `time` e aplica o piso de duração. A faixa NÃO empilha em colunas: aqui ela
+       é referência, não área de trabalho, e um bloco por linha se lê melhor. */
+    const planejados = packOverlaps(tasksByDate().get(hoje) || []);
+    faixaPlan.innerHTML = pomoGradeVaos() + planejados.map(b => {
+      const c = projColor(b.t);
+      const cor = c ? `--bloco:${c.fg};--bloco-bg:${c.bg}` : '';
+      const fimReal = toMins(b.t.time) + (b.t.dur || 0);
+      const classes = ['plan'];
+      if (b.t.status === 'done') classes.push('feita');
+      const nome = esc(b.t.name);
+      return blocoDaGradeHtml(classes, b.ini, b.fim, b.t.time, nome, cor,
+        ` title="${nome} · ${b.t.time}–${padTime(fimReal)} (planejado)"`);
+    }).join('');
+
+    /* Realizado: os registros de foco. O trecho em curso leva um id fixo para o
+       pulso de um segundo poder esticá-lo sem remontar a grade. */
+    const focados = focosNoDia(hoje, agora);
+    faixaReal.innerHTML = pomoGradeVaos() + focados.map(f => {
+      const r = f.reg;
+      const t = r.taskId && tasks.find(x => x.id === r.taskId);
+      const c = t ? projColor(t) : null;
+      const cor = c ? `--bloco:${c.fg};--bloco-bg:${c.bg}` : '';
+      const classes = ['real'];
+      if (r.aberto) classes.push('aberto');
+      else if (!r.completo) classes.push('parcial');
+      const nome = esc(nomeDoRegistro(r));
+      const rotulo = r.aberto ? 'em curso' : (r.completo ? 'pomo' : 'interrompido');
+      const id = r.aberto ? ' id="pomo-bloco-aberto"' : '';
+      return blocoDaGradeHtml(classes, f.ini, f.fim, hhmm(r.ini), nome, cor,
+        `${id} title="${nome} · ${hhmm(r.ini)}–${hhmm(r.fim)} (${rotulo})"`);
+    }).join('');
+
+    const vazia = document.getElementById('pomo-grade-vazia');
+    if (vazia) {
+      const semNada = !planejados.length && !focados.length;
+      vazia.hidden = !semNada;
+      if (semNada) vazia.textContent = 'Nada planejado nem focado hoje ainda — este pomo abre a grade.';
+    }
+
+    posicionarGradePomo();
+    atualizarGradePomo(agora);
+  }
+
+  /* A rolagem é posta uma vez por ENTRADA na grade — quem limpa a marca é
+     renderPainelPomo(), quando a metade em curso deixa de estar escondida.
+     Repô-la a cada render, ou a cada hora, arrancaria a grade de baixo de quem
+     está olhando. Uma hora acima do agora, para o passado recente ficar
+     visível. */
+  function posicionarGradePomo() {
+    const box = document.getElementById('pomo-grade-rolagem');
+    if (!box || box.dataset.posicionado) return;
+    box.scrollTop = Math.max(0, (getNowMins() - 60) / 60 * CAL_HOUR_H);
+    box.dataset.posicionado = '1';
+  }
+
+  /* O que anda por segundo, e nada além: a linha do agora e o bloco em curso.
+     Remontar a grade aqui seria o mesmo erro dos cinco gráficos. Ver D20. */
+  function atualizarGradePomo(agora) {
+    const linha = document.getElementById('pomo-agora');
+    if (linha) {
+      linha.hidden = false;
+      linha.style.top = getNowMins() / 60 * CAL_HOUR_H + 'px';
+    }
+    const bloco = document.getElementById('pomo-bloco-aberto');
+    if (!bloco) return;
+    const aberto = trechoAbertoDoPomo(agora)[0];
+    if (!aberto) return;
+    const diaIni = inicioDoDiaEm(todayStr());
+    const f = faixaNoDia(aberto.ini, aberto.fim, diaIni, diaIni + 86400000);
+    if (!f) return;
+    const alt = Math.max(CAL_MIN_BLOCK_H, (Math.min(f.fim, 1440) - f.ini) / 60 * CAL_HOUR_H);
+    bloco.style.height = alt + 'px';
+    bloco.classList.toggle('curto', alt < 30);
+  }
+
+  /* ---------- Pomodoro: Foco em Notas (B3) ---------- */
+
+  /* Salvar a cada tecla escreveria no localStorage por caractere; salvar só no
+     blur perderia a nota num recarregamento. Meio segundo de folga resolve os
+     dois, e o blur força a gravação pendente.
+
+     A nota vai para o registro em encerrarFase(), que também roda ao PAUSAR — um
+     pomo pausado uma vez grava a mesma nota nos dois fragmentos. É o certo: cada
+     registro carrega a nota do pomo a que pertence. Ver o desvio 8. */
+  let notaTimer = null;
+
+  function anotarPomo(txt) {
+    if (!pomoAtual) return;
+    pomoAtual.nota = txt;
+    if (notaTimer) clearTimeout(notaTimer);
+    notaTimer = setTimeout(() => { notaTimer = null; salvarPomoAtual(); }, 500);
+  }
+
+  function salvarNotaAgora() {
+    if (!notaTimer) return;
+    clearTimeout(notaTimer);
+    notaTimer = null;
+    salvarPomoAtual();
+  }
+
+  /* Numa pausa o campo é desligado: encerrarFase() só grava registro de foco, e
+     uma nota escrita durante a pausa seria descartada em silêncio. Dizer que ele
+     não está disponível é mais honesto que aceitar texto e jogá-lo fora.
+
+     O valor só é reescrito quando o campo NÃO está em foco: sobrescrever o
+     textarea de quem está digitando joga o cursor para o fim. */
+  function sincronizarNotaPomo() {
+    const campo = document.getElementById('pomo-nota');
+    if (!campo) return;
+    const emFoco = !!pomoAtual && pomoAtual.fase === 'foco';
+    campo.disabled = !emFoco;
+    campo.placeholder = emFoco
+      ? 'O que está sendo feito neste pomo?'
+      : 'Disponível durante o foco.';
+    if (campo === document.activeElement) return;
+    const valor = (emFoco && pomoAtual.nota) || '';
+    if (campo.value !== valor) campo.value = valor;
+  }
+
+  /* ---------- Pomodoro: modo foco (B3) ---------- */
+
+  /* Uma classe no <body> e mais nada. Não é requestFullscreen: aquele exige
+     gesto, engole a barra do sistema e não volta sozinho ao trocar de aba. */
+  let modoFoco = false;
+
+  /* "Em andamento" inclui a pausa: o pomo continua existindo, e a grade do dia
+     continua sendo o que se quer ver. O que devolve a tela ao estado ocioso é não
+     haver estado nenhum, ou ele estar apenas AGUARDANDO — aí ninguém está
+     focando, e os números de hoje voltam a ser a informação útil. */
+  function pomoEmAndamento() {
+    return !!pomoAtual && !pomoAtual.aguardando;
+  }
+
+  /* Burro de propósito: liga a classe e volta. Quem chama decide se
+     re-renderiza, e é isso que impede o laço com renderPainelPomo(), que também
+     o chama para derrubar o modo quando o pomo acaba. */
+  function aplicarModoFoco(ligado) {
+    modoFoco = !!ligado;
+    document.body.classList.toggle('modo-foco', modoFoco);
+  }
+
+  function alternarModoFoco() {
+    if (!modoFoco && !pomoEmAndamento()) return;
+    aplicarModoFoco(!modoFoco);
+    renderPainelPomo(Date.now());
+  }
+
+  function sairDoModoFoco() {
+    if (!modoFoco) return;
+    aplicarModoFoco(false);
+    renderPainelPomo(Date.now());
+  }
+
   function renderPomodoro() {
     const agora = Date.now();
     renderPainelPomo(agora);
-    renderMetricasPomo(agora);
-    renderRegistroPomo(agora);
+    /* Só a metade visível é montada. Além de mais barato, é o que impede a linha
+       do tempo de ser remontada durante um pomo — ela não está na tela. */
+    if (pomoEmAndamento()) {
+      renderGradePomo(agora);
+      sincronizarNotaPomo();
+    } else {
+      renderMetricasPomo(agora);
+      renderRegistroPomo(agora);
+    }
   }
 
   /* ---------- Pomodoro: seletor de alvo ---------- */
@@ -9316,14 +9931,52 @@
       e.target.value = projects[0] ? projects[0].id : '';
     }
   });
+  /* O que o Escape pode fechar. Os `if` são independentes de propósito: um Esc
+     fecha tudo o que estiver aberto de uma vez, e é assim desde antes do
+     Pomodoro. */
+  function algoAbertoPorCima() {
+    return formOpen || projectsManagerOpen || syncManagerOpen ||
+           pomoCfgAberto || pomoAlvoAberto || sidebarOpen;
+  }
+
   document.addEventListener('keydown', e => {
     if (e.key !== 'Escape') return;
+    /* Medido ANTES de fechar: o modo foco sai por último, e "por último" quer
+       dizer só quando não havia mais nada aberto por cima dele. Esc com o modal
+       de Configurações aberto fecha o modal e mantém o modo foco. */
+    const havia = algoAbertoPorCima();
     if (formOpen) closeForm();
     if (projectsManagerOpen) closeProjectsManager();
     if (syncManagerOpen) closeSyncManager();
     if (pomoCfgAberto) fecharConfigPomo();
     if (pomoAlvoAberto) fecharSeletorDeAlvo();
     if (sidebarOpen) closeSidebar();
+    if (!havia) sairDoModoFoco();
+  });
+
+  /* Espaço pausa e retoma o pomo. Quatro guardas, e nenhuma é opcional:
+
+     1. Só na tela do Pomodoro ou no modo foco. Um espaço perdido na lista de
+        tarefas pausando o cronômetro em silêncio é pior que não ter atalho.
+     2. Nada aberto por cima: com um modal na frente o teclado é dele.
+     3. Fora de campo de texto — o "Foco em Notas" está logo ali, e lá espaço
+        digita um espaço.
+     4. Fora de botão e link, onde espaço já é o "ativar" do navegador. Sem esta,
+        o espaço depois de clicar em "Pausar" alternaria duas vezes.
+
+     Em window, e não em document, para acompanhar os outros keydown do arquivo. */
+  const SEM_ESPACO = 'input, textarea, select, button, a, [role="button"], [contenteditable=""], [contenteditable="true"]';
+
+  window.addEventListener('keydown', e => {
+    if (e.key !== ' ' && e.code !== 'Space') return;
+    if (!pomoAtual) return;
+    if (currentTab !== 'pomodoro' && !modoFoco) return;
+    if (algoAbertoPorCima()) return;
+    const alvo = e.target;
+    if (alvo && alvo.closest && alvo.closest(SEM_ESPACO)) return;
+    // Espaço rola a página por padrão, e aqui ele não é rolagem.
+    e.preventDefault();
+    alternarPomo();
   });
 
   /* `change` e não `input`: normalizar a cada tecla faria o "3" de "30" ser
