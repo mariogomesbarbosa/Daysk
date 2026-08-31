@@ -430,6 +430,60 @@ eq('pomo das 23:40 a 00:10 se reparte em dois dias',
 
 sess.semear([]);
 
+/* ---------- faixaNoDia / inicioDoDiaEm: o recorte da grade do dia (B3) ---------- */
+/* A grade do Pomodoro mostra UM dia. Um pomo que atravessa a meia-noite tem de
+   aparecer aparado nos dois, e nao desaparecer de nenhum — e virada de dia nao se
+   confere no olho. Ver D12. */
+const grade = new Function(`
+  ${['faixaNoDia', 'inicioDoDiaEm', 'toDateStr'].map(extrair).join('\n')}
+  return { faixaNoDia, inicioDoDiaEm, toDateStr };
+`)();
+
+const DIA = grade.inicioDoDiaEm('2026-08-19');
+const DIA_FIM = DIA + 86400000;
+const faixa = (ini, fim) => {
+  const r = grade.faixaNoDia(ini, fim, DIA, DIA_FIM);
+  return r ? r.ini + '-' + r.fim : null;
+};
+/* Minutos desde a meia-noite do dia recortado. */
+const hm = (h, mi = 0) => DIA + h * 3600000 + mi * 60000;
+
+eq('trecho inteiro dentro do dia', faixa(hm(9), hm(9, 30)), '540-570');
+eq('trecho comecando na meia-noite', faixa(DIA, hm(0, 30)), '0-30');
+eq('trecho terminando na meia-noite seguinte', faixa(hm(23, 30), DIA_FIM), '1410-1440');
+eq('trecho que atravessa para o dia seguinte e aparado em 1440',
+   faixa(hm(23, 40), hm(24, 10)), '1420-1440');
+eq('trecho vindo do dia anterior comeca em 0',
+   faixa(DIA - 2 * 3600000, hm(0, 30)), '0-30');
+eq('trecho cobrindo o dia inteiro e mais', faixa(DIA - 3600000, DIA_FIM + 3600000), '0-1440');
+
+/* Sem intersecao nao ha bloco. Sem esta guarda a grade desenharia retangulos
+   fora do eixo, ou de altura negativa. */
+eq('trecho todo no dia anterior', faixa(DIA - 3 * 3600000, DIA - 3600000), null);
+eq('trecho todo no dia seguinte', faixa(DIA_FIM + 3600000, DIA_FIM + 2 * 3600000), null);
+eq('trecho que termina EXATAMENTE na meia-noite do dia nao cria bloco vazio',
+   faixa(DIA - 3600000, DIA), null);
+eq('trecho que comeca EXATAMENTE na meia-noite seguinte nao entra',
+   faixa(DIA_FIM, DIA_FIM + 60000), null);
+eq('duracao zero', faixa(hm(9), hm(9)), null);
+eq('duracao negativa (relogio do sistema para tras)', faixa(hm(11), hm(9)), null);
+
+/* Minutos fracionarios: o `top` em pixels sai de ini/60*CAL_HOUR_H, e arredondar
+   aqui empurraria o bloco meio pixel para cima. */
+eq('meio minuto e preservado', faixa(hm(9) + 30000, hm(9, 30)), '540.5-570');
+
+/* inicioDoDiaEm: meia-noite LOCAL por componentes, como o resto do app. */
+eq('inicioDoDiaEm devolve meia-noite local',
+   new Date(grade.inicioDoDiaEm('2026-08-19')).getHours(), 0);
+eq('e ida-e-volta com toDateStr', grade.toDateStr(new Date(grade.inicioDoDiaEm('2026-08-19'))), '2026-08-19');
+eq('primeiro do mes', grade.toDateStr(new Date(grade.inicioDoDiaEm('2026-09-01'))), '2026-09-01');
+eq('primeiro do ano', grade.toDateStr(new Date(grade.inicioDoDiaEm('2027-01-01'))), '2027-01-01');
+eq('29 de fevereiro em ano bissexto', grade.toDateStr(new Date(grade.inicioDoDiaEm('2028-02-29'))), '2028-02-29');
+/* O dia seguinte e sempre +24h em fuso sem horario de verao, e a soma que a
+   grade faz (diaIni + 86400000) tem de bater com o inicio do dia seguinte. */
+eq('o dia dura 86400000ms neste fuso',
+   grade.inicioDoDiaEm('2026-08-20') - grade.inicioDoDiaEm('2026-08-19'), 86400000);
+
 /* ---------- Pomodoro: restanteDe, proximaFase, normalizarConfigPomo ---------- */
 const pomo = new Function(`
   ${extrairConst('POMO_PADRAO')}

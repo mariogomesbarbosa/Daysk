@@ -1,6 +1,6 @@
 # Pomodoro
 
-**Plano. Os blocos B1 e B2 estão implementados; B3 a B5 continuam no papel.**
+**Plano. Os blocos B1, B2 e B3 estão implementados; B4 e B5 continuam no papel.**
 
 > Referências a linhas valem para `207369c` (`main` depois do PR #38). Se não
 > baterem mais, busque pelo nome da função ou da classe.
@@ -321,6 +321,21 @@ A grade nova tem duas faixas lado a lado no mesmo eixo de horas:
 
 Mais a linha do "agora", que já é `nowM / 60 * CAL_HOUR_H`.
 
+> **Na implementação, três coisas que o plano não tinha resolvido.**
+>
+> **A faixa esquerda não empilha sobreposição em colunas.** `packOverlaps()` é
+> reusada porque já filtra tarefa sem `time` e aplica o piso de duração, mas as
+> colunas que ela calcula são ignoradas: ali a faixa é referência, não área de
+> trabalho, e um bloco por linha se lê melhor num painel estreito.
+>
+> **O recorte por dia virou uma função própria, `faixaNoDia()`.** Um registro
+> pode atravessar a meia-noite, e a grade mostra um dia só. O que sai dele é
+> aparado, não escondido — um pomo das 23:40 às 00:10 aparece como 23:40–24:00
+> hoje e 00:00–00:10 amanhã. É pura, e está no harness.
+>
+> **A rolagem é posta uma vez por entrada na grade**, não a cada render nem a
+> cada hora: repô-la enquanto alguém olha arranca a grade de baixo do olho.
+
 ### D13 — O widget aparece em qualquer aba; no mobile ele encosta, não flutua
 
 Enquanto houver pomo (correndo ou pausado), o widget aparece — inclusive na
@@ -514,6 +529,11 @@ funciona.
   este pomo? 12 min já registrados."* Abaixo do piso de **D8** o texto muda para
   dizer que nada será registrado — é a mesma confirmação, não uma segunda.
 
+  > **Corrigido no B3: ela era um `confirm()` nativo, e virou o modal do app.**
+  > Um `confirm()` suprimido devolve `false` sem abrir diálogo, e `false` é
+  > indistinguível de "a pessoa cancelou" — o botão "Parar" virava um botão que
+  > não faz nada, sem aviso nenhum. Ver o desvio 11.
+
 Verificável: iniciar um pomo pela lista, acompanhar no widget, **recarregar a
 página no meio** e ver o tempo continuar certo, deixar terminar e conferir que
 `elapsed` cresceu exatamente a duração do pomo. Nos Relatórios, os números do
@@ -539,6 +559,8 @@ Reuso: os cartões são o mesmo padrão de `.overview-stats` /
 
 ### B3 — Tela do Pomodoro, estado em execução
 
+**Implementado.** Ver [Desvios do B3](#desvios-do-b3).
+
 - A coluna direita troca de conteúdo: grade do dia (**D12**), planejado à
   esquerda, focado à direita, linha do agora.
 - "Foco em Notas" abaixo, gravado em `nota` ao fechar o pomo.
@@ -551,6 +573,17 @@ Reuso: os cartões são o mesmo padrão de `.overview-stats` /
   foco num campo de texto (o "Foco em Notas" está logo ali), e Esc já fecha
   formulário, gerenciador de projetos, sincronização e gaveta — o modo foco
   entra nessa cadeia, e sai **por último**.
+
+  > **Na implementação o Espaço precisou de mais duas guardas.** Ele vale só na
+  > aba do Pomodoro ou no modo foco — um espaço perdido na lista de tarefas
+  > pausando o cronômetro em silêncio é pior que não ter atalho —, e é ignorado
+  > sobre botão e link, onde espaço já é o "ativar" do navegador. Sem esta
+  > segunda, o espaço depois de clicar em "Pausar" alternava duas vezes.
+  >
+  > E o "por último" do Esc precisou de um sinalizador medido **antes** de
+  > fechar: os `if` da cadeia são independentes de propósito — um Esc fecha tudo
+  > o que estiver aberto de uma vez —, então "não havia mais nada aberto" não se
+  > lê depois de já ter fechado.
 
 ### B4 — Arrastar o widget
 
@@ -729,6 +762,131 @@ alcançadas pelo "..." da tela do Pomodoro, como no print, e ele sai da
 Relatórios. Verificado nesta rodada — 30 min de foco livre ficaram fora das
 Horas Trabalhadas. É a ressalva já registrada na **D10**, e o conserto (a linha
 "Sem atividade") é do **B5**.
+
+## Desvios do B3
+
+| # | O quê | Onde |
+|---|---|---|
+| 1 | Dois `style` no mesmo bloco fizeram os blocos empilharem no pé da faixa | Abaixo |
+| 2 | Um `const` no topo bateu na zona morta temporal do `CAL_HOUR_H` e deixou a página em branco | Abaixo |
+| 3 | O botão "Foco" saiu da `brand-bar` — o que o desvio 10 do B1 prometia para o B2 | Abaixo |
+| 4 | "Foco em Notas" é desligado fora da fase de foco | Abaixo |
+| 5 | O Espaço ganhou duas guardas a mais; o Esc, um sinalizador medido antes de fechar | **B3** |
+| 6 | A faixa esquerda não empilha sobreposição; o recorte por dia virou `faixaNoDia()`; a rolagem é posta uma vez por entrada | **D12** |
+| 7 | O widget cobria o "Foco em Notas" | Abaixo |
+| 8 | O nome do foco fica visível no modo foco | Abaixo |
+| 9 | A faixa esquerda não empilha sobreposição em colunas | **D12** |
+| 10 | A rolagem da grade é posta uma vez por entrada | **D12** |
+| 11 | O `confirm()` nativo do "Parar" virou o modal do app — era um botão que não fazia nada | Abaixo |
+
+### 1 — Dois `style` no mesmo bloco
+
+A primeira versão de `blocoDaGradeHtml()` recebia a cor do projeto como
+*atributo* pronto (` style="--bloco:…"`) e escrevia a posição noutro `style=`.
+O navegador honra só o primeiro: todo bloco de tarefa **com projeto** perdia
+`top` e `height` e ia para o pé da faixa, com 25px de altura.
+
+Só apareceu porque foi **medido** — `getBoundingClientRect()` de cada bloco —, e
+não julgado pela captura de tela, onde a grade só parecia vazia. É o aprendizado
+que este repositório já registrou duas vezes, e valeu a terceira.
+
+A correção é de assinatura: `estilo` passou a ser um conjunto de **declarações**,
+concatenado no mesmo `style=` da posição.
+
+### 2 — Zona morta temporal do `CAL_HOUR_H`
+
+Os vãos de hora nasceram como `const POMO_GRADE_VAOS = …CAL_HOUR_H…` no topo da
+seção do Pomodoro. `CAL_HOUR_H` é declarada ~250 linhas abaixo, e `const` tem
+zona morta: o script inteiro morria na carga e a página ficava **em branco**.
+
+O harness não pega isto: `new Function(principal)` **parseia** o script, não o
+executa. O que pegou foi abrir a página e ler o console.
+
+Virou `pomoGradeVaos()`, uma função memoizada — a mesma saída que `POMO_PADRAO`
+já documenta para o caso inverso.
+
+### 3 — O botão "Foco" saiu da `brand-bar`
+
+O desvio 10 do B1 dizia que aquele botão era provisório e sairia no B2, quando as
+Configurações de foco passassem a ser alcançadas pela própria tela. O B2 não fez,
+e o B3 fez: um "..." no topo do painel do mostrador, como no print.
+
+A quebra de linha do `.brand-actions` **ficou**. Era a segunda defesa da medida de
+343px, custa nada, e protege a barra do próximo botão que chegar.
+
+### 4 — "Foco em Notas" desligado fora da fase de foco
+
+`encerrarFase()` só grava registro quando a fase é `foco`. Uma nota escrita
+durante uma pausa seria descartada em silêncio — o defeito que
+[enviar-agora-e-o-descarte-silencioso.md](enviar-agora-e-o-descarte-silencioso.md)
+já custou uma vez. O campo é desabilitado, com o placeholder dizendo por quê.
+
+**Pausar um foco não desliga o campo**: ali a fase continua sendo `foco`, o pomo
+continua existindo, e escrever sobre ele continua fazendo sentido.
+
+E a nota vai para **todos** os fragmentos do mesmo pomo, porque `encerrarFase()`
+também roda ao pausar. É o certo: cada registro carrega a nota do pomo a que
+pertence.
+
+### 7 — O widget cobria o "Foco em Notas"
+
+Medido a 1280x800: o widget, encostado no canto inferior direito, cobria ~60px do
+campo de notas. As duas coisas sempre coexistem — a metade em curso só aparece com
+pomo em andamento —, então `#pomo-emcurso` ganhou 72px de reserva no pé, e o campo
+passa a poder rolar para fora do caminho.
+
+**Não** se resolveu escondendo o widget: a **D13** diz explicitamente que ele
+aparece inclusive na própria tela do Pomodoro.
+
+> Fica registrada uma sobreposição **anterior a este bloco**, e que é do B4: por
+> volta de 880px de largura o widget flutuante encosta na pílula da `.app-nav`.
+> Nem o widget nem a navbar foram tocados aqui.
+
+### 8 — O nome do foco fica visível no modo foco
+
+O plano dizia "esconde tudo menos o mostrador". Feito ao pé da letra, sobrava uma
+tela cheia com um número e nada dizendo no que se está focando.
+
+O nome fica, centrado sobre o mostrador, e só perde a cara de botão — durante um
+pomo o seletor de alvo já está desabilitado, e trocar de alvo no meio não faz
+sentido. O botão de sair fica pelo mesmo tipo de razão: tela cheia sem saída
+visível é armadilha, e o Esc sozinho não é saída visível.
+
+### 11 — O "Parar" era um botão que não fazia nada
+
+**Relatado no uso, não pelo código.** Clicar em "Parar" não encerrava o pomo nem
+zerava o cronômetro. Diagnóstico, medindo:
+
+- O clique **chegava** em `pararPomo()`.
+- O `confirm()` **era chamado**, com o texto certo.
+- E devolvia `false`. A função saía pelo `return` e nada acontecia.
+
+Um `confirm()` suprimido devolve `false` **sem abrir diálogo nenhum**, e `false`
+é exatamente o mesmo valor de "a pessoa clicou em Cancelar". O caminho mais
+comum para isso é o *"impedir que esta página crie diálogos adicionais"* do
+Chrome, que aparece depois de alguns diálogos e, marcado, mata em silêncio todo
+`confirm()` seguinte daquela página. Contextos de PWA e WebView têm o mesmo
+efeito.
+
+A pergunta passou a ser o modal do app — `.form-overlay`, o padrão que os outros
+seis modais já usam. Não depende de diálogo do navegador, aceita duas linhas de
+texto formatado, entra na cadeia do Escape (Escape ali é *não descartar*), e o
+Espaço fica bloqueado enquanto ela está aberta.
+
+Três coisas que apareceram no caminho:
+
+- **Parar uma fase de PAUSA não pergunta mais nada.** Não há foco a descartar, e
+  a versão anterior já não perguntava — mas por acidente, porque caía fora do
+  `if (est.fase === 'foco')`. Agora é explícito.
+- **O pomo pode vencer enquanto a pergunta está na tela**, porque o pulso de um
+  segundo continua correndo. `confirmarParada()` reconfere a fase antes de
+  fechá-la: se venceu, a reconciliação já gravou o trecho com o carimbo certo, e
+  fechar de novo somaria duas vezes.
+- **Os outros quatro `confirm()` do arquivo ficaram.** Ali `false` significa
+  "mantenha o lado seguro" — não trocar os dados, não apagar o projeto —, que é o
+  que se quer quando o diálogo não aparece. Aqui `false` significava "o pomo
+  continua correndo", que se lê como defeito. Trocar os quatro é decisão
+  separada, e não é deste bloco.
 
 ## O que fica de fora
 
