@@ -1,103 +1,85 @@
-/* Service worker do Daysk.
- *
- * Existe por duas razões, nesta ordem:
- *
- * 1. É ele que faz o Chrome no Android instalar um APP DE VERDADE (WebAPK) em
- *    vez de um atalho de favorito. Sem manifest e sem service worker, o
- *    "Adicionar à tela inicial" cria um atalho legado — e é esse atalho que
- *    aparece na home e não abre nada em vários launchers.
- * 2. Faz o app abrir sem rede, que num gerenciador de tarefas diárias no
- *    celular é o caso comum. Os dados já são locais (localStorage); o que
- *    faltava era o app carregar.
- *
- * Estratégia, e o porquê de cada uma:
- *
- * - DOCUMENTO: rede primeiro, cache como rede de segurança. Todo o app vive num
- *   único index.html, então cache-primeiro no documento significaria continuar
- *   vendo a versão velha depois de um deploy — o problema clássico. Rede
- *   primeiro custa alguns milissegundos e paga com "abrir online é sempre a
- *   versão nova".
- * - RESTO (ícones, fontes, Chart.js): serve do cache e revalida em segundo
- *   plano. São imutáveis na prática e é onde está o peso.
- * - AUTENTICAÇÃO DO GOOGLE: nunca passa por aqui. Cachear resposta de OAuth é
- *   pedir para o login quebrar de um jeito difícil de diagnosticar.
- */
+/* =========================================================================
+   Service Worker escopado por aplicativo.
+   Copie este arquivo para DENTRO da pasta de cada projeto (Zenny/sw.js e
+   Daysk/sw.js) e altere APENAS a constante APP_ID em cada cópia.
+   Um sw.js na raiz do repositório username.github.io controlaria os dois
+   apps ao mesmo tempo — é exatamente o que queremos evitar.
+   ========================================================================= */
 
-const VERSAO = 'daysk-v1';
-const APP = './';
+const APP_ID = 'zenny';          // <-- em Daysk/sw.js troque para 'daysk'
+const VERSION = 'v1';
+const CACHE_NAME = `${APP_ID}-${VERSION}`;
 
-/* Precache mínimo: o shell e os ícones. Deliberadamente NÃO inclui as CDNs —
-   elas entram pelo caminho de revalidação, e uma CDN fora do ar no momento da
-   instalação não pode impedir o service worker de instalar. */
+// Caminhos relativos ao sw.js, ou seja, relativos à pasta do app.
 const PRECACHE = [
-  APP,
-  'manifest.webmanifest',
-  'assets/icons/icon-192.png',
-  'assets/icons/icon-512.png',
-  'assets/icons/icon-maskable-512.png',
+  './',
+  './index.html',
+  './manifest.json',
+  './icons/icon-192.png',
+  './icons/icon-512.png'
 ];
 
-const NUNCA_CACHEAR = [
-  'accounts.google.com',
-  'apis.google.com',
-  'www.googleapis.com',
-  'oauth2.googleapis.com',
-  'content.googleapis.com',
-];
-
-self.addEventListener('install', evento => {
-  evento.waitUntil(
-    caches.open(VERSAO)
-      // allSettled e não all: um único 404 no precache faria a instalação
-      // inteira falhar, e sem service worker não há instalação do app.
-      .then(cache => Promise.allSettled(PRECACHE.map(u => cache.add(u))))
+self.addEventListener('install', (event) => {
+  event.waitUntil(
+    caches
+      .open(CACHE_NAME)
+      // addAll falha inteiro se um arquivo faltar; add individual é mais tolerante
+      .then((cache) => Promise.allSettled(PRECACHE.map((url) => cache.add(url))))
       .then(() => self.skipWaiting())
   );
 });
 
-self.addEventListener('activate', evento => {
-  evento.waitUntil(
-    caches.keys()
-      .then(chaves => Promise.all(
-        chaves.filter(k => k !== VERSAO).map(k => caches.delete(k))
-      ))
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    caches
+      .keys()
+      .then((keys) =>
+        Promise.all(
+          keys
+            // remove só as versões antigas DESTE app, nunca as do outro
+            .filter((key) => key.startsWith(`${APP_ID}-`) && key !== CACHE_NAME)
+            .map((key) => caches.delete(key))
+        )
+      )
       .then(() => self.clients.claim())
   );
 });
 
-self.addEventListener('fetch', evento => {
-  const req = evento.request;
-  if (req.method !== 'GET') return;
+self.addEventListener('fetch', (event) => {
+  const { request } = event;
 
-  let url;
-  try { url = new URL(req.url); } catch { return; }
-  if (NUNCA_CACHEAR.includes(url.hostname)) return;
+  if (request.method !== 'GET') return;
 
-  if (req.mode === 'navigate') {
-    evento.respondWith(
-      fetch(req)
-        .then(res => {
-          const copia = res.clone();
-          caches.open(VERSAO).then(c => c.put(APP, copia));
-          return res;
+  // Ignora qualquer requisição fora do escopo deste app.
+  if (!request.url.startsWith(self.registration.scope)) return;
+
+  // Navegação: rede primeiro, cai para o cache offline.
+  if (request.mode === 'navigate') {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          const copy = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
+          return response;
         })
-        // Sem rede: a última versão que carregou. Cai no shell e não na URL
-        // pedida porque o app é uma página só — a navegação é toda interna.
-        .catch(() => caches.match(APP).then(r => r || caches.match(req)))
+        .catch(() =>
+          caches.match(request).then((cached) => cached || caches.match('./index.html'))
+        )
     );
     return;
   }
 
-  evento.respondWith(
-    caches.match(req).then(cacheado => {
-      const daRede = fetch(req).then(res => {
-        if (res && (res.ok || res.type === 'opaque')) {
-          const copia = res.clone();
-          caches.open(VERSAO).then(c => c.put(req, copia));
+  // Demais arquivos: cache primeiro, rede como reforço.
+  event.respondWith(
+    caches.match(request).then((cached) => {
+      if (cached) return cached;
+      return fetch(request).then((response) => {
+        if (response.ok && response.type === 'basic') {
+          const copy = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
         }
-        return res;
-      }).catch(() => cacheado);
-      return cacheado || daRede;
+        return response;
+      });
     })
   );
 });
